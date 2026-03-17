@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: ichat
+    runtime: node
+    region: oregon
+    plan: free
+    buildCommand: npm install -g pnpm && pnpm install --frozen-lockfile && bash scripts/render-build.sh
+    startCommand: node artifacts/api-server/dist/index.cjs
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: GROQ_API_KEY
+        sync: false
+    autoDeploy: false
