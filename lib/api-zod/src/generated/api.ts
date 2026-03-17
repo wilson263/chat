@@ -14,3 +14,299 @@ import * as zod from "zod";
 export const HealthCheckResponse = zod.object({
   status: zod.string(),
 });
+
+// ─── GitHub ───────────────────────────────────────────────────────────────────
+
+export const ListGithubReposQueryParams = zod.object({
+  token: zod.string(),
+});
+
+export const GetGithubRepoContentsParams = zod.object({
+  owner: zod.string(),
+  repo: zod.string(),
+});
+
+export const GetGithubRepoContentsQueryParams = zod.object({
+  token: zod.string().optional(),
+  path: zod.string().optional(),
+});
+
+export const GetGithubFileParams = zod.object({
+  owner: zod.string(),
+  repo: zod.string(),
+});
+
+export const GetGithubFileQueryParams = zod.object({
+  path: zod.string(),
+  token: zod.string().optional(),
+});
+
+export const CommitToGithubBody = zod.object({
+  owner: zod.string(),
+  repo: zod.string(),
+  path: zod.string(),
+  message: zod.string(),
+  content: zod.string(),
+  sha: zod.string().optional(),
+  token: zod.string(),
+});
+
+export const ImportGithubRepoBody = zod.object({
+  url: zod.string(),
+  token: zod.string().optional(),
+});
+
+export const ListGithubReposResponse = zod.array(
+  zod.object({
+    id: zod.number(),
+    name: zod.string(),
+    fullName: zod.string(),
+    description: zod.string().nullable().optional(),
+    private: zod.boolean(),
+    language: zod.string().nullable().optional(),
+    updatedAt: zod.string().optional(),
+    url: zod.string(),
+  })
+);
+
+export const GetGithubRepoContentsResponse = zod.array(
+  zod.object({
+    name: zod.string(),
+    path: zod.string(),
+    type: zod.enum(["file", "dir"]),
+    size: zod.number(),
+    sha: zod.string(),
+  })
+);
+
+export const GetGithubFileResponse = zod.object({
+  name: zod.string(),
+  path: zod.string(),
+  content: zod.string(),
+  sha: zod.string(),
+  encoding: zod.string(),
+});
+
+export const CommitToGithubResponse = zod.object({
+  sha: zod.string(),
+  url: zod.string(),
+});
+
+export const ImportGithubRepoResponse = zod.object({
+  repoName: zod.string(),
+  description: zod.string(),
+  language: zod.string(),
+  files: zod.array(
+    zod.object({
+      path: zod.string(),
+      content: zod.string(),
+      language: zod.string(),
+    })
+  ),
+  totalFiles: zod.number(),
+  skippedFiles: zod.number(),
+});
+
+// ─── Codegen ──────────────────────────────────────────────────────────────────
+
+export const GenerateCodeBody = zod.object({
+  prompt: zod.string(),
+  language: zod.string(),
+  context: zod.string().optional(),
+});
+
+export const ExplainCodeBody = zod.object({
+  code: zod.string(),
+  language: zod.string(),
+});
+
+export const FixCodeBody = zod.object({
+  code: zod.string(),
+  language: zod.string(),
+  error: zod.string().optional(),
+});
+
+export const ReviewCodeBody = zod.object({
+  code: zod.string(),
+  language: zod.string(),
+});
+
+export const ConvertCodeBody = zod.object({
+  code: zod.string(),
+  fromLanguage: zod.string(),
+  toLanguage: zod.string(),
+});
+
+export const CompleteCodeBody = zod.object({
+  code: zod.string(),
+  language: zod.string(),
+  cursorPosition: zod.number().optional(),
+});
+
+export const GenerateTestsBody = zod.object({
+  code: zod.string(),
+  language: zod.string(),
+  framework: zod.string().optional(),
+});
+
+export const DocumentCodeBody = zod.object({
+  code: zod.string(),
+  language: zod.string(),
+});
+
+export const ListLanguagesResponse = zod.array(
+  zod.object({
+    id: zod.string(),
+    name: zod.string(),
+    extension: zod.string(),
+    icon: zod.string(),
+  })
+);
+
+// ─── Projects ─────────────────────────────────────────────────────────────────
+
+export const CreateProjectBody = zod.object({
+  name: zod.string(),
+  description: zod.string().optional(),
+  language: zod.string().optional(),
+});
+
+export const GetProjectParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateProjectParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateProjectBody = zod.object({
+  name: zod.string().optional(),
+  description: zod.string().optional(),
+  language: zod.string().optional(),
+});
+
+export const DeleteProjectParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+const ProjectSchema = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  description: zod.string().nullable().optional(),
+  language: zod.string().nullable().optional(),
+  createdAt: zod.union([zod.string(), zod.date()]).optional(),
+  updatedAt: zod.union([zod.string(), zod.date()]).optional(),
+});
+
+const ProjectFileSchema = zod.object({
+  id: zod.number(),
+  projectId: zod.number(),
+  name: zod.string(),
+  path: zod.string(),
+  content: zod.string().optional(),
+  language: zod.string().nullable().optional(),
+  createdAt: zod.union([zod.string(), zod.date()]).optional(),
+  updatedAt: zod.union([zod.string(), zod.date()]).optional(),
+});
+
+export const ListProjectsResponse = zod.array(ProjectSchema);
+
+export const GetProjectResponse = ProjectSchema.extend({
+  files: zod.array(ProjectFileSchema).optional(),
+});
+
+export const UpdateProjectResponse = ProjectSchema;
+
+// ─── Files ────────────────────────────────────────────────────────────────────
+
+export const ListFilesParams = zod.object({
+  projectId: zod.coerce.number(),
+});
+
+export const CreateFileParams = zod.object({
+  projectId: zod.coerce.number(),
+});
+
+export const CreateFileBody = zod.object({
+  name: zod.string(),
+  path: zod.string(),
+  content: zod.string().optional(),
+  language: zod.string().optional(),
+});
+
+export const GetFileParams = zod.object({
+  projectId: zod.coerce.number(),
+  fileId: zod.coerce.number(),
+});
+
+export const UpdateFileParams = zod.object({
+  projectId: zod.coerce.number(),
+  fileId: zod.coerce.number(),
+});
+
+export const UpdateFileBody = zod.object({
+  name: zod.string().optional(),
+  content: zod.string().optional(),
+  language: zod.string().optional(),
+});
+
+export const DeleteFileParams = zod.object({
+  projectId: zod.coerce.number(),
+  fileId: zod.coerce.number(),
+});
+
+export const ListFilesResponse = zod.array(ProjectFileSchema);
+
+export const GetFileResponse = ProjectFileSchema;
+
+export const UpdateFileResponse = ProjectFileSchema;
+
+// ─── OpenAI Conversations ─────────────────────────────────────────────────────
+
+export const CreateOpenaiConversationBody = zod.object({
+  title: zod.string().optional(),
+});
+
+export const GetOpenaiConversationParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const DeleteOpenaiConversationParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ListOpenaiMessagesParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const SendOpenaiMessageParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const SendOpenaiMessageBody = zod.object({
+  content: zod.string(),
+  model: zod.string().optional(),
+});
+
+const MessageSchema = zod.object({
+  id: zod.number(),
+  conversationId: zod.number(),
+  role: zod.string(),
+  content: zod.string(),
+  createdAt: zod.union([zod.string(), zod.date()]).optional(),
+});
+
+const ConversationSchema = zod.object({
+  id: zod.number(),
+  title: zod.string().nullable().optional(),
+  createdAt: zod.union([zod.string(), zod.date()]).optional(),
+  updatedAt: zod.union([zod.string(), zod.date()]).optional(),
+});
+
+export const ListOpenaiConversationsResponse = zod.array(ConversationSchema);
+
+export const GetOpenaiConversationResponse = ConversationSchema.extend({
+  messages: zod.array(MessageSchema).optional(),
+});
+
+export const ListOpenaiMessagesResponse = zod.array(MessageSchema);
