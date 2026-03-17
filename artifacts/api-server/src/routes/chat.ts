@@ -120,23 +120,23 @@ Always structure your output like this:
 ---
 
 === folder/filename.ext ===
-```language
+\`\`\`language
 [complete code — never truncated]
-```
+\`\`\`
 
 === folder/filename2.ext ===
-```language
+\`\`\`language
 [complete code]
-```
+\`\`\`
 
 [... all files ...]
 
 ---
 
 ### ⚡ Quick Start:
-```bash
+\`\`\`bash
 [step by step setup commands]
-```
+\`\`\`
 
 ### 🚀 Deploy:
 [deployment instructions for the target platform]
