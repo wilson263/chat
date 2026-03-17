@@ -1,0 +1,148 @@
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+@import "tw-animate-css";
+@plugin "@tailwindcss/typography";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-card-border: hsl(var(--card-border));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-popover-border: hsl(var(--popover-border));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+
+  --color-editor-bg: hsl(var(--editor-bg));
+  --color-panel-bg: hsl(var(--panel-bg));
+
+  --font-sans: 'Inter', sans-serif;
+  --font-mono: 'Fira Code', monospace;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  /* Forced Dark Mode for Premium IDE Feel */
+  --background: 230 25% 6%;
+  --foreground: 210 40% 98%;
+  
+  --card: 230 25% 8%;
+  --card-foreground: 210 40% 98%;
+  --card-border: 230 20% 15%;
+  
+  --popover: 230 25% 10%;
+  --popover-foreground: 210 40% 98%;
+  --popover-border: 230 20% 20%;
+  
+  --primary: 250 100% 65%;
+  --primary-foreground: 0 0% 100%;
+  
+  --secondary: 230 20% 15%;
+  --secondary-foreground: 210 40% 98%;
+  
+  --muted: 230 20% 15%;
+  --muted-foreground: 215 20% 65%;
+  
+  --accent: 280 100% 60%;
+  --accent-foreground: 0 0% 100%;
+  
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 210 40% 98%;
+
+  --border: 230 20% 16%;
+  --input: 230 20% 15%;
+  --ring: 250 100% 65%;
+
+  --editor-bg: 230 25% 5%;
+  --panel-bg: 230 25% 8%;
+
+  --radius: 0.5rem;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    /* Force dark mode background globally */
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+}
+
+/* Custom Scrollbar for IDE */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted));
+  border-radius: 5px;
+  border: 2px solid hsl(var(--background));
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
+}
+
+/* Monaco Editor Overrides */
+.monaco-editor {
+  padding-top: 8px;
+}
+
+/* Markdown Styles */
+.prose pre {
+  margin: 0;
+  border-radius: 0.5rem;
+}
+.prose code {
+  color: hsl(var(--primary));
+  background: hsl(var(--muted));
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-weight: 500;
+}
+.prose pre code {
+  color: inherit;
+  background: transparent;
+  padding: 0;
+}
+
+.glass-panel {
+  background: rgba(15, 17, 26, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}

@@ -1,8 +1,48 @@
 import { Router, type IRouter } from "express";
 import healthRouter from "./health";
+import openaiRouter from "./openai";
+import codegenRouter from "./codegen";
+import projectsRouter from "./projects";
+import filesRouter from "./files";
+import githubRouter from "./github";
+import chatRouter from "./chat";
+import authRouter from "./auth";
+import appsRouter from "./apps";
+import usageRouter from "./usage";
+import agentBuildRouter from "./agent-build";
+import deployRouter from "./deploy";
+import adminRouter from "./admin";
+import aiFeaturesRouter from "./ai-features";
+import terminalRouter from "./terminal";
+import secretsRouter from "./secrets";
+import collabRouter from "./collab";
+import packagesRouter from "./packages";
+import dbviewerRouter from "./dbviewer";
+import gitopsRouter from "./gitops";
+import playgroundGenerateRouter from "./playground-generate";
 
 const router: IRouter = Router();
 
+router.use(authRouter);
 router.use(healthRouter);
+router.use(openaiRouter);
+router.use(codegenRouter);
+router.use(projectsRouter);
+router.use(filesRouter);
+router.use(githubRouter);
+router.use(chatRouter);
+router.use(appsRouter);
+router.use(usageRouter);
+router.use(agentBuildRouter);
+router.use(deployRouter);
+router.use(adminRouter);
+router.use(aiFeaturesRouter);
+router.use(terminalRouter);
+router.use(secretsRouter);
+router.use(collabRouter);
+router.use(packagesRouter);
+router.use(dbviewerRouter);
+router.use(gitopsRouter);
+router.use(playgroundGenerateRouter);
 
 export default router;
