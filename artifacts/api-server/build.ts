@@ -6,9 +6,6 @@ import { rm, readFile } from "fs/promises";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// server deps to bundle to reduce openat(2) syscalls
-// which helps cold start times without risking some
-// packages that are not bundle compatible
 const allowlist = [
   "groq-sdk",
   "axios",
@@ -58,11 +55,15 @@ async function buildAll() {
   await esbuild({
     entryPoints: [path.resolve(__dirname, "src/index.ts")],
     platform: "node",
+    target: "node22",
     bundle: true,
     format: "cjs",
     outfile: path.resolve(distDir, "index.cjs"),
     define: {
       "process.env.NODE_ENV": '"production"',
+    },
+    banner: {
+      js: "// ZorvixAI API Server\nconst filename = __filename; const dirname = __dirname;",
     },
     minify: false,
     external: externals,
