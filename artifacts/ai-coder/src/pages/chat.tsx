@@ -511,7 +511,19 @@ export default function ChatPage() {
     recognition.onstart = () => setIsListening(true);
     recognition.onend = () => setIsListening(false);
     recognition.onresult = (e: any) => { const t = e.results[0][0].transcript; setInput(prev => prev + (prev ? ' ' : '') + t); };
-    recognition.onerror = () => { setIsListening(false); toast({ title: 'Voice input error', variant: 'destructive' }); };
+    recognition.onerror = (e: any) => {
+      setIsListening(false);
+      const errorMessages: Record<string, string> = {
+        'not-allowed': 'Microphone access denied. Please allow microphone permission in your browser settings.',
+        'no-speech': 'No speech detected. Please speak clearly and try again.',
+        'network': 'Network error. Voice input requires an internet connection.',
+        'audio-capture': 'No microphone found. Please connect a microphone and try again.',
+        'aborted': 'Voice input was cancelled.',
+        'service-not-allowed': 'Voice input is not allowed. Try using HTTPS or check browser permissions.',
+      };
+      const description = errorMessages[e?.error] || (e?.error ? `Error: ${e.error}` : 'Could not access microphone. Please check permissions.');
+      toast({ title: 'Voice input error', description, variant: 'destructive' });
+    };
     recognition.start();
   };
 
