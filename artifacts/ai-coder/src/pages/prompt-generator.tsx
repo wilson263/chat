@@ -4,27 +4,147 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
 import {
   ArrowLeft, Sparkles, Wand2, Copy, Check, RefreshCw, Download,
   Figma, Palette, Layout, Smartphone, Monitor, Layers,
-  Lightbulb, Star, Zap, Eye, Code2, PenLine,
+  Lightbulb, Star, Zap, Eye, Code2, PenLine, Globe, Server,
+  Database, ShoppingCart, Gamepad2, Brain, Shield, CreditCard,
+  Bell, Users, MessageSquare, BarChart3, Lock, Wifi, Cloud,
+  Package, Rocket, PlaySquare, Apple, Chrome, Terminal,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-const TOOLS = [
-  { id: 'figma', label: 'Figma', icon: Figma, color: 'text-pink-400', bg: 'bg-pink-500/10', border: 'border-pink-500/20' },
-  { id: 'canva', label: 'Canva', icon: Palette, color: 'text-cyan-400', bg: 'bg-cyan-500/10', border: 'border-cyan-500/20' },
-  { id: 'general', label: 'General UX/UI', icon: Layout, color: 'text-violet-400', bg: 'bg-violet-500/10', border: 'border-violet-500/20' },
-  { id: 'mobile', label: 'Mobile App', icon: Smartphone, color: 'text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/20' },
-  { id: 'web', label: 'Web App', icon: Monitor, color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20' },
-  { id: 'prototype', label: 'Prototype', icon: Layers, color: 'text-orange-400', bg: 'bg-orange-500/10', border: 'border-orange-500/20' },
+// ─── MODES ────────────────────────────────────────────────────────────────────
+const MODES = [
+  { id: 'fullstack', label: 'Full Stack Web App', icon: Globe, color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20', desc: 'Frontend + Backend + DB + Auth' },
+  { id: 'mobile', label: 'Mobile App', icon: Smartphone, color: 'text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/20', desc: 'Android & iOS — Play Store ready' },
+  { id: 'uiux', label: 'UI/UX Design', icon: Figma, color: 'text-pink-400', bg: 'bg-pink-500/10', border: 'border-pink-500/20', desc: 'Figma / Canva / Prototype prompts' },
+  { id: 'backend', label: 'Backend / API', icon: Server, color: 'text-orange-400', bg: 'bg-orange-500/10', border: 'border-orange-500/20', desc: 'REST / GraphQL API server' },
+  { id: 'ecommerce', label: 'E-Commerce', icon: ShoppingCart, color: 'text-yellow-400', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', desc: 'Full shop with payments' },
+  { id: 'game', label: 'Game', icon: Gamepad2, color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20', desc: 'Browser or mobile game' },
+  { id: 'ai', label: 'AI / ML App', icon: Brain, color: 'text-cyan-400', bg: 'bg-cyan-500/10', border: 'border-cyan-500/20', desc: 'AI-powered application' },
+  { id: 'dashboard', label: 'Dashboard / SaaS', icon: BarChart3, color: 'text-violet-400', bg: 'bg-violet-500/10', border: 'border-violet-500/20', desc: 'Admin panel / analytics SaaS' },
 ];
 
-const APP_TYPES = [
-  'Social Media App', 'E-Commerce Platform', 'Task Manager', 'Dashboard/Analytics',
-  'Food Delivery App', 'Fitness & Health App', 'Finance & Banking', 'Education Platform',
-  'Travel & Booking', 'Chat & Messaging', 'Portfolio Website', 'SaaS Tool',
-  'Medical App', 'Real Estate App', 'News & Blog', 'Music Streaming',
+// ─── APP TYPES ────────────────────────────────────────────────────────────────
+const APP_TYPES: Record<string, string[]> = {
+  fullstack: ['Social Media Platform', 'Task & Project Manager', 'Blog / CMS', 'Job Board', 'Real Estate Platform', 'Booking & Reservation System', 'Forum / Community', 'Learning Management System', 'Event Management', 'Health & Fitness Platform', 'Recipe & Food App', 'Travel & Tourism', 'News & Magazine', 'Portfolio / Personal Site', 'Video Streaming Platform', 'Music Platform', 'Marketplace'],
+  mobile: ['Social Networking App', 'Food Delivery App', 'Ride Sharing App', 'Fitness Tracker', 'Finance & Banking App', 'Shopping App', 'Dating App', 'Education App', 'Health & Medication Tracker', 'Chat & Messaging App', 'Video Calling App', 'Maps & Navigation', 'News Reader', 'Todo & Productivity App', 'Travel Companion', 'Music Player', 'Photo Editor', 'Games App', 'Crypto Wallet', 'IoT Controller'],
+  uiux: ['Social Media App', 'E-Commerce Platform', 'Task Manager', 'Dashboard/Analytics', 'Food Delivery App', 'Fitness App', 'Finance App', 'Education Platform', 'Travel App', 'Chat App', 'Portfolio', 'SaaS Tool', 'Medical App', 'Real Estate App', 'News App', 'Music App'],
+  backend: ['Authentication Service', 'Payment Processing API', 'File Upload Service', 'Real-time Notification API', 'E-Commerce API', 'Social Graph API', 'Analytics Service', 'Email & SMS Service', 'Search Service', 'Content Management API', 'IoT Data API', 'Webhook Service'],
+  ecommerce: ['Fashion & Clothing Store', 'Electronics Store', 'Grocery Delivery', 'Digital Products Store', 'Handmade Crafts Marketplace', 'B2B Wholesale Platform', 'Subscription Box Service', 'Food & Beverage Shop', 'Books & Media Store', 'Sports & Outdoors', 'Beauty & Cosmetics', 'Multi-vendor Marketplace'],
+  game: ['Endless Runner', 'Puzzle Game', 'Platformer', 'Tower Defense', 'Word Game', 'Card Game', 'Trivia / Quiz Game', 'Clicker / Idle Game', 'RPG', 'Strategy Game', 'Sports Game', 'Racing Game'],
+  ai: ['AI Chatbot', 'Image Generation App', 'Text Summarizer', 'AI Writing Assistant', 'Code Review Bot', 'Sentiment Analysis Tool', 'Resume Builder with AI', 'AI Voice Assistant', 'Document Q&A', 'AI Image Editor', 'Recommendation Engine', 'AI Translator'],
+  dashboard: ['Analytics Dashboard', 'CRM System', 'HR Management System', 'Inventory Management', 'Financial Dashboard', 'Project Management Tool', 'Customer Support Portal', 'Marketing Analytics', 'Sales Pipeline', 'Fleet Management', 'School Management System', 'Hospital Management'],
+};
+
+// ─── TECH STACKS ──────────────────────────────────────────────────────────────
+const TECH_STACKS: Record<string, { id: string; label: string }[]> = {
+  fullstack: [
+    { id: 'react-node', label: 'React + Node.js + PostgreSQL' },
+    { id: 'nextjs', label: 'Next.js 14 + Prisma + PostgreSQL' },
+    { id: 'react-fastapi', label: 'React + FastAPI + PostgreSQL' },
+    { id: 'vue-node', label: 'Vue.js + Node.js + MongoDB' },
+    { id: 'react-django', label: 'React + Django + PostgreSQL' },
+    { id: 'nuxtjs', label: 'Nuxt.js + Node.js + MongoDB' },
+  ],
+  mobile: [
+    { id: 'react-native-expo', label: 'React Native + Expo (Recommended)' },
+    { id: 'flutter', label: 'Flutter + Dart' },
+    { id: 'react-native-cli', label: 'React Native CLI' },
+    { id: 'ionic', label: 'Ionic + Angular' },
+  ],
+  backend: [
+    { id: 'express', label: 'Node.js + Express + PostgreSQL' },
+    { id: 'fastapi', label: 'Python + FastAPI + PostgreSQL' },
+    { id: 'nestjs', label: 'NestJS + TypeORM + PostgreSQL' },
+    { id: 'django', label: 'Django REST Framework' },
+    { id: 'go-gin', label: 'Go + Gin + PostgreSQL' },
+    { id: 'springboot', label: 'Spring Boot + PostgreSQL' },
+  ],
+  ecommerce: [
+    { id: 'react-node', label: 'React + Node.js + Stripe + PostgreSQL' },
+    { id: 'nextjs-stripe', label: 'Next.js + Stripe + Prisma' },
+    { id: 'react-django', label: 'React + Django + Stripe + PostgreSQL' },
+  ],
+  game: [
+    { id: 'js-canvas', label: 'Vanilla JS + HTML Canvas' },
+    { id: 'phaser', label: 'Phaser.js (Browser Game)' },
+    { id: 'react-game', label: 'React + CSS Animations' },
+    { id: 'react-native-game', label: 'React Native (Mobile Game)' },
+  ],
+  ai: [
+    { id: 'react-openai', label: 'React + Node.js + OpenAI API' },
+    { id: 'nextjs-openai', label: 'Next.js + OpenAI API' },
+    { id: 'react-groq', label: 'React + Node.js + Groq API' },
+    { id: 'python-langchain', label: 'Python + LangChain + FastAPI' },
+  ],
+  dashboard: [
+    { id: 'react-node', label: 'React + Node.js + PostgreSQL + Recharts' },
+    { id: 'nextjs', label: 'Next.js + Prisma + PostgreSQL + Chart.js' },
+    { id: 'react-django', label: 'React + Django + PostgreSQL' },
+    { id: 'vue-node', label: 'Vue.js + Node.js + MongoDB' },
+  ],
+};
+
+// ─── FEATURES ─────────────────────────────────────────────────────────────────
+const FEATURES = [
+  { id: 'auth', label: 'Authentication (JWT)', icon: Lock },
+  { id: 'social-auth', label: 'Social Login (Google/GitHub)', icon: Chrome },
+  { id: 'payments', label: 'Payments (Stripe)', icon: CreditCard },
+  { id: 'push-notif', label: 'Push Notifications', icon: Bell },
+  { id: 'realtime', label: 'Real-time (WebSocket)', icon: Wifi },
+  { id: 'chat', label: 'In-app Chat / Messaging', icon: MessageSquare },
+  { id: 'roles', label: 'User Roles & Permissions', icon: Users },
+  { id: 'file-upload', label: 'File & Image Upload', icon: Cloud },
+  { id: 'search', label: 'Search & Filters', icon: Zap },
+  { id: 'analytics', label: 'Analytics & Reports', icon: BarChart3 },
+  { id: 'email', label: 'Email Notifications', icon: Bell },
+  { id: 'api', label: 'Public REST API', icon: Server },
+  { id: 'pwa', label: 'PWA / Offline Support', icon: Package },
+  { id: 'dark-mode', label: 'Dark Mode', icon: Eye },
+  { id: 'i18n', label: 'Multi-language (i18n)', icon: Globe },
+  { id: '2fa', label: 'Two-Factor Auth (2FA)', icon: Shield },
+];
+
+// ─── DEPLOY TARGETS ───────────────────────────────────────────────────────────
+const DEPLOY_TARGETS: Record<string, { id: string; label: string; icon: any }[]> = {
+  fullstack: [
+    { id: 'render', label: 'Render', icon: Cloud },
+    { id: 'vercel', label: 'Vercel + Railway', icon: Rocket },
+    { id: 'aws', label: 'AWS (EC2 + RDS)', icon: Cloud },
+    { id: 'digitalocean', label: 'DigitalOcean', icon: Cloud },
+    { id: 'heroku', label: 'Heroku', icon: Cloud },
+    { id: 'vps', label: 'VPS / Linux Server', icon: Terminal },
+  ],
+  mobile: [
+    { id: 'playstore', label: 'Google Play Store', icon: PlaySquare },
+    { id: 'appstore', label: 'Apple App Store', icon: Apple },
+    { id: 'both', label: 'Both Stores', icon: Smartphone },
+    { id: 'apk', label: 'APK Only (Android)', icon: Package },
+  ],
+  backend: [
+    { id: 'render', label: 'Render', icon: Cloud },
+    { id: 'railway', label: 'Railway', icon: Rocket },
+    { id: 'aws', label: 'AWS Lambda / EC2', icon: Cloud },
+    { id: 'docker', label: 'Docker + VPS', icon: Package },
+  ],
+  ecommerce: [
+    { id: 'vercel', label: 'Vercel (Frontend) + Railway (Backend)', icon: Rocket },
+    { id: 'render', label: 'Render (Full Stack)', icon: Cloud },
+    { id: 'aws', label: 'AWS', icon: Cloud },
+  ],
+};
+
+// ─── UI/UX TOOLS ──────────────────────────────────────────────────────────────
+const UIUX_TOOLS = [
+  { id: 'figma', label: 'Figma', icon: Figma },
+  { id: 'canva', label: 'Canva', icon: Palette },
+  { id: 'general', label: 'General UX/UI', icon: Layout },
+  { id: 'mobile', label: 'Mobile App', icon: Smartphone },
+  { id: 'web', label: 'Web App', icon: Monitor },
+  { id: 'prototype', label: 'Prototype', icon: Layers },
 ];
 
 const STYLE_VIBES = [
@@ -40,139 +160,445 @@ const SCREEN_TYPES = [
   'Error Pages', 'Loading States', 'Modal & Popups', 'Data Tables',
 ];
 
-function buildPrompt(opts: {
-  tool: string;
-  appName: string;
-  appType: string;
-  styleVibe: string;
-  screens: string[];
-  colorPalette: string;
-  extraNotes: string;
-  targetUsers: string;
-}): string {
-  const toolLabel = TOOLS.find(t => t.id === opts.tool)?.label || opts.tool;
-  const screenList = opts.screens.length > 0 ? opts.screens.join(', ') : 'all key screens';
+// ─── PROMPT BUILDERS ──────────────────────────────────────────────────────────
 
-  let prompt = `Design a complete, production-ready ${toolLabel} UI/UX design for a ${opts.appType || 'modern app'} called "${opts.appName || 'MyApp'}".\n\n`;
+function buildFullStackPrompt(opts: any): string {
+  const stackLabel = (TECH_STACKS.fullstack.find(s => s.id === opts.techStack) || TECH_STACKS.fullstack[0]).label;
+  const featureLabels = opts.features.map((f: string) => FEATURES.find(feat => feat.id === f)?.label).filter(Boolean);
+  const deployLabel = DEPLOY_TARGETS.fullstack.find(d => d.id === opts.deployTarget)?.label || 'Render';
 
-  prompt += `**Design Style:** ${opts.styleVibe || 'Modern & Clean'}\n`;
+  return `Build a complete, production-ready full stack web application called "${opts.appName || 'MyApp'}" — a ${opts.appType || 'web platform'}.
 
-  if (opts.targetUsers) {
-    prompt += `**Target Users:** ${opts.targetUsers}\n`;
-  }
+## Requirements
 
-  if (opts.colorPalette) {
-    prompt += `**Color Palette:** ${opts.colorPalette}\n`;
-  }
+**Tech Stack:** ${stackLabel}
+**Deployment Target:** ${deployLabel}
 
-  prompt += `\n**Screens to Design:** ${screenList}\n\n`;
+## Features to Build (ALL must be fully implemented — no stubs):
+${featureLabels.map((f: string) => `• ${f}`).join('\n')}
+• Full CRUD operations for all core entities
+• Responsive design (mobile + tablet + desktop)
+• Form validation (client-side + server-side)
+• Error handling and loading states throughout
+• Environment configuration (.env.example)
+${opts.extraNotes ? `• ${opts.extraNotes}` : ''}
 
-  prompt += `**Design Requirements:**\n`;
-  prompt += `- Create a visually stunning, pixel-perfect design with exceptional attention to detail\n`;
-  prompt += `- Use a consistent design system with reusable components (buttons, cards, inputs, typography scale)\n`;
-  prompt += `- Apply proper spacing, padding, and visual hierarchy following the 8pt grid system\n`;
-  prompt += `- Include micro-interactions and hover states for interactive elements\n`;
-  prompt += `- Ensure accessibility with sufficient color contrast (WCAG AA minimum)\n`;
-  prompt += `- Design for both light and dark mode variants\n`;
-  prompt += `- Include responsive breakpoints for mobile (375px), tablet (768px), and desktop (1440px)\n`;
+## Code Standards:
+- Minimum 1000 lines of code total
+- Every function fully implemented — no TODO comments, no placeholder code
+- Real database queries (not hardcoded data)
+- Proper HTTP status codes and error responses
+- Password hashing with bcrypt
+- JWT tokens with refresh logic
+- Rate limiting and security headers
+- Pagination for all list endpoints
 
-  if (opts.tool === 'figma') {
-    prompt += `\n**Figma-Specific Requirements:**\n`;
-    prompt += `- Organize layers with clear naming conventions and logical grouping\n`;
-    prompt += `- Use Auto Layout for all flexible components\n`;
-    prompt += `- Create a local Styles library for colors, typography, and effects\n`;
-    prompt += `- Build reusable Components with variants (size, state, theme variants)\n`;
-    prompt += `- Add interactive prototyping links between screens\n`;
-    prompt += `- Include a Design Tokens page with all variables\n`;
-  } else if (opts.tool === 'canva') {
-    prompt += `\n**Canva-Specific Requirements:**\n`;
-    prompt += `- Use Canva's brand kit for consistent colors and fonts\n`;
-    prompt += `- Create a template structure that can be easily edited\n`;
-    prompt += `- Include mockup frames for device presentations\n`;
-    prompt += `- Add annotations and design notes for developers\n`;
-    prompt += `- Export-ready assets in multiple formats (PNG, SVG, PDF)\n`;
-  } else if (opts.tool === 'mobile') {
-    prompt += `\n**Mobile Design Requirements:**\n`;
-    prompt += `- Follow iOS Human Interface Guidelines and Material Design 3 principles\n`;
-    prompt += `- Design for safe areas, notches, and gesture navigation\n`;
-    prompt += `- Use native-feeling patterns (bottom sheets, tab bars, swipe gestures)\n`;
-    prompt += `- Minimum touch target size of 44x44pt\n`;
-    prompt += `- Consider one-handed usability with thumb-friendly zones\n`;
-  }
+## File Structure Required:
+frontend/
+  src/pages/ — every page component fully built
+  src/components/ — reusable components
+  src/hooks/ — custom React hooks
+  src/api/ — API client functions
+  src/types/ — TypeScript types
 
-  prompt += `\n**Visual Design Details:**\n`;
-  prompt += `- Apply ${opts.styleVibe || 'modern'} aesthetic throughout all screens\n`;
-  prompt += `- Use professional typography with a clear hierarchy (h1, h2, h3, body, caption)\n`;
-  prompt += `- Add subtle shadows, depth, and texture to create visual interest\n`;
-  prompt += `- Include realistic placeholder content (not just "Lorem ipsum")\n`;
-  prompt += `- Add icons from a consistent icon library (Lucide, Heroicons, or similar)\n`;
-  prompt += `- Include data visualizations or charts where appropriate\n`;
+backend/
+  src/routes/ — all API route handlers
+  src/middleware/ — auth, rate-limit, error handlers
+  src/controllers/ — business logic
+  src/models/ — database models/schema
+  src/utils/ — helper functions
+  server.ts — entry point
 
-  if (opts.extraNotes) {
-    prompt += `\n**Additional Notes:**\n${opts.extraNotes}\n`;
-  }
+database/
+  schema.sql or prisma/schema.prisma — complete schema
+  seed.ts — seed data
 
-  prompt += `\n**Deliverables:**\n`;
-  prompt += `- Complete design files for all ${screenList} screens\n`;
-  prompt += `- Component library with all UI elements\n`;
-  prompt += `- Color palette, typography, and spacing documentation\n`;
-  prompt += `- Developer handoff notes with specs and assets\n`;
+config/
+  .env.example
+  docker-compose.yml (optional)
 
-  return prompt;
+## Output Format:
+Show every file completely. No truncation. Label each file as:
+=== path/filename.ext ===
+
+End with:
+### Quick Start Guide (step-by-step commands)
+### Deploy to ${deployLabel} (complete deployment steps)`;
 }
 
-const EXAMPLE_PROMPTS = [
-  {
-    label: 'Figma - Food Delivery',
-    config: { tool: 'figma', appName: 'FoodRush', appType: 'Food Delivery App', styleVibe: 'Bold & Colorful', screens: ['Dashboard Home', 'Product Listing', 'Checkout Flow'], colorPalette: '#FF6B35, #FFF3E0, #1A1A2E', targetUsers: 'Busy urban professionals aged 20-40', extraNotes: '' },
-  },
-  {
-    label: 'Canva - SaaS Dashboard',
-    config: { tool: 'canva', appName: 'AnalyticsPro', appType: 'Dashboard/Analytics', styleVibe: 'Dark Mode Premium', screens: ['Dashboard Home', 'Data Tables', 'Settings Screen'], colorPalette: '#6C63FF, #1E1E2E, #A78BFA', targetUsers: 'Business analysts and data teams', extraNotes: 'Include charts, KPI cards, and data visualization widgets' },
-  },
-  {
-    label: 'Mobile - Fitness App',
-    config: { tool: 'mobile', appName: 'FitPulse', appType: 'Fitness & Health App', styleVibe: 'Minimalist & Clean', screens: ['Onboarding Flow', 'Dashboard Home', 'Profile Page'], colorPalette: '#00C9A7, #F0FFF4, #1A202C', targetUsers: 'Health-conscious users aged 18-35', extraNotes: 'Focus on progress tracking and motivational design' },
-  },
-];
+function buildMobilePrompt(opts: any): string {
+  const stackLabel = (TECH_STACKS.mobile.find(s => s.id === opts.techStack) || TECH_STACKS.mobile[0]).label;
+  const featureLabels = opts.features.map((f: string) => FEATURES.find(feat => feat.id === f)?.label).filter(Boolean);
+  const deployTarget = opts.deployTarget || 'both';
+  const storeInfo = deployTarget === 'playstore' ? 'Google Play Store' : deployTarget === 'appstore' ? 'Apple App Store' : 'Both Google Play Store and Apple App Store';
 
-export default function PromptGeneratorPage() {
+  return `Build a complete, production-ready mobile application called "${opts.appName || 'MyApp'}" — a ${opts.appType || 'mobile app'} — ready for submission to ${storeInfo}.
+
+## Tech Stack: ${stackLabel}
+
+## App Screens (ALL fully built — not skeleton, not placeholder):
+• Splash Screen with app logo and animation
+• Onboarding (3-slide walkthrough for new users)
+• Login Screen (email + password, show/hide password)
+• Register Screen (full form with validation)
+• Forgot Password Screen
+• Home / Main Screen (fully functional with real content)
+• Profile Screen (view and edit user info)
+• Settings Screen (notifications, theme, account options)
+• [All domain-specific screens for a ${opts.appType}]
+
+## Features to Implement:
+${featureLabels.map((f: string) => `• ${f}`).join('\n')}
+• Bottom tab navigation with icons
+• Stack navigation (React Navigation)
+• AsyncStorage for local data persistence
+• Loading spinners and error states on every screen
+• Pull-to-refresh on list screens
+• Proper keyboard handling (KeyboardAvoidingView)
+• Safe area handling (SafeAreaView)
+${opts.extraNotes ? `• ${opts.extraNotes}` : ''}
+
+## Backend API (include this too):
+• Node.js + Express REST API
+• JWT authentication
+• PostgreSQL database with complete schema
+• All endpoints the app needs
+
+## App Configuration (app.json):
+• App name, slug, bundle identifier (com.${(opts.appName || 'myapp').toLowerCase().replace(/\s/g,'')}${opts.appType ? '.' + opts.appType.toLowerCase().replace(/\s/g,'') : ''})
+• Android: versionCode, permissions (camera, notifications, location if needed)
+• iOS: bundleIdentifier, permissions with usage descriptions
+• App icon and splash screen config
+• EAS build configuration (eas.json)
+
+## Output Format:
+Show every file completely. No truncation. Label each file as:
+=== path/filename.ext ===
+
+End with:
+### Quick Start (commands to run on local device/emulator)
+### 🚀 Publish to ${storeInfo}:
+  Step-by-step guide from build to store submission including:
+  - EAS Build commands
+  - Store listing requirements (screenshots, descriptions, ratings)
+  - Submission process and review timelines`;
+}
+
+function buildBackendPrompt(opts: any): string {
+  const stackLabel = (TECH_STACKS.backend.find(s => s.id === opts.techStack) || TECH_STACKS.backend[0]).label;
+  const featureLabels = opts.features.map((f: string) => FEATURES.find(feat => feat.id === f)?.label).filter(Boolean);
+
+  return `Build a complete, production-ready REST API server called "${opts.appName || 'MyAPI'}" — a ${opts.appType || 'backend service'}.
+
+## Tech Stack: ${stackLabel}
+
+## API Requirements (ALL endpoints fully implemented):
+• Authentication routes: POST /auth/register, POST /auth/login, POST /auth/logout, POST /auth/refresh
+• Full CRUD for all core resources
+• Proper request validation (Joi/Zod)
+• OpenAPI/Swagger documentation
+• Health check endpoint: GET /health
+${featureLabels.map((f: string) => `• ${f}`).join('\n')}
+${opts.extraNotes ? `• ${opts.extraNotes}` : ''}
+
+## Security & Quality:
+• Helmet.js for security headers
+• CORS configuration
+• Rate limiting (express-rate-limit)
+• Input sanitization
+• SQL injection prevention (parameterized queries)
+• Proper error middleware (dev vs prod error messages)
+• Request logging (Morgan)
+• Graceful shutdown
+
+## Database:
+• Complete schema with all tables, relationships, indexes
+• Migration files
+• Seed data for testing
+• Connection pooling
+
+## File Structure:
+src/
+  routes/ — all route files
+  controllers/ — business logic
+  middleware/ — auth, validation, error, rate-limit
+  models/ — DB models/queries
+  services/ — external service integrations
+  utils/ — helpers
+  config/ — database, app config
+  types/ — TypeScript types
+server.ts, .env.example, docker-compose.yml, README.md
+
+## Output Format:
+Show every file completely. Label each: === path/filename.ext ===
+End with API documentation table showing all endpoints.`;
+}
+
+function buildEcommercePrompt(opts: any): string {
+  const featureLabels = opts.features.map((f: string) => FEATURES.find(feat => feat.id === f)?.label).filter(Boolean);
+
+  return `Build a complete, production-ready e-commerce platform called "${opts.appName || 'MyShop'}" — ${opts.appType || 'an online store'} with real payment processing.
+
+## Tech Stack: React + Node.js + PostgreSQL + Stripe
+
+## Frontend Pages (ALL fully built):
+• Home page with hero, featured products, categories
+• Product listing with filters, search, sorting, pagination
+• Product detail with images, reviews, add-to-cart
+• Shopping cart with quantity controls
+• Checkout flow (shipping → payment → confirmation)
+• User account (orders history, profile, addresses)
+• Login / Register pages
+• Admin dashboard (products, orders, customers, analytics)
+
+## Backend API (fully implemented):
+• Products CRUD (with images, variants, inventory)
+• Categories and tags
+• Cart management (server-side)
+• Orders management with status tracking
+• Stripe payment integration (checkout sessions, webhooks)
+• User authentication with JWT
+• Admin endpoints (protected)
+• Inventory tracking
+• Coupon/discount codes
+• Email order confirmations
+
+## Features:
+${featureLabels.map((f: string) => `• ${f}`).join('\n')}
+• Product search with filters
+• Product reviews and ratings
+• Wishlist
+• Related products
+• Order tracking
+• Inventory management
+• Sales analytics
+${opts.extraNotes ? `• ${opts.extraNotes}` : ''}
+
+## Output Format:
+Show every file completely. Label each: === path/filename.ext ===
+End with: Quick Start + Stripe setup guide + Deployment steps.`;
+}
+
+function buildGamePrompt(opts: any): string {
+  const stackLabel = (TECH_STACKS.game.find(s => s.id === opts.techStack) || TECH_STACKS.game[0]).label;
+
+  return `Build a complete, fully playable ${opts.appType || 'browser game'} called "${opts.appName || 'MyGame'}" using ${stackLabel}.
+
+## Game Requirements:
+• Complete game loop (start → play → game over → restart)
+• Main menu screen with play button and instructions
+• Game over screen with score and high score
+• Smooth animations at 60fps
+• Sound effects (using Web Audio API or Howler.js)
+• Mobile-responsive controls (touch + keyboard)
+• Local high score storage (localStorage)
+• Pause/resume functionality
+
+## Game Mechanics (ALL fully implemented for ${opts.appType}):
+• Complete game physics and collision detection
+• Scoring system with multipliers
+• Difficulty progression (increases over time)
+• Power-ups or special mechanics
+• Visual effects (particles, animations)
+
+## UI/UX:
+• Beautiful start screen with animated background
+• HUD showing score, lives, level
+• Responsive design (plays on mobile and desktop)
+• Theme and visual identity for the game
+${opts.extraNotes ? `• ${opts.extraNotes}` : ''}
+
+## Output Format:
+Show every file completely. Label each: === filename.ext ===
+End with: How to play + controls guide + How to deploy/host.`;
+}
+
+function buildAIPrompt(opts: any): string {
+  const stackLabel = (TECH_STACKS.ai.find(s => s.id === opts.techStack) || TECH_STACKS.ai[0]).label;
+  const featureLabels = opts.features.map((f: string) => FEATURES.find(feat => feat.id === f)?.label).filter(Boolean);
+
+  return `Build a complete, production-ready AI-powered application called "${opts.appName || 'MyAI'}" — ${opts.appType || 'an AI tool'} using ${stackLabel}.
+
+## Frontend (fully built):
+• Clean, modern chat/input interface
+• Streaming AI responses (typewriter effect)
+• Conversation history
+• Loading states and error handling
+• Copy response button
+• Model/temperature selector (if applicable)
+• Dark mode
+• Responsive design
+
+## Backend API:
+• AI API integration (streaming responses)
+• Conversation management and history storage
+• Rate limiting per user
+• API key management
+• Usage tracking
+
+## Features:
+${featureLabels.map((f: string) => `• ${f}`).join('\n')}
+• Prompt templates/suggestions
+• Export conversation as PDF/text
+• Share conversation link
+${opts.extraNotes ? `• ${opts.extraNotes}` : ''}
+
+## AI Integration:
+• Streaming SSE responses
+• System prompt customization
+• Context window management (summarize old messages)
+• Fallback error handling for API failures
+• Token usage display
+
+## Output Format:
+Show every file completely. Label each: === path/filename.ext ===
+End with: Setup (API key config) + Deployment guide.`;
+}
+
+function buildDashboardPrompt(opts: any): string {
+  const stackLabel = (TECH_STACKS.dashboard.find(s => s.id === opts.techStack) || TECH_STACKS.dashboard[0]).label;
+  const featureLabels = opts.features.map((f: string) => FEATURES.find(feat => feat.id === f)?.label).filter(Boolean);
+
+  return `Build a complete, production-ready ${opts.appType || 'admin dashboard'} called "${opts.appName || 'MyDashboard'}" using ${stackLabel}.
+
+## Dashboard Pages (ALL fully built):
+• Login page with auth
+• Main Dashboard — KPI cards, charts, recent activity
+• Data table pages with sorting, filtering, pagination, export
+• Detail/edit pages for each data type
+• Settings page (account, notifications, integrations)
+• User management (if multi-user)
+• Reports / Analytics page with charts
+• Profile page
+
+## Charts & Visualizations:
+• Line charts (trends over time)
+• Bar charts (comparisons)
+• Pie/donut charts (distributions)
+• Area charts (cumulative data)
+• Data tables with bulk actions
+• Real numbers from the database (not fake)
+
+## Backend API:
+• Authentication with role-based access (admin, viewer, editor)
+• All data endpoints with filtering, sorting, pagination
+• CSV export endpoints
+• Dashboard metrics aggregation queries
+• Activity logging
+
+## Features:
+${featureLabels.map((f: string) => `• ${f}`).join('\n')}
+• Date range picker for filtering
+• Real-time updates (WebSocket or polling)
+• Bulk operations on table data
+• Audit log
+• Email notifications for alerts
+${opts.extraNotes ? `• ${opts.extraNotes}` : ''}
+
+## Output Format:
+Show every file completely. Label each: === path/filename.ext ===
+End with: Setup guide + Deployment steps.`;
+}
+
+function buildUIUXPrompt(opts: any): string {
+  const toolLabel = UIUX_TOOLS.find(t => t.id === opts.uiuxTool)?.label || opts.uiuxTool;
+  const screenList = opts.selectedScreens.length > 0 ? opts.selectedScreens.join(', ') : 'all key screens';
+  return `Design a complete, production-ready ${toolLabel} UI/UX design for a ${opts.appType || 'modern app'} called "${opts.appName || 'MyApp'}".
+
+**Design Style:** ${opts.styleVibe || 'Modern & Clean'}
+${opts.targetUsers ? `**Target Users:** ${opts.targetUsers}` : ''}
+${opts.colorPalette ? `**Color Palette:** ${opts.colorPalette}` : ''}
+
+**Screens to Design:** ${screenList}
+
+**Design Requirements:**
+- Create a visually stunning, pixel-perfect design with exceptional attention to detail
+- Use a consistent design system with reusable components (buttons, cards, inputs, typography scale)
+- Apply proper spacing, padding, and visual hierarchy following the 8pt grid system
+- Include micro-interactions and hover/tap states for interactive elements
+- Ensure accessibility with sufficient color contrast (WCAG AA minimum)
+- Design for both light and dark mode variants
+- Include responsive breakpoints for mobile (375px), tablet (768px), and desktop (1440px)
+- Use modern design trends: subtle gradients, depth with shadows, smooth transitions
+- Include iconography that matches the design style
+- Add realistic placeholder content (no Lorem Ipsum — use real-sounding names/data)
+${opts.extraNotes ? `\n**Additional Notes:** ${opts.extraNotes}` : ''}
+
+**Deliverables:**
+- Complete design for all specified screens
+- Component library / design system
+- Color palette with hex values
+- Typography scale (font family, sizes, weights)
+- Spacing system
+- Icon set recommendations`;
+}
+
+function buildPrompt(mode: string, opts: any): string {
+  switch (mode) {
+    case 'fullstack': return buildFullStackPrompt(opts);
+    case 'mobile': return buildMobilePrompt(opts);
+    case 'backend': return buildBackendPrompt(opts);
+    case 'ecommerce': return buildEcommercePrompt(opts);
+    case 'game': return buildGamePrompt(opts);
+    case 'ai': return buildAIPrompt(opts);
+    case 'dashboard': return buildDashboardPrompt(opts);
+    case 'uiux': return buildUIUXPrompt(opts);
+    default: return buildFullStackPrompt(opts);
+  }
+}
+
+// ─── COMPONENT ────────────────────────────────────────────────────────────────
+export default function PromptGenerator() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const [selectedTool, setSelectedTool] = useState('figma');
+
+  const [mode, setMode] = useState('fullstack');
   const [appName, setAppName] = useState('');
   const [selectedAppType, setSelectedAppType] = useState('');
-  const [selectedStyle, setSelectedStyle] = useState('');
-  const [selectedScreens, setSelectedScreens] = useState<string[]>([]);
-  const [colorPalette, setColorPalette] = useState('');
-  const [targetUsers, setTargetUsers] = useState('');
+  const [selectedTechStack, setSelectedTechStack] = useState('');
+  const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
+  const [selectedDeploy, setSelectedDeploy] = useState('');
   const [extraNotes, setExtraNotes] = useState('');
+  const [targetUsers, setTargetUsers] = useState('');
+  const [colorPalette, setColorPalette] = useState('');
+  const [styleVibe, setStyleVibe] = useState('');
+  const [selectedScreens, setSelectedScreens] = useState<string[]>([]);
+  const [uiuxTool, setUiuxTool] = useState('figma');
   const [generatedPrompt, setGeneratedPrompt] = useState('');
   const [copied, setCopied] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const toggleScreen = (screen: string) => {
-    setSelectedScreens(prev =>
-      prev.includes(screen) ? prev.filter(s => s !== screen) : [...prev, screen]
-    );
+  const toggleFeature = (id: string) => setSelectedFeatures(prev => prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id]);
+  const toggleScreen = (s: string) => setSelectedScreens(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
+
+  const handleModeChange = (newMode: string) => {
+    setMode(newMode);
+    setSelectedAppType('');
+    setSelectedTechStack('');
+    setSelectedFeatures([]);
+    setSelectedDeploy('');
+    setGeneratedPrompt('');
   };
 
   const handleGenerate = async () => {
-    if (!selectedAppType || !selectedStyle) {
-      toast({ title: 'Please select an app type and style vibe first', variant: 'destructive' });
+    if (!selectedAppType) {
+      toast({ title: 'Please select an app type first', variant: 'destructive' });
       return;
     }
     setIsGenerating(true);
-    await new Promise(r => setTimeout(r, 800));
-    const prompt = buildPrompt({
-      tool: selectedTool,
+    await new Promise(r => setTimeout(r, 600));
+    const prompt = buildPrompt(mode, {
       appName,
       appType: selectedAppType,
-      styleVibe: selectedStyle,
-      screens: selectedScreens,
-      colorPalette,
-      targetUsers,
+      techStack: selectedTechStack,
+      features: selectedFeatures,
+      deployTarget: selectedDeploy,
       extraNotes,
+      targetUsers,
+      colorPalette,
+      styleVibe,
+      selectedScreens,
+      uiuxTool,
     });
     setGeneratedPrompt(prompt);
     setIsGenerating(false);
@@ -182,7 +608,7 @@ export default function PromptGeneratorPage() {
     if (!generatedPrompt) return;
     await navigator.clipboard.writeText(generatedPrompt);
     setCopied(true);
-    toast({ title: 'Prompt copied to clipboard!' });
+    toast({ title: 'Prompt copied!' });
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -192,344 +618,320 @@ export default function PromptGeneratorPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `ui-ux-prompt-${selectedTool}-${Date.now()}.txt`;
+    a.download = `zorvixai-prompt-${mode}-${Date.now()}.txt`;
     a.click();
     URL.revokeObjectURL(url);
     toast({ title: 'Prompt downloaded!' });
   };
 
-  const loadExample = (cfg: typeof EXAMPLE_PROMPTS[0]['config']) => {
-    setSelectedTool(cfg.tool);
-    setAppName(cfg.appName);
-    setSelectedAppType(cfg.appType);
-    setSelectedStyle(cfg.styleVibe);
-    setSelectedScreens(cfg.screens);
-    setColorPalette(cfg.colorPalette);
-    setTargetUsers(cfg.targetUsers);
-    setExtraNotes(cfg.extraNotes);
-    setGeneratedPrompt('');
+  const handleReset = () => {
+    setAppName(''); setSelectedAppType(''); setSelectedTechStack('');
+    setSelectedFeatures([]); setSelectedDeploy(''); setExtraNotes('');
+    setTargetUsers(''); setColorPalette(''); setStyleVibe('');
+    setSelectedScreens([]); setGeneratedPrompt('');
   };
 
-  const handleReset = () => {
-    setSelectedTool('figma');
-    setAppName('');
-    setSelectedAppType('');
-    setSelectedStyle('');
-    setSelectedScreens([]);
-    setColorPalette('');
-    setTargetUsers('');
-    setExtraNotes('');
-    setGeneratedPrompt('');
-  };
+  const currentAppTypes = APP_TYPES[mode] || APP_TYPES.fullstack;
+  const currentTechStacks = TECH_STACKS[mode] || [];
+  const currentDeployTargets = DEPLOY_TARGETS[mode] || DEPLOY_TARGETS.fullstack;
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
-      <div className="absolute top-0 inset-x-0 h-[400px] overflow-hidden -z-10 pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-b from-violet-600/10 via-pink-500/5 to-background" />
+      <div className="absolute top-0 inset-x-0 h-[350px] overflow-hidden -z-10 pointer-events-none">
+        <div className="absolute inset-0 bg-gradient-to-b from-violet-600/10 via-blue-500/5 to-background" />
         <div className="absolute top-20 left-1/4 w-96 h-96 bg-violet-500/5 rounded-full blur-3xl" />
-        <div className="absolute top-10 right-1/4 w-80 h-80 bg-pink-500/5 rounded-full blur-3xl" />
+        <div className="absolute top-10 right-1/4 w-80 h-80 bg-blue-500/5 rounded-full blur-3xl" />
       </div>
 
       <header className="border-b border-border/50 bg-card/30 backdrop-blur-sm sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4 flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => setLocation('/projects')} className="text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="w-4 h-4 mr-2" /> Dashboard
+          <Button variant="ghost" size="sm" onClick={() => setLocation('/')} className="text-muted-foreground hover:text-foreground">
+            <ArrowLeft className="w-4 h-4 mr-2" /> Back
           </Button>
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center">
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-blue-500 flex items-center justify-center">
               <Wand2 className="w-4 h-4 text-white" />
             </div>
-            <span className="font-semibold">Prompt Generator</span>
+            <span className="font-semibold">AI Prompt Generator</span>
           </div>
-          <span className="text-muted-foreground/40">/</span>
-          <span className="text-sm text-muted-foreground">UI/UX Design Prompts</span>
-          <div className="ml-auto flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={handleReset} className="text-muted-foreground hover:text-foreground">
-              <RefreshCw className="w-4 h-4 mr-2" /> Reset
-            </Button>
-          </div>
+          <Badge variant="secondary" className="ml-auto text-xs">Pro</Badge>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-10 max-w-6xl">
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-400 text-sm font-medium mb-6">
-            <Sparkles className="w-4 h-4" />
-            AI-Powered UI/UX Prompt Generator
-          </div>
-          <h1 className="text-5xl font-bold text-foreground mb-4 leading-tight">
-            Generate Perfect{' '}
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-violet-400 to-pink-400">Design Prompts</span>
-          </h1>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Create detailed, professional UI/UX design prompts for Figma, Canva, and other design tools.
-            Get pixel-perfect results every time.
-          </p>
-        </div>
-
-        <div className="mb-8">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Quick Examples</h2>
-          <div className="flex flex-wrap gap-2">
-            {EXAMPLE_PROMPTS.map(ex => (
-              <button
-                key={ex.label}
-                onClick={() => loadExample(ex.config)}
-                className="flex items-center gap-2 px-4 py-2 rounded-full bg-card border border-border/50 text-sm text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all"
-              >
-                <Lightbulb className="w-3.5 h-3.5 text-yellow-400" />
-                {ex.label}
-              </button>
-            ))}
+      <main className="container mx-auto px-4 py-6 max-w-5xl">
+        {/* Mode Selector */}
+        <div className="mb-6">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">What are you building?</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {MODES.map(m => {
+              const Icon = m.icon;
+              const active = mode === m.id;
+              return (
+                <button
+                  key={m.id}
+                  onClick={() => handleModeChange(m.id)}
+                  className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all text-center ${active ? `${m.bg} ${m.border} border` : 'border-border/40 hover:border-border bg-card/40 hover:bg-card/70'}`}
+                >
+                  <Icon className={`w-5 h-5 ${active ? m.color : 'text-muted-foreground'}`} />
+                  <span className={`text-xs font-medium leading-tight ${active ? 'text-foreground' : 'text-muted-foreground'}`}>{m.label}</span>
+                  <span className="text-[10px] text-muted-foreground/60 leading-tight hidden sm:block">{m.desc}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-8">
-          <div className="space-y-6">
-            <div className="bg-card border border-border/50 rounded-2xl p-6 space-y-6">
-              <div>
-                <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-primary" />
-                  Step 1 — Choose Your Design Tool
-                </h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {TOOLS.map(tool => {
-                    const Icon = tool.icon;
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          {/* Left panel — config */}
+          <div className="lg:col-span-2 space-y-4">
+
+            {/* App Name */}
+            <div className="bg-card border border-border/50 rounded-2xl p-4">
+              <Label className="text-sm font-semibold mb-2 block">App / Project Name</Label>
+              <Input
+                value={appName}
+                onChange={e => setAppName(e.target.value)}
+                placeholder={mode === 'game' ? 'e.g. Pixel Runner, Space Blast' : mode === 'mobile' ? 'e.g. FitTrack, ShopNow' : 'e.g. TaskFlow, ShopHub'}
+                className="bg-background/50 border-border/40"
+              />
+            </div>
+
+            {/* App Type */}
+            <div className="bg-card border border-border/50 rounded-2xl p-4">
+              <Label className="text-sm font-semibold mb-3 block">App Type</Label>
+              <div className="flex flex-wrap gap-2">
+                {currentAppTypes.map(type => (
+                  <button
+                    key={type}
+                    onClick={() => setSelectedAppType(type)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${selectedAppType === type ? 'bg-primary text-primary-foreground border-primary' : 'border-border/40 text-muted-foreground hover:border-border hover:text-foreground bg-background/40'}`}
+                  >
+                    {type}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* UI/UX specific */}
+            {mode === 'uiux' && (
+              <>
+                <div className="bg-card border border-border/50 rounded-2xl p-4">
+                  <Label className="text-sm font-semibold mb-3 block">Design Tool</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {UIUX_TOOLS.map(tool => {
+                      const Icon = tool.icon;
+                      return (
+                        <button
+                          key={tool.id}
+                          onClick={() => setUiuxTool(tool.id)}
+                          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium border transition-all ${uiuxTool === tool.id ? 'bg-primary text-primary-foreground border-primary' : 'border-border/40 text-muted-foreground hover:border-border bg-background/40'}`}
+                        >
+                          <Icon className="w-3.5 h-3.5" /> {tool.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="bg-card border border-border/50 rounded-2xl p-4">
+                  <Label className="text-sm font-semibold mb-3 block">Style Vibe</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {STYLE_VIBES.map(s => (
+                      <button key={s} onClick={() => setStyleVibe(s)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${styleVibe === s ? 'bg-primary text-primary-foreground border-primary' : 'border-border/40 text-muted-foreground hover:border-border bg-background/40'}`}>
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="bg-card border border-border/50 rounded-2xl p-4">
+                  <Label className="text-sm font-semibold mb-3 block">Screens to Design</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {SCREEN_TYPES.map(s => (
+                      <button key={s} onClick={() => toggleScreen(s)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${selectedScreens.includes(s) ? 'bg-violet-500/20 text-violet-300 border-violet-500/40' : 'border-border/40 text-muted-foreground hover:border-border bg-background/40'}`}>
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Tech Stack — for non-uiux modes */}
+            {mode !== 'uiux' && currentTechStacks.length > 0 && (
+              <div className="bg-card border border-border/50 rounded-2xl p-4">
+                <Label className="text-sm font-semibold mb-3 block">Tech Stack</Label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {currentTechStacks.map(stack => (
+                    <button
+                      key={stack.id}
+                      onClick={() => setSelectedTechStack(stack.id)}
+                      className={`px-3 py-2 rounded-lg text-xs font-medium border transition-all text-left ${selectedTechStack === stack.id ? 'bg-blue-500/20 text-blue-300 border-blue-500/40' : 'border-border/40 text-muted-foreground hover:border-border bg-background/40'}`}
+                    >
+                      {stack.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Features — for non-uiux/game modes */}
+            {!['uiux', 'game'].includes(mode) && (
+              <div className="bg-card border border-border/50 rounded-2xl p-4">
+                <Label className="text-sm font-semibold mb-3 block">Features to Include</Label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {FEATURES.map(feat => {
+                    const Icon = feat.icon;
+                    const active = selectedFeatures.includes(feat.id);
                     return (
                       <button
-                        key={tool.id}
-                        onClick={() => setSelectedTool(tool.id)}
-                        className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all ${
-                          selectedTool === tool.id
-                            ? `${tool.bg} ${tool.border} ${tool.color} ring-1 ring-primary/30 scale-[1.02]`
-                            : 'border-border/50 text-muted-foreground hover:border-border hover:text-foreground'
-                        }`}
+                        key={feat.id}
+                        onClick={() => toggleFeature(feat.id)}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium border transition-all ${active ? 'bg-green-500/15 text-green-300 border-green-500/40' : 'border-border/40 text-muted-foreground hover:border-border bg-background/40'}`}
                       >
-                        <Icon className={`w-5 h-5 ${selectedTool === tool.id ? tool.color : ''}`} />
-                        <span className="text-xs font-medium">{tool.label}</span>
-                        {selectedTool === tool.id && <div className={`w-1 h-1 rounded-full ${tool.color.replace('text-', 'bg-')}`} />}
+                        <Icon className="w-3 h-3 shrink-0" /> {feat.label}
                       </button>
                     );
                   })}
                 </div>
               </div>
+            )}
 
-              <div>
-                <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-                  <PenLine className="w-4 h-4 text-primary" />
-                  Step 2 — App Details
-                </h3>
-                <div className="space-y-3">
-                  <div>
-                    <Label className="text-xs text-muted-foreground mb-1 block">App Name</Label>
-                    <Input
-                      placeholder="e.g. FoodRush, AnalyticsPro, FitPulse..."
-                      value={appName}
-                      onChange={e => setAppName(e.target.value)}
-                      className="bg-background/50 border-border/60 h-10"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground mb-2 block">App Type *</Label>
-                    <div className="flex flex-wrap gap-1.5">
-                      {APP_TYPES.map(type => (
-                        <button
-                          key={type}
-                          onClick={() => setSelectedAppType(type)}
-                          className={`px-2.5 py-1 rounded-full text-xs border transition-all ${
-                            selectedAppType === type
-                              ? 'bg-primary text-white border-primary shadow-sm'
-                              : 'border-border/50 text-muted-foreground hover:text-foreground hover:border-border'
-                          }`}
-                        >
-                          {type}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground mb-1 block">Target Users</Label>
-                    <Input
-                      placeholder="e.g. Busy professionals aged 25-40..."
-                      value={targetUsers}
-                      onChange={e => setTargetUsers(e.target.value)}
-                      className="bg-background/50 border-border/60 h-10"
-                    />
-                  </div>
+            {/* Deploy Target */}
+            {currentDeployTargets.length > 0 && (
+              <div className="bg-card border border-border/50 rounded-2xl p-4">
+                <Label className="text-sm font-semibold mb-3 block">Deployment Target</Label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {currentDeployTargets.map(dep => {
+                    const Icon = dep.icon;
+                    return (
+                      <button
+                        key={dep.id}
+                        onClick={() => setSelectedDeploy(dep.id)}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium border transition-all ${selectedDeploy === dep.id ? 'bg-orange-500/15 text-orange-300 border-orange-500/40' : 'border-border/40 text-muted-foreground hover:border-border bg-background/40'}`}
+                      >
+                        <Icon className="w-3.5 h-3.5 shrink-0" /> {dep.label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
+            )}
 
+            {/* Extra fields */}
+            <div className="bg-card border border-border/50 rounded-2xl p-4 space-y-3">
               <div>
-                <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-                  <Eye className="w-4 h-4 text-primary" />
-                  Step 3 — Style Vibe *
-                </h3>
-                <div className="flex flex-wrap gap-1.5">
-                  {STYLE_VIBES.map(style => (
-                    <button
-                      key={style}
-                      onClick={() => setSelectedStyle(style)}
-                      className={`px-2.5 py-1 rounded-full text-xs border transition-all ${
-                        selectedStyle === style
-                          ? 'bg-gradient-to-r from-violet-500 to-pink-500 text-white border-transparent shadow-sm'
-                          : 'border-border/50 text-muted-foreground hover:text-foreground hover:border-border'
-                      }`}
-                    >
-                      {style}
-                    </button>
-                  ))}
-                </div>
+                <Label className="text-xs font-semibold mb-1.5 block text-muted-foreground">Target Users (optional)</Label>
+                <Input value={targetUsers} onChange={e => setTargetUsers(e.target.value)}
+                  placeholder="e.g. freelancers, students aged 18-25, small business owners"
+                  className="bg-background/50 border-border/40 text-sm" />
               </div>
-
+              {mode === 'uiux' && (
+                <div>
+                  <Label className="text-xs font-semibold mb-1.5 block text-muted-foreground">Color Palette (optional)</Label>
+                  <Input value={colorPalette} onChange={e => setColorPalette(e.target.value)}
+                    placeholder="e.g. Deep purple #6366F1, Dark background #0F0F0F, White text"
+                    className="bg-background/50 border-border/40 text-sm" />
+                </div>
+              )}
               <div>
-                <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-                  <Layout className="w-4 h-4 text-primary" />
-                  Step 4 — Screens to Design
-                </h3>
-                <div className="flex flex-wrap gap-1.5">
-                  {SCREEN_TYPES.map(screen => (
-                    <button
-                      key={screen}
-                      onClick={() => toggleScreen(screen)}
-                      className={`px-2.5 py-1 rounded-full text-xs border transition-all ${
-                        selectedScreens.includes(screen)
-                          ? 'bg-blue-500/20 text-blue-300 border-blue-500/30'
-                          : 'border-border/50 text-muted-foreground hover:text-foreground hover:border-border'
-                      }`}
-                    >
-                      {screen}
-                    </button>
-                  ))}
-                </div>
-                {selectedScreens.length > 0 && (
-                  <p className="text-xs text-muted-foreground mt-2">{selectedScreens.length} screen{selectedScreens.length > 1 ? 's' : ''} selected</p>
-                )}
+                <Label className="text-xs font-semibold mb-1.5 block text-muted-foreground">Additional Requirements (optional)</Label>
+                <Textarea value={extraNotes} onChange={e => setExtraNotes(e.target.value)}
+                  placeholder="Any specific features, requirements, or constraints..."
+                  className="bg-background/50 border-border/40 text-sm resize-none" rows={2} />
               </div>
-
-              <div>
-                <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-                  <Palette className="w-4 h-4 text-primary" />
-                  Step 5 — Extras (Optional)
-                </h3>
-                <div className="space-y-3">
-                  <div>
-                    <Label className="text-xs text-muted-foreground mb-1 block">Color Palette</Label>
-                    <Input
-                      placeholder="e.g. #6C63FF, #F8F9FA, #1E1E2E or 'Ocean blues and coral'"
-                      value={colorPalette}
-                      onChange={e => setColorPalette(e.target.value)}
-                      className="bg-background/50 border-border/60 h-10"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground mb-1 block">Additional Notes</Label>
-                    <textarea
-                      placeholder="Any specific requirements, inspirations, or constraints..."
-                      value={extraNotes}
-                      onChange={e => setExtraNotes(e.target.value)}
-                      className="w-full rounded-xl border border-border/60 bg-background/50 px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground resize-none outline-none focus:border-primary/50 transition-colors h-24"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <Button
-                onClick={handleGenerate}
-                disabled={isGenerating}
-                className="w-full h-12 bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-500 hover:to-pink-500 text-white shadow-lg shadow-violet-500/25 text-base font-medium"
-              >
-                {isGenerating ? (
-                  <><RefreshCw className="w-4 h-4 mr-2 animate-spin" /> Generating Prompt...</>
-                ) : (
-                  <><Wand2 className="w-4 h-4 mr-2" /> Generate Design Prompt</>
-                )}
-              </Button>
             </div>
+
+            {/* Generate button */}
+            <Button
+              onClick={handleGenerate}
+              disabled={isGenerating || !selectedAppType}
+              className="w-full h-12 bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-500 hover:to-blue-500 text-white font-semibold text-sm"
+            >
+              {isGenerating ? <><RefreshCw className="w-4 h-4 mr-2 animate-spin" /> Generating...</> : <><Sparkles className="w-4 h-4 mr-2" /> Generate AI Prompt</>}
+            </Button>
           </div>
 
+          {/* Right panel — output */}
           <div className="space-y-4">
-            <div className="bg-card border border-border/50 rounded-2xl p-6 h-full min-h-[600px] flex flex-col">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-foreground flex items-center gap-2">
-                  <Star className="w-4 h-4 text-yellow-400" />
-                  Generated Prompt
+            <div className="bg-card border border-border/50 rounded-2xl p-4 flex flex-col gap-3 min-h-[300px]">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-sm flex items-center gap-2">
+                  <Star className="w-4 h-4 text-yellow-400" /> Generated Prompt
                 </h3>
                 {generatedPrompt && (
-                  <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="sm" onClick={handleDownload} className="text-muted-foreground hover:text-foreground h-8 px-3">
-                      <Download className="w-3.5 h-3.5 mr-1.5" /> Download
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={handleCopy} className="text-muted-foreground hover:text-foreground h-8 px-3">
-                      {copied ? <><Check className="w-3.5 h-3.5 mr-1.5 text-green-400" /> Copied!</> : <><Copy className="w-3.5 h-3.5 mr-1.5" /> Copy</>}
-                    </Button>
-                  </div>
+                  <button onClick={handleReset} className="text-xs text-muted-foreground hover:text-foreground transition-colors">Reset</button>
                 )}
               </div>
 
               {!generatedPrompt ? (
-                <div className="flex-1 flex flex-col items-center justify-center text-center gap-4">
-                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-violet-500/10 to-pink-500/10 border border-violet-500/20 flex items-center justify-center">
-                    <Wand2 className="w-9 h-9 text-violet-400" />
+                <div className="flex-1 flex flex-col items-center justify-center text-center py-8">
+                  <div className="w-12 h-12 rounded-2xl bg-muted/30 flex items-center justify-center mb-3">
+                    <Wand2 className="w-6 h-6 text-muted-foreground/50" />
                   </div>
-                  <div>
-                    <h4 className="text-lg font-semibold text-foreground mb-2">Your prompt will appear here</h4>
-                    <p className="text-muted-foreground text-sm max-w-xs">
-                      Fill in the form on the left and click "Generate Design Prompt" to get a detailed, professional UI/UX prompt.
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap justify-center gap-2 mt-2">
-                    {['Figma-ready', 'Canva-optimized', 'Pixel-perfect', 'Developer handoff'].map(tag => (
-                      <Badge key={tag} variant="secondary" className="text-xs bg-secondary/50 border border-border/30">{tag}</Badge>
-                    ))}
-                  </div>
+                  <p className="text-xs text-muted-foreground">Select options and click Generate to create your prompt</p>
                 </div>
               ) : (
-                <div className="flex-1 flex flex-col gap-4">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <Badge className="bg-violet-500/20 text-violet-300 border-violet-500/30 text-xs">
-                      {TOOLS.find(t => t.id === selectedTool)?.label || selectedTool}
-                    </Badge>
-                    {selectedAppType && <Badge variant="secondary" className="text-xs">{selectedAppType}</Badge>}
-                    {selectedStyle && <Badge variant="secondary" className="text-xs">{selectedStyle}</Badge>}
+                <>
+                  <div className="flex flex-wrap gap-1">
+                    {selectedAppType && <Badge variant="secondary" className="text-[10px]">{selectedAppType}</Badge>}
+                    {selectedFeatures.slice(0, 3).map(f => <Badge key={f} variant="outline" className="text-[10px]">{FEATURES.find(feat => feat.id === f)?.label}</Badge>)}
+                    {selectedFeatures.length > 3 && <Badge variant="outline" className="text-[10px]">+{selectedFeatures.length - 3} more</Badge>}
                   </div>
-                  <div className="flex-1 bg-background/50 rounded-xl border border-border/40 p-4 overflow-y-auto">
-                    <pre className="text-sm text-foreground/90 whitespace-pre-wrap font-sans leading-relaxed">
-                      {generatedPrompt}
-                    </pre>
+                  <div className="flex-1 bg-background/50 rounded-xl border border-border/40 p-3 overflow-y-auto max-h-72">
+                    <pre className="text-xs text-foreground/90 whitespace-pre-wrap font-sans leading-relaxed">{generatedPrompt}</pre>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Button onClick={handleCopy} variant="outline" className="border-border/50 h-10">
-                      {copied ? <><Check className="w-4 h-4 mr-2 text-green-400" /> Copied!</> : <><Copy className="w-4 h-4 mr-2" /> Copy Prompt</>}
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button onClick={handleCopy} variant="outline" className="border-border/50 h-9 text-xs">
+                      {copied ? <><Check className="w-3.5 h-3.5 mr-1.5 text-green-400" />Copied!</> : <><Copy className="w-3.5 h-3.5 mr-1.5" />Copy</>}
                     </Button>
-                    <Button onClick={handleDownload} variant="outline" className="border-border/50 h-10">
-                      <Download className="w-4 h-4 mr-2" /> Download .txt
+                    <Button onClick={handleDownload} variant="outline" className="border-border/50 h-9 text-xs">
+                      <Download className="w-3.5 h-3.5 mr-1.5" />Download
                     </Button>
                   </div>
-                  <Button
-                    onClick={() => setLocation('/')}
-                    className="w-full h-10 bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-500 hover:to-pink-500 text-white"
-                  >
-                    <Code2 className="w-4 h-4 mr-2" /> Use in AI Chat
+                  <Button onClick={() => setLocation('/')} className="w-full h-9 bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-500 hover:to-blue-500 text-white text-xs">
+                    <Code2 className="w-3.5 h-3.5 mr-1.5" />Use in AI Chat →
                   </Button>
-                </div>
+                </>
               )}
             </div>
 
-            <div className="bg-card border border-border/50 rounded-2xl p-5">
+            {/* Tips */}
+            <div className="bg-card border border-border/50 rounded-2xl p-4">
               <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2 text-sm">
-                <Lightbulb className="w-4 h-4 text-yellow-400" />
-                How to use your prompt
+                <Lightbulb className="w-4 h-4 text-yellow-400" /> Tips
               </h3>
               <div className="space-y-2">
                 {[
-                  { step: '01', text: 'Generate your custom design prompt above' },
-                  { step: '02', text: 'Copy the prompt to clipboard' },
-                  { step: '03', text: 'Paste into Figma AI, Canva AI, Midjourney, or any AI design tool' },
-                  { step: '04', text: 'Or use "Use in AI Chat" to get design advice directly' },
+                  { step: '01', text: 'Select your build type and app category' },
+                  { step: '02', text: 'Pick features you need' },
+                  { step: '03', text: 'Choose deployment target' },
+                  { step: '04', text: 'Copy prompt and paste in AI Chat' },
                 ].map(item => (
                   <div key={item.step} className="flex items-start gap-3">
                     <span className="text-xs font-mono text-primary/60 mt-0.5 shrink-0">{item.step}</span>
                     <span className="text-xs text-muted-foreground">{item.text}</span>
                   </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Quick modes */}
+            <div className="bg-card border border-border/50 rounded-2xl p-4">
+              <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2 text-sm">
+                <Zap className="w-4 h-4 text-yellow-400" /> Quick Build
+              </h3>
+              <div className="space-y-2">
+                {[
+                  { label: 'Play Store Android App', action: () => { handleModeChange('mobile'); setSelectedAppType('Social Networking App'); setSelectedTechStack('react-native-expo'); setSelectedDeploy('playstore'); setSelectedFeatures(['auth','push-notif','realtime']); }},
+                  { label: 'Full Stack SaaS', action: () => { handleModeChange('fullstack'); setSelectedAppType('SaaS Tool'); setSelectedTechStack('nextjs'); setSelectedDeploy('vercel'); setSelectedFeatures(['auth','payments','roles','analytics']); }},
+                  { label: 'E-Commerce Store', action: () => { handleModeChange('ecommerce'); setSelectedAppType('Fashion & Clothing Store'); setSelectedFeatures(['auth','payments','search','email']); setSelectedDeploy('vercel'); }},
+                  { label: 'AI Chatbot App', action: () => { handleModeChange('ai'); setSelectedAppType('AI Chatbot'); setSelectedTechStack('react-openai'); setSelectedFeatures(['auth','realtime','dark-mode']); }},
+                ].map(item => (
+                  <button key={item.label} onClick={item.action}
+                    className="w-full text-left px-3 py-2 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-muted/30 border border-transparent hover:border-border/40 transition-all">
+                    <Rocket className="w-3 h-3 inline mr-2 text-violet-400" />{item.label}
+                  </button>
                 ))}
               </div>
             </div>
