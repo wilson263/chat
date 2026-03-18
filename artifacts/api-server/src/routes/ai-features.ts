@@ -18,8 +18,7 @@ router.post("/api/chat/auto-title", async (req, res) => {
   try {
     const { firstMessage } = req.body as { firstMessage: string };
     if (!firstMessage) return res.json({ title: "New Chat" });
-    const result = await openai.chat.completions.create({
-      model: "meta-llama/llama-3.1-8b-instruct:free",
+    const result = await createChatCompletion({
       messages: [
         {
           role: "user",
@@ -59,8 +58,7 @@ router.post("/api/chat/websearch", async (req, res) => {
     const { query } = req.body as { query: string };
     if (!query) return res.status(400).json({ error: "Query required" });
 
-    const result = await openai.chat.completions.create({
-      model: "meta-llama/llama-3.3-70b-instruct:free",
+    const result = await createChatCompletion({
       messages: [
         {
           role: "user",
