@@ -143,7 +143,17 @@ Complex apps:
   - components/ (if needed, e.g. components/Header.jsx)
   - data.js (if using sample data)
 
-DO NOT generate: package.json, vite.config, node_modules, tsconfig, webpack
+DO NOT generate: package.json, vite.config, node_modules, tsconfig, webpack, App.tsx (React Native style), metro.config.js, babel.config.js
+
+ABSOLUTELY FORBIDDEN — these will break the preview:
+- import { View, Text, TextInput, Button, StyleSheet } from 'react-native' ← NEVER
+- import { NavigationContainer } from '@react-navigation/native' ← NEVER
+- import { createNativeStackNavigator } from '@react-navigation/native-stack' ← NEVER
+- import { useNavigation } from '@react-navigation/native' ← NEVER
+- import * as Expo from 'expo' ← NEVER
+- StyleSheet.create({...}) ← NEVER
+- Any React Native JSX elements like <View>, <Text>, <TouchableOpacity> ← NEVER
+These are mobile-only and do not work in a browser. Use HTML/CSS/React DOM instead.
 
 REMEMBER: Respond with ONLY the raw JSON object.`;
 
