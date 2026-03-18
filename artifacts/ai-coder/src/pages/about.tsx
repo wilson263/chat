@@ -12,6 +12,7 @@ import {
   Gamepad2, Camera, Music, BarChart, CheckSquare, FileText,
   Monitor, Columns2, GitCompare as GitCompare2, LayoutPanelLeft, AlignLeft,
 } from 'lucide-react';
+import { OPENROUTER_MODELS } from '@/components/model-selector';
 
 export default function AboutPage() {
   const [, setLocation] = useLocation();
@@ -51,7 +52,7 @@ export default function AboutPage() {
   ];
 
   const chatFeatures = [
-    { icon: Brain, title: 'Multi-Model AI Chat', desc: '20+ models — GPT-4o, Claude 3.5, Gemini 2.5 Flash, Mistral, LLaMA 3, and more. Switch model per message.' },
+    { icon: Brain, title: 'Multi-Model AI Chat', desc: `${OPENROUTER_MODELS.length} free OpenRouter models — Llama 3.3 70B, Qwen3 Coder, GPT-OSS, Mistral, DeepSeek, Gemma 3, and more. Switch model per message.` },
     { icon: Layers, title: 'File Attachments', desc: 'Attach images, PDFs, code files or CSV data to any message. AI reads and reasons over the content.' },
     { icon: Palette, title: 'Custom System Prompts', desc: 'Set a persistent system prompt for your entire session. Make the AI behave as a specific persona or expert.' },
     { icon: Sliders, title: 'Temperature Control', desc: 'Adjust creativity from 0.0 (deterministic) to 1.0 (creative) per conversation.' },
@@ -76,7 +77,7 @@ export default function AboutPage() {
         {/* Hero Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-14">
           {[
-            { val: '20+', label: 'AI Models', icon: Brain, color: 'text-primary' },
+            { val: `${OPENROUTER_MODELS.length}`, label: 'AI Models', icon: Brain, color: 'text-primary' },
             { val: '10+', label: 'Templates', icon: LayoutTemplate, color: 'text-violet-400' },
             { val: `${totalFeatures}+`, label: 'Features', icon: Zap, color: 'text-yellow-400' },
             { val: '6', label: 'Languages', icon: Terminal, color: 'text-emerald-400' },
@@ -166,7 +167,7 @@ export default function AboutPage() {
             </div>
             <div>
               <h2 className="text-xl font-bold">AI Chat</h2>
-              <p className="text-sm text-muted-foreground">20+ models, file attachments, system prompts, model comparison, and full history</p>
+              <p className="text-sm text-muted-foreground">{OPENROUTER_MODELS.length} free models, file attachments, system prompts, model comparison, and full history</p>
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -181,6 +182,109 @@ export default function AboutPage() {
                 </div>
               </div>
             ))}
+          </div>
+        </section>
+
+        {/* AI Models Section */}
+        <section className="mb-14">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+              <Brain className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold">Available AI Models</h2>
+              <p className="text-sm text-muted-foreground">All {OPENROUTER_MODELS.length} free OpenRouter models — zero cost, no API key required</p>
+            </div>
+            <Badge className="ml-auto bg-primary/20 text-primary border-primary/30">{OPENROUTER_MODELS.length} FREE</Badge>
+          </div>
+
+          {/* Large Models */}
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-3">
+              <Brain className="w-4 h-4 text-purple-400" />
+              <h3 className="text-sm font-semibold text-purple-400 uppercase tracking-wider">Large Models (70B+)</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {OPENROUTER_MODELS.filter(m => m.category === 'large').map(m => (
+                <div key={m.id} className="bg-card border border-border/50 rounded-xl p-4 hover:border-purple-500/30 transition-colors">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center shrink-0">
+                      <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                        <span className="text-sm font-semibold">{m.label}</span>
+                        {m.badge && <Badge variant="outline" className="text-[10px] py-0 h-4 border-purple-500/40 text-purple-400">{m.badge}</Badge>}
+                        <span className="text-[10px] text-muted-foreground ml-auto">{m.provider}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-snug">{m.description}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Medium Models */}
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-3">
+              <Star className="w-4 h-4 text-blue-400" />
+              <h3 className="text-sm font-semibold text-blue-400 uppercase tracking-wider">Medium Models (20–49B)</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {OPENROUTER_MODELS.filter(m => m.category === 'medium').map(m => (
+                <div key={m.id} className="bg-card border border-border/50 rounded-xl p-4 hover:border-blue-500/30 transition-colors">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center shrink-0">
+                      <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                        <span className="text-sm font-semibold">{m.label}</span>
+                        {m.badge && <Badge variant="outline" className="text-[10px] py-0 h-4 border-blue-500/40 text-blue-400">{m.badge}</Badge>}
+                        <span className="text-[10px] text-muted-foreground ml-auto">{m.provider}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-snug">{m.description}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Small Models */}
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <Zap className="w-4 h-4 text-emerald-400" />
+              <h3 className="text-sm font-semibold text-emerald-400 uppercase tracking-wider">Small & Fast (&lt;20B)</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {OPENROUTER_MODELS.filter(m => m.category === 'small').map(m => (
+                <div key={m.id} className="bg-card border border-border/50 rounded-xl p-4 hover:border-emerald-500/30 transition-colors">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
+                      <Zap className="w-3.5 h-3.5 text-emerald-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                        <span className="text-sm font-semibold">{m.label}</span>
+                        {m.badge && <Badge variant="outline" className="text-[10px] py-0 h-4 border-emerald-500/40 text-emerald-400">{m.badge}</Badge>}
+                        <span className="text-[10px] text-muted-foreground ml-auto">{m.provider}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-snug">{m.description}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-5 bg-primary/5 border border-primary/20 rounded-xl px-5 py-4 flex items-center gap-3">
+            <Sparkles className="w-5 h-5 text-primary shrink-0" />
+            <p className="text-sm text-muted-foreground">
+              All models are served via <strong className="text-foreground">OpenRouter</strong> at <strong className="text-foreground">$0 cost</strong>.
+              The system automatically falls back to the next available model if one is busy or unavailable.
+            </p>
           </div>
         </section>
 
