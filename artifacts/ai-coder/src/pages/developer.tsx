@@ -484,11 +484,17 @@ export default function DeveloperPage() {
     if (aiCategory === 'frontend') {
       systemPrompt = `You are a senior frontend developer helping with code in an IDE.
 Focus ONLY on Frontend (HTML/CSS/JS/React/UI). Do not include backend or server code.
+When generating multi-page HTML sites, create a SEPARATE .html file for each page — never put multiple pages in one index.html.
 When generating files, use this exact format so they are auto-created in the editor:
-===FILE: filename.ext===
-[complete file content here]
+===FILE: index.html===
+[complete home page html]
+===FILE: about.html===
+[complete about page html]
 ===FILE: styles.css===
-[complete css here]
+[complete shared css]
+===FILE: script.js===
+[complete shared js]
+Navigation links must use real hrefs: <a href="about.html">About</a>
 Write complete, working code. No placeholders. No TODO comments.`;
     } else if (aiCategory === 'backend') {
       systemPrompt = `You are a senior backend developer helping with code in an IDE.
@@ -632,31 +638,37 @@ Rewrite the ENTIRE file based on the instructions. Return ONLY the complete rewr
 
   const PHASE_PROMPTS: Record<'frontend' | 'backend' | 'api', { system: string; user: (p: string) => string }> = {
     frontend: {
-      system: `You are building the FRONTEND ONLY for a live browser-preview IDE.
+      system: `You are building the FRONTEND ONLY for a code editor IDE.
 Output ONLY file blocks — no text outside the blocks.
 
 Format EXACTLY like this:
 ===FILE: index.html===
 [complete html]
+===FILE: about.html===
+[complete html for about page]
 ===FILE: styles.css===
 [complete css]
 ===FILE: script.js===
 [complete js]
 
-━━━ SPA NAVIGATION RULES (CRITICAL) ━━━
-The preview uses srcDoc — separate HTML files CANNOT navigate to each other.
-Use Single-Page App routing inside ONE index.html:
-• All pages = <section id="page-X" class="page"> inside index.html
-• styles.css: .page{display:none} .page.active{display:block}
-• script.js: function showPage(id){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById('page-'+id)?.classList.add('active');}
-• Nav links: <a href="#" onclick="showPage('menu');return false;">Menu</a>
-• NEVER href="menu.html" — NEVER href="#" with no onclick
+━━━ FILE STRUCTURE RULES ━━━
+- Create a SEPARATE .html file for EACH page (index.html, about.html, contact.html, menu.html, etc.)
+- NEVER put multiple pages inside a single index.html
+- All HTML pages link to shared styles.css and script.js
+- Navigation links use real hrefs: <a href="about.html">About</a>
+- script.js auto-highlights the active nav link using location.pathname
+- index.html is the home/landing page only
+
+━━━ SHARED ELEMENTS ━━━
+- Every HTML page must include the full header/navbar and footer (duplicate them per-page)
+- Link shared files in every page: <link rel="stylesheet" href="styles.css"> and <script src="script.js" defer></script>
 
 ━━━ QUALITY RULES ━━━
 - Visually stunning: gradients, animations, modern dark or light design
 - Every section fully built — no lorem ipsum, no placeholder content
-- Forms, buttons, interactive elements all functional with JS`,
-      user: (p) => `Build the complete FRONTEND (UI only) for: "${p}"\nInclude: index.html (all pages as SPA sections), styles.css, script.js.\nUse mock/sample data for any dynamic content.`,
+- Forms, buttons, interactive elements all functional with JS
+- Responsive design with media queries`,
+      user: (p) => `Build the complete FRONTEND (UI only) for: "${p}"\nCreate SEPARATE .html files for each page (index.html, about.html, contact.html, etc.), plus styles.css and script.js.\nUse mock/sample data for any dynamic content.`,
     },
     backend: {
       system: `You are building the BACKEND SERVER only.
