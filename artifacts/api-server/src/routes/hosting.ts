@@ -27,6 +27,52 @@ function getMime(filename: string): string {
   return MIME_TYPES[ext] ?? "text/plain; charset=utf-8";
 }
 
+// Detect if the project uses React Native (can't run in a browser)
+function isReactNativeProject(files: { content: string }[]): boolean {
+  return files.some(
+    (f) =>
+      /from ['"]react-native['"]/i.test(f.content) ||
+      /require\(['"]react-native['"]\)/i.test(f.content) ||
+      /from ['"]@react-navigation\//i.test(f.content) ||
+      /from ['"]expo['"]/i.test(f.content) ||
+      /from ['"]expo-/i.test(f.content)
+  );
+}
+
+function reactNativePage(projectName: string): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${projectName} — Mobile App</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, -apple-system, sans-serif;
+           background: #0d1117; color: #e6edf3;
+           display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    .card { text-align: center; padding: 2.5rem 2rem; max-width: 420px; }
+    .icon { font-size: 3rem; margin-bottom: 1rem; }
+    h1 { margin: 0 0 .5rem; font-size: 1.4rem; }
+    p { color: #8b949e; line-height: 1.6; font-size: .9rem; margin: 0 0 1.5rem; }
+    .badge { display: inline-flex; align-items: center; gap: 6px; background: #1c2128;
+             border: 1px solid #30363d; border-radius: 999px; padding: 6px 14px;
+             font-size: .8rem; color: #8b949e; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #6e40c9; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">📱</div>
+    <h1>${projectName}</h1>
+    <p>This is a <strong>React Native / Expo</strong> mobile app — it can't run directly in a browser.<br>
+    To preview it, open the project in <strong>Expo Go</strong> or run it with <code>npx expo start</code> on your machine.</p>
+    <div class="badge"><span class="dot"></span>React Native project</div>
+  </div>
+</body>
+</html>`;
+}
+
 // Known package aliases for esm.sh
 const PACKAGE_ALIASES: Record<string, string> = {
   "react": "react@18",
@@ -71,28 +117,20 @@ function resolvePackage(pkg: string): string {
   return `https://esm.sh/${pkg}`;
 }
 
-// Rewrite bare package imports to esm.sh CDN URLs so any npm package works in browser
 function rewriteImportsToEsm(code: string): string {
-  // Strip TypeScript type-only imports
   code = code.replace(/^\s*import\s+type\s+.*?from\s+['"][^'"]*['"]\s*;?\s*$/gm, "");
   code = code.replace(/^\s*export\s+type\s+\{[^}]*\}\s*;?\s*$/gm, "");
-
-  // Rewrite bare package imports to esm.sh
   code = code.replace(
     /^(\s*import\s+(?:[^'"]*\s+from\s+)?)(["'])([^'".\/][^'"]*)(["'])/gm,
     (match, prefix, q1, pkg, q2) => `${prefix}${q1}${resolvePackage(pkg)}${q2}`
   );
-
-  // Rewrite export ... from 'pkg'
   code = code.replace(
     /^(\s*export\s+(?:\{[^}]*\}|\*)\s+from\s+)(["'])([^'".\/][^'"]*)(["'])/gm,
     (match, prefix, q1, pkg, q2) => `${prefix}${q1}${resolvePackage(pkg)}${q2}`
   );
-
   return code;
 }
 
-// Build an import map from all bare imports referenced in the code
 function buildImportMap(allCode: string): string {
   const imports: Record<string, string> = {};
   const re = /(?:from|import)\s+(['"])([^'".\/][^'"]*)\1/g;
@@ -105,11 +143,10 @@ function buildImportMap(allCode: string): string {
   return `<script type="importmap">\n${JSON.stringify({ imports }, null, 2)}\n</script>`;
 }
 
-// Build a full HTML document from the project files, with Babel + esm.sh for all imports
 function buildProjectHtml(
   files: { name: string; content: string; language?: string | null; path?: string | null }[],
   baseHref: string,
-  projectTitle: string,
+  projectTitle: string
 ): string {
   const cssFiles = files.filter((f) => f.language === "css" || f.name.endsWith(".css"));
   const jsFiles = files.filter((f) =>
@@ -125,8 +162,6 @@ function buildProjectHtml(
   if (htmlFile) {
     return buildFromHtmlFile(htmlFile.content, cssFiles, jsFiles.filter((f) => f.name !== htmlFile.name), baseHref);
   }
-
-  // No HTML file — generate one
   return buildAutoHtml(jsFiles, cssFiles, baseHref, projectTitle);
 }
 
@@ -134,43 +169,35 @@ function buildFromHtmlFile(
   htmlContent: string,
   cssFiles: { name: string; content: string }[],
   jsFiles: { name: string; content: string }[],
-  baseHref: string,
+  baseHref: string
 ): string {
   let html = htmlContent;
   const allJsCode = jsFiles.map((f) => f.content).join("\n");
   const importMap = buildImportMap(allJsCode);
 
-  // Inject CSS
   if (cssFiles.length > 0) {
     const styles = cssFiles.map((f) => `<style>\n${f.content}\n</style>`).join("\n");
     html = html.includes("</head>") ? html.replace("</head>", `${styles}\n</head>`) : styles + html;
   }
 
-  // Inject import map + Babel into <head>
   const headInject = `${importMap}\n<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>`;
   html = html.includes("<head>")
     ? html.replace("<head>", `<head>\n${headInject}`)
     : headInject + html;
 
-  // Upgrade existing script tags to text/babel (handles JSX + TS)
   html = html.replace(/<script(\s+type=["']module["'])?(\s*)>/g, '<script type="text/babel" data-type="module"$2>');
-
-  // Rewrite inline script content to use esm.sh
   html = html.replace(
     /<script\s[^>]*data-type="module"[^>]*>([\s\S]*?)<\/script>/g,
     (match, code) => match.replace(code, rewriteImportsToEsm(code))
   );
 
-  // Inject external JS files
   if (jsFiles.length > 0) {
-    const scriptTags = jsFiles.map((f) => {
-      const code = rewriteImportsToEsm(f.content);
-      return `<script type="text/babel" data-type="module">\n/* ${f.name} */\n${code}\n</script>`;
-    }).join("\n");
+    const scriptTags = jsFiles
+      .map((f) => `<script type="text/babel" data-type="module">\n/* ${f.name} */\n${rewriteImportsToEsm(f.content)}\n</script>`)
+      .join("\n");
     html = html.includes("</body>") ? html.replace("</body>", `${scriptTags}\n</body>`) : html + scriptTags;
   }
 
-  // Add base href
   if (!html.includes("<base")) {
     html = html.includes("<head>") ? html.replace("<head>", `<head>\n<base href="${baseHref}">`) : html;
   }
@@ -182,30 +209,26 @@ function buildAutoHtml(
   jsFiles: { name: string; content: string }[],
   cssFiles: { name: string; content: string }[],
   baseHref: string,
-  title: string,
+  title: string
 ): string {
   const allCode = jsFiles.map((f) => f.content).join("\n");
   const importMap = buildImportMap(allCode);
 
-  // Sort: entry points first (main, index, App)
   const sorted = [...jsFiles].sort((a, b) => {
     const p = (n: string) => /^(main|index)\.(tsx?|jsx?)$/i.test(n) ? 0 : /^App\.(tsx?|jsx?)$/i.test(n) ? 1 : 2;
     return p(a.name) - p(b.name);
   });
 
   const combined = sorted.map((f) => rewriteImportsToEsm(f.content)).join("\n\n");
-
   const hasRender = /createRoot|ReactDOM\.render|root\.render/.test(combined);
-  const hasApp = /(?:^|\s)(?:function|class)\s+App[\s({]/.test(combined) ||
-                 /(?:^|\s)(?:const|let|var)\s+App\s*=/.test(combined);
+  const hasApp =
+    /(?:^|\s)(?:function|class)\s+App[\s({]/.test(combined) ||
+    /(?:^|\s)(?:const|let|var)\s+App\s*=/.test(combined);
 
-  const autoRender = (!hasRender && hasApp) ? `
-// Auto-render
-const __c = document.getElementById("root") || document.getElementById("app");
-if (__c) {
-  const { createRoot } = await import("${resolvePackage("react-dom/client")}");
-  createRoot(__c).render((await import("${resolvePackage("react")}")).createElement(App));
-}` : "";
+  const autoRender =
+    !hasRender && hasApp
+      ? `\n// Auto-render\nconst __c = document.getElementById("root") || document.getElementById("app");\nif (__c) {\n  const { createRoot } = await import("${resolvePackage("react-dom/client")}");\n  createRoot(__c).render((await import("${resolvePackage("react")}")).createElement(App));\n}`
+      : "";
 
   const cssInline = cssFiles.map((f) => `<style>\n${f.content}\n</style>`).join("\n");
 
@@ -235,16 +258,16 @@ ${combined}${autoRender}
 </html>`;
 }
 
+// ── Migration ─────────────────────────────────────────────────────────────────
+
 let migrationDone = false;
 async function runMigrationOnce(): Promise<void> {
   if (migrationDone) return;
   try {
     await db.execute(sql`ALTER TABLE projects ADD COLUMN IF NOT EXISTS published BOOLEAN NOT NULL DEFAULT FALSE`);
     await db.execute(sql`ALTER TABLE projects ADD COLUMN IF NOT EXISTS published_at TIMESTAMP`);
-    migrationDone = true;
-  } catch {
-    migrationDone = true;
-  }
+  } catch { /* columns may already exist */ }
+  migrationDone = true;
 }
 
 // ── Publish / Unpublish / Status ──────────────────────────────────────────────
@@ -282,37 +305,68 @@ router.get("/status/:projectId", async (req: Request, res: Response): Promise<vo
 });
 
 // ── Live Preview (authenticated, no publish required) ─────────────────────────
-// This is used by the workspace's Live Preview panel
-router.use("/preview/:projectId", async (req: Request, res: Response): Promise<void> => {
+// Mounted at /api/hosting — so full path is /api/hosting/preview/<id>[/...]
+// NOTE: We parse the projectId manually from req.path to avoid Express router.use() param issues.
+router.use("/preview", async (req: Request, res: Response): Promise<void> => {
   await runMigrationOnce();
+
   const userId = getUserId(req);
-  if (!userId) { res.status(401).send("Not authenticated"); return; }
+  if (!userId) {
+    res.status(401).send("Not authenticated");
+    return;
+  }
 
-  const projectId = parseInt(req.params.projectId, 10);
-  if (isNaN(projectId)) { res.status(400).send("Invalid project"); return; }
+  // req.path here is "/<projectId>" or "/<projectId>/subpath"
+  const parts = (req.path || "/").split("/").filter(Boolean);
+  const projectId = parseInt(parts[0] ?? "", 10);
 
-  const files = await db.select().from(projectFilesTable).where(eq(projectFilesTable.projectId, projectId));
+  if (isNaN(projectId)) {
+    res.status(400).send(errorPage("No project ID in URL", "The preview URL must include a project ID, e.g. /api/hosting/preview/42/"));
+    return;
+  }
+
+  let files: typeof projectFilesTable.$inferSelect[];
+  try {
+    files = await db.select().from(projectFilesTable).where(eq(projectFilesTable.projectId, projectId));
+  } catch (e: any) {
+    res.status(500).send(errorPage("Database error", e.message));
+    return;
+  }
+
   if (!files.length) {
-    res.status(404).send("No files found.");
+    res.status(404).send(errorPage("No files found", `Project #${projectId} exists but has no files yet. Generate some code first.`));
     return;
   }
 
-  const reqPath = (req.path || "").replace(/^\/+/, "");
-  const cleanPath = reqPath || "index.html";
+  // Serve a specific sub-asset (e.g. /preview/14/style.css)
+  const assetPath = parts.slice(1).join("/");
+  if (assetPath) {
+    const match = files.find((f) => f.path === assetPath || f.name === assetPath || f.path === `/${assetPath}`);
+    if (match && !match.name.endsWith(".html")) {
+      res.setHeader("Content-Type", getMime(match.name));
+      res.send(match.content);
+      return;
+    }
+  }
 
-  // Serve a specific non-HTML asset if requested
-  const exactMatch = files.find((f) => f.path === cleanPath || f.name === cleanPath || f.path === `/${cleanPath}`);
-  if (exactMatch && !exactMatch.name.endsWith(".html")) {
-    res.setHeader("Content-Type", getMime(exactMatch.name));
-    res.send(exactMatch.content);
+  // React Native — show friendly info page instead of broken preview
+  if (isReactNativeProject(files)) {
+    let projectName = `Project #${projectId}`;
+    try {
+      const rows = await db.execute(sql`SELECT name FROM projects WHERE id = ${projectId}`);
+      const row = (rows as any).rows?.[0] ?? (Array.isArray(rows) ? rows[0] : null);
+      projectName = row?.name ?? projectName;
+    } catch { /* ignore */ }
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.send(reactNativePage(projectName));
     return;
   }
 
-  let projectTitle = "Preview";
+  let projectTitle = `Project #${projectId}`;
   try {
     const rows = await db.execute(sql`SELECT name FROM projects WHERE id = ${projectId}`);
     const row = (rows as any).rows?.[0] ?? (Array.isArray(rows) ? rows[0] : null);
-    projectTitle = row?.name ?? "Preview";
+    projectTitle = row?.name ?? projectTitle;
   } catch { /* ignore */ }
 
   const previewBase = `/api/hosting/preview/${projectId}/`;
@@ -322,10 +376,17 @@ router.use("/preview/:projectId", async (req: Request, res: Response): Promise<v
 });
 
 // ── Public hosted projects ────────────────────────────────────────────────────
-router.use("/:projectId", async (req: Request, res: Response): Promise<void> => {
+// Mounted at both /hosted and /api/hosting — handles /<projectId>[/...]
+router.use("/", async (req: Request, res: Response): Promise<void> => {
   await runMigrationOnce();
-  const projectId = parseInt(req.params.projectId, 10);
-  if (isNaN(projectId)) { res.status(400).send("Invalid project"); return; }
+
+  const parts = (req.path || "/").split("/").filter(Boolean);
+  const projectId = parseInt(parts[0] ?? "", 10);
+
+  if (isNaN(projectId)) {
+    res.status(400).send(errorPage("Invalid project ID", "The URL must include a numeric project ID."));
+    return;
+  }
 
   let isPublished = false;
   let projectTitle = "Published App";
@@ -342,23 +403,27 @@ router.use("/:projectId", async (req: Request, res: Response): Promise<void> => 
 .box{text-align:center;padding:2rem}.badge{background:#6e40c9;color:#fff;border-radius:6px;padding:4px 12px;font-size:12px;margin-bottom:1rem;display:inline-block}
 h1{margin:0 0 .5rem;font-size:1.5rem}p{color:#8b949e}</style></head>
 <body><div class="box"><div class="badge">ZorvixAI</div>
-<h1>Project Not Published</h1>
-<p>Open this project in ZorvixAI and click <strong>Publish Live</strong>.</p>
+<h1>Project Not Published</h1><p>Open this project in ZorvixAI and click <strong>Publish Live</strong>.</p>
 </div></body></html>`);
     return;
   }
 
   const files = await db.select().from(projectFilesTable).where(eq(projectFilesTable.projectId, projectId));
-  if (!files.length) { res.status(404).send("No files found."); return; }
+  if (!files.length) { res.status(404).send(errorPage("No files found", "")); return; }
 
-  const reqPath = (req.path || "").replace(/^\/+/, "");
-  const cleanPath = reqPath || "index.html";
+  const assetPath = parts.slice(1).join("/");
+  if (assetPath) {
+    const match = files.find((f) => f.path === assetPath || f.name === assetPath || f.path === `/${assetPath}`);
+    if (match && !match.name.endsWith(".html")) {
+      res.setHeader("Content-Type", getMime(match.name));
+      res.send(match.content);
+      return;
+    }
+  }
 
-  // Serve a specific non-HTML asset if requested
-  const exactMatch = files.find((f) => f.path === cleanPath || f.name === cleanPath || f.path === `/${cleanPath}`);
-  if (exactMatch && !exactMatch.name.endsWith(".html")) {
-    res.setHeader("Content-Type", getMime(exactMatch.name));
-    res.send(exactMatch.content);
+  if (isReactNativeProject(files)) {
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.send(reactNativePage(projectTitle));
     return;
   }
 
@@ -367,5 +432,12 @@ h1{margin:0 0 .5rem;font-size:1.5rem}p{color:#8b949e}</style></head>
   res.setHeader("Content-Type", "text/html; charset=utf-8");
   res.send(html);
 });
+
+function errorPage(title: string, detail: string): string {
+  return `<!DOCTYPE html><html><head><title>${title}</title>
+<style>body{font-family:system-ui;background:#0d1117;color:#e6edf3;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}
+.box{text-align:center;padding:2rem;max-width:480px}h1{margin:0 0 .5rem;font-size:1.3rem}p{color:#8b949e;font-size:.9rem}</style></head>
+<body><div class="box"><h1>⚠️ ${title}</h1><p>${detail}</p></div></body></html>`;
+}
 
 export default router;
