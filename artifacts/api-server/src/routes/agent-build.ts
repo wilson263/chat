@@ -2,6 +2,7 @@ import { Router, type IRouter, type Request, type Response } from "express";
 import { db, projectsTable, projectFilesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { getUserId } from "./auth";
+import { openai } from "@workspace/integrations-openai-ai-server";
 
 const router: IRouter = Router();
 
@@ -52,8 +53,6 @@ async function generateProject(prompt: string, attempt = 1): Promise<{
   language: string;
   files: Array<{ path: string; name: string; content: string; language: string }>;
 }> {
-  const { groq } = await import("@workspace/integrations-groq-ai");
-
   const systemPrompt = `You are an expert full-stack web developer building browser-runnable apps. You MUST respond with ONLY a valid JSON object — no markdown, no explanation, just the raw JSON.
 
 JSON structure:
@@ -161,14 +160,13 @@ REMEMBER: Respond with ONLY the raw JSON object.`;
     ? `Build this: ${prompt}`
     : `Build this: ${prompt}\n\nPREVIOUS ATTEMPT FAILED. You MUST respond with ONLY a raw JSON object. No markdown fences, no explanation text.`;
 
-  const response = await groq.chat.completions.create({
-    model: "llama-3.3-70b-versatile",
+  const response = await openai.chat.completions.create({
+    model: "gpt-5.2",
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: userMessage },
     ],
-    max_tokens: 32768,
-    temperature: 0.4,
+    max_completion_tokens: 8192,
   });
 
   const raw = response.choices[0]?.message?.content ?? "";
@@ -204,13 +202,11 @@ async function fixErrors(
   files: Array<{ path: string; content: string }>,
   errors: string[]
 ): Promise<Array<{ path: string; content: string }>> {
-  const { groq } = await import("@workspace/integrations-groq-ai");
-
   const filesContext = files.map(f => `--- ${f.path} ---\n${f.content}`).join("\n\n");
   const errorsText = errors.join("\n");
 
-  const response = await groq.chat.completions.create({
-    model: "llama-3.3-70b-versatile",
+  const response = await openai.chat.completions.create({
+    model: "gpt-5.2",
     messages: [
       {
         role: "user",
@@ -226,8 +222,7 @@ ${errorsText}
 Return ONLY the JSON array, nothing else.`,
       },
     ],
-    max_tokens: 16384,
-    temperature: 0.3,
+    max_completion_tokens: 8192,
   });
 
   const raw = response.choices[0]?.message?.content ?? "";
