@@ -34,168 +34,307 @@ function buildFileTree(paths: string[]): Record<string, any> {
     let node = tree;
     for (let i = 0; i < parts.length; i++) {
       const part = parts[i];
-      if (i === parts.length - 1) {
-        node[part] = null;
-      } else {
-        node[part] = node[part] ?? {};
-        node = node[part];
-      }
+      if (i === parts.length - 1) { node[part] = null; }
+      else { node[part] = node[part] ?? {}; node = node[part]; }
     }
   }
   return tree;
 }
 
-// ── Phase 1: Analyse the prompt and plan files (streaming, shows thinking) ──
+// ── Streaming helper: collect full text and stream tokens ─────────────────────
+async function streamCollect(
+  model: string,
+  messages: Array<{ role: "system" | "user"; content: string }>,
+  maxTokens: number,
+  onToken?: (token: string) => void
+): Promise<string> {
+  const stream = await createChatCompletionStream({
+    model,
+    messages,
+    max_tokens: maxTokens,
+    stream: true,
+  } as any);
+  let raw = "";
+  for await (const chunk of stream) {
+    const token = chunk.choices[0]?.delta?.content;
+    if (token) { raw += token; onToken?.(token); }
+  }
+  return raw;
+}
+
+// ── Phase 1: Analyse and plan ─────────────────────────────────────────────────
 async function analyseAndPlan(
   prompt: string,
   send: (data: Record<string, any>) => void
-): Promise<{ projectName: string; description: string; language: string; filePlan: string[] }> {
-  const systemPrompt = `You are an expert software architect. Analyse the user's app request and produce a JSON plan.
+): Promise<{ projectName: string; description: string; language: string; filePlan: Array<{ path: string; role: string }> }> {
 
-Respond with ONLY valid JSON:
+  const systemPrompt = `You are an expert software architect. Analyse the user's app request and produce a detailed project plan.
+
+You MUST respond with ONLY valid JSON — no markdown, no explanation:
 {
   "projectName": "kebab-case-name",
   "description": "one-line description",
   "language": "javascript",
-  "thinking": "2-4 sentences explaining your analysis of what to build, which technologies to use, and why",
-  "filePlan": ["index.html", "style.css", "app.js"]
+  "thinking": "3-5 sentences: what you are building, the architecture, technologies used via CDN, why this approach creates a Play-Store quality experience",
+  "filePlan": [
+    { "path": "index.html", "role": "Entry point — loads all CDN scripts and links all JS/CSS files" },
+    { "path": "css/style.css", "role": "Global styles, CSS variables, animations, responsive layout" },
+    { "path": "css/components.css", "role": "Component-specific styles: cards, buttons, modals, inputs" },
+    { "path": "js/app.js", "role": "App router, state management, initialisation" },
+    { "path": "js/api.js", "role": "API service layer — fetch wrappers, mock data, localStorage persistence" },
+    { "path": "js/pages/home.js", "role": "Home page/screen logic and rendering" },
+    ...more files as needed
+  ]
 }
 
-Rules for filePlan:
-- index.html is ALWAYS first
-- 3-8 files total
-- Keep it simple and browser-runnable (no build step)`;
+RULES for filePlan:
+- index.html MUST be first
+- Generate 10-15 files total — enough for a real, structured app
+- Separate CSS into at least 2 files: global styles + component styles
+- Separate JS into: app.js (router), api.js (data layer), pages/ (each screen), components/ (reusable UI)
+- Include a data/sample-data.js or js/data.js with realistic sample data (20+ records)
+- All files must be browser-runnable via CDN — no npm, no build step
+- The app should feel like a Play Store / App Store quality mobile app`;
 
-  const stream = await createChatCompletionStream({
-    model: "qwen/qwen3-coder-480b-a35b:free",
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: `Analyse and plan: ${prompt}` },
-    ],
-    max_tokens: 1024,
-    stream: true,
-  });
-
-  let raw = "";
   send({ step: "thinking", message: "Analysing your request..." });
 
-  for await (const chunk of stream) {
-    const token = chunk.choices[0]?.delta?.content;
-    if (token) {
-      raw += token;
-      send({ step: "thinking_token", token });
-    }
-  }
+  // Use llama-70b for planning — it's much faster than qwen-480b
+  const raw = await streamCollect(
+    "meta-llama/llama-3.3-70b-instruct:free",
+    [{ role: "system", content: systemPrompt }, { role: "user", content: `Plan this app: ${prompt}` }],
+    1500,
+    (token) => send({ step: "thinking_token", token })
+  );
 
   const jsonStr = extractJson(raw);
   let plan: any;
-  try {
-    plan = JSON.parse(jsonStr);
-  } catch {
+  try { plan = JSON.parse(jsonStr); }
+  catch {
     plan = {
-      projectName: "my-project",
+      projectName: "my-app",
       description: prompt,
       language: "javascript",
-      thinking: "Building a complete browser app.",
-      filePlan: ["index.html", "style.css", "app.js"],
+      thinking: "Building a full-featured browser app with modern design.",
+      filePlan: [
+        { path: "index.html", role: "Entry point" },
+        { path: "css/style.css", role: "Global styles" },
+        { path: "css/components.css", role: "Component styles" },
+        { path: "js/app.js", role: "App router and state" },
+        { path: "js/api.js", role: "Data layer" },
+        { path: "js/pages/home.js", role: "Home screen" },
+        { path: "js/pages/detail.js", role: "Detail screen" },
+        { path: "js/components/navbar.js", role: "Navigation bar" },
+        { path: "js/data.js", role: "Sample data" },
+      ],
     };
   }
 
+  const filePlan = (plan.filePlan ?? []).map((f: any) =>
+    typeof f === "string" ? { path: f, role: "File" } : f
+  );
+
   send({
     step: "analysed",
-    message: "Analysis complete",
     thinking: plan.thinking ?? "",
-    projectName: plan.projectName ?? "my-project",
-    filePlan: plan.filePlan ?? ["index.html"],
+    projectName: plan.projectName ?? "my-app",
+    filePlan: filePlan.map((f: any) => f.path),
   });
 
   return {
-    projectName: plan.projectName ?? "my-project",
+    projectName: plan.projectName ?? "my-app",
     description: plan.description ?? prompt,
     language: plan.language ?? "javascript",
-    filePlan: (plan.filePlan ?? ["index.html", "style.css", "app.js"]) as string[],
+    filePlan,
   };
 }
 
-// ── Phase 2: Generate one file at a time with live streaming ────────────────
-async function generateFile(
-  filePath: string,
-  prompt: string,
-  projectName: string,
-  allFiles: string[],
-  previousFiles: Array<{ path: string; content: string }>,
-  send: (data: Record<string, any>) => void
-): Promise<string> {
-  const previousContext = previousFiles.length > 0
-    ? `\n\nPreviously generated files (for consistency):\n` +
-      previousFiles.map(f => `--- ${f.path} (first 200 chars) ---\n${f.content.slice(0, 200)}`).join("\n\n")
-    : "";
+// ── Phase 2: Generate a single file ──────────────────────────────────────────
+async function generateFile(opts: {
+  filePath: string;
+  role: string;
+  prompt: string;
+  projectName: string;
+  allFiles: Array<{ path: string; role: string }>;
+  indexHtmlSnippet?: string;
+  send: (data: Record<string, any>) => void;
+}): Promise<string> {
+  const { filePath, role, prompt, projectName, allFiles, indexHtmlSnippet, send } = opts;
 
-  const isHtml = filePath.endsWith(".html");
-  const isCss = filePath.endsWith(".css");
-  const isJs = filePath.endsWith(".js") || filePath.endsWith(".jsx");
+  const ext = filePath.split(".").pop()?.toLowerCase() ?? "";
+  const isHtml = ext === "html";
+  const isCss = ext === "css";
+  const isJs = ext === "js" || ext === "jsx";
 
+  // File-type specific guidance
   let fileGuidance = "";
   if (isHtml) {
     fileGuidance = `
-This is the main HTML entry point. Requirements:
-- Load ALL CDN libraries needed for the app (React via unpkg if React app, Chart.js if charts, etc.)
-- Include <link> to CSS files and <script> to JS files
-- Provide proper HTML5 structure
-- NEVER use npm-style imports. CDN only.`;
+You are writing index.html — the ENTRY POINT of the app.
+
+CRITICAL REQUIREMENTS:
+1. Load ALL CDN libraries at the top of <head> — React (if React app), Tailwind CSS CDN, Font Awesome icons, Google Fonts, Chart.js (if charts), GSAP (if animations), etc.
+2. Link every CSS file: css/style.css, css/components.css, etc.
+3. Load every JS file at the bottom of <body> in dependency order
+4. Add a splash screen / loading animation that fades out
+5. Create the root HTML structure with proper semantic tags
+6. Add PWA meta tags: viewport, theme-color, apple-mobile-web-app-capable
+7. The app must look and feel like a native mobile app
+
+CDN LINKS TO USE:
+- Tailwind: <script src="https://cdn.tailwindcss.com"></script>
+- Font Awesome: <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+- Google Fonts: <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+- Animate.css: <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+- Chart.js (if charts): <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+NEVER use npm-style imports. CDN only.`;
   } else if (isCss) {
-    fileGuidance = `
-This is the stylesheet. Requirements:
-- Modern, professional dark-theme design
-- CSS variables for theming
-- Responsive design with media queries
-- Smooth animations and transitions`;
+    const isGlobal = filePath.includes("style") && !filePath.includes("component");
+    fileGuidance = isGlobal ? `
+You are writing the GLOBAL stylesheet.
+
+REQUIREMENTS — Play Store quality design:
+1. Define CSS custom properties (variables) for the entire design system:
+   --primary, --primary-dark, --secondary, --accent, --background, --surface, --surface-2, 
+   --text, --text-secondary, --text-muted, --border, --shadow, --radius, --radius-lg
+2. Dark theme by default (deep dark backgrounds, vibrant accent colors)
+3. Mobile-first: base styles for mobile, media queries for desktop
+4. Smooth animations: transitions on all interactive elements (0.2s ease)
+5. Safe area support: padding for mobile notches (env(safe-area-inset-*))
+6. Custom scrollbar styling
+7. Typography scale using the Google Font loaded in HTML
+8. Glassmorphism effects: backdrop-filter: blur() with semi-transparent backgrounds
+9. Gradient backgrounds and accent colors
+10. Bottom navigation bar styles (fixed, blur background)
+11. Card styles with subtle shadows and hover effects
+12. Input/button styles that look native-app quality` : `
+You are writing COMPONENT styles.
+
+REQUIREMENTS:
+1. Cards: rounded corners (16-24px), subtle shadows, hover lift effects
+2. Buttons: gradient backgrounds, press animations (transform: scale(0.97))
+3. Modals/sheets: slide-up animation, backdrop blur
+4. List items: proper padding, dividers, tap highlight
+5. Badges/tags: pill shapes, color variants
+6. Skeleton loaders for loading states
+7. Empty states with illustrations (CSS-only or emoji)
+8. Toast/snackbar notifications
+9. Progress bars and spinners
+10. Avatar components`;
   } else if (isJs) {
-    fileGuidance = `
-This is the JavaScript/application logic. Requirements:
-- Complete, fully-working implementation
-- Real interactivity — buttons work, forms submit, data displays
-- Error handling with user-friendly messages
-- No placeholder functions or TODO comments`;
-  }
+    const isRouter = filePath.endsWith("app.js");
+    const isApi = filePath.includes("api");
+    const isPage = filePath.includes("pages/");
+    const isComponent = filePath.includes("components/");
+    const isData = filePath.includes("data");
 
-  const systemPrompt = `You are an expert web developer. Write the COMPLETE content of a single file.
-Output ONLY the raw file content — no markdown fences, no explanation, just the file content itself.
-Write every line. The file must be 100% complete and working.${fileGuidance}`;
+    if (isRouter) {
+      fileGuidance = `
+You are writing the MAIN APP ROUTER and state manager.
 
-  const userMessage = `Project: ${projectName}
-User wants: ${prompt}
-All project files: ${allFiles.join(", ")}
-Write the COMPLETE content of: ${filePath}${previousContext}`;
+REQUIREMENTS:
+1. Client-side router: manage "pages" as shown/hidden div sections
+2. Global app state object (AppState): currentUser, currentPage, data cache, theme
+3. Navigation functions: navigate(page, params), goBack()
+4. Auth check on init: read user from localStorage
+5. Bottom tab bar rendering and active state management
+6. Page transition animations (slide, fade)
+7. Initialize all components on DOM ready
+8. Toast notification system
+9. Theme toggling (dark/light)
+10. Error boundary: global error handler`;
+    } else if (isApi) {
+      fileGuidance = `
+You are writing the API SERVICE LAYER.
 
-  send({
-    step: "writing_file",
-    message: `Writing ${filePath}...`,
-    filePath,
-  });
+REQUIREMENTS:
+1. Wrap localStorage as a mini-database (no real backend needed — simulate one)
+2. CRUD functions for all data entities the app needs
+3. User auth simulation: register(), login(), logout(), getCurrentUser()
+4. Data persistence: all operations save to localStorage, load on init
+5. Async wrappers that simulate network delay (200-500ms) for realism
+6. Error simulation for edge cases
+7. Pre-populate with 20+ realistic sample records on first run
+8. Export all functions for use by pages/components`;
+    } else if (isPage) {
+      const pageName = filePath.split("/").pop()?.replace(".js", "") ?? "page";
+      fileGuidance = `
+You are writing the ${pageName.toUpperCase()} PAGE module.
 
-  const stream = await createChatCompletionStream({
-    model: "qwen/qwen3-coder-480b-a35b:free",
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: userMessage },
-    ],
-    max_tokens: 4096,
-    stream: true,
-  });
+REQUIREMENTS:
+1. render() function that returns HTML string for this page
+2. init() function called after render to attach event listeners
+3. Full page layout with header, content area, and proper spacing
+4. At least 3-5 meaningful UI sections/components visible on this screen
+5. Interactive elements: buttons, forms, cards that respond to user input
+6. Loading states and empty states
+7. Real data from the api.js service layer
+8. Smooth entry animation on page load
+9. Mobile-optimized touch targets (min 44px)
+10. Context-appropriate icons from Font Awesome`;
+    } else if (isComponent) {
+      const compName = filePath.split("/").pop()?.replace(".js", "") ?? "component";
+      fileGuidance = `
+You are writing the ${compName.toUpperCase()} COMPONENT.
 
-  let content = "";
-  for await (const chunk of stream) {
-    const token = chunk.choices[0]?.delta?.content;
-    if (token) {
-      content += token;
-      send({ step: "file_token", filePath, token });
+REQUIREMENTS:
+1. Reusable render(props) function
+2. Event delegation pattern for dynamic elements
+3. Multiple visual variants (primary, secondary, danger, etc.)
+4. Responsive behaviour for mobile vs desktop
+5. Accessible markup (aria labels, roles)`;
+    } else if (isData) {
+      fileGuidance = `
+You are writing the SAMPLE DATA module.
+
+REQUIREMENTS:
+1. Export 20-30 realistic, diverse sample records for each data type the app needs
+2. Use real-sounding names, locations, dates, prices, etc.
+3. Include variety: different statuses, categories, dates, amounts
+4. Image URLs from https://picsum.photos/seed/{id}/400/300 for placeholder images
+5. Avatar URLs from https://i.pravatar.cc/150?img={1-70} for user avatars
+6. Export as named constants: export const USERS = [...], export const PRODUCTS = [...], etc.`;
     }
   }
 
+  const allFilesList = allFiles.map(f => `  ${f.path} — ${f.role}`).join("\n");
+  const contextNote = indexHtmlSnippet && !isHtml
+    ? `\n\nindex.html summary (CDN scripts loaded, file structure):\n${indexHtmlSnippet}`
+    : "";
+
+  const systemPrompt = `You are an elite frontend engineer building a Play Store quality app.
+Write the COMPLETE, PRODUCTION-READY content of a SINGLE file.
+Output ONLY the raw file content — no markdown fences, no explanation text, no comments like "// rest of code".
+Write EVERY LINE. Minimum 150 lines for CSS/JS files, minimum 80 lines for HTML.
+The design and code quality must match top-tier apps on the Play Store / App Store.${fileGuidance}`;
+
+  const userMessage = `App: ${projectName}
+User request: ${prompt}
+This file: ${filePath} (${role})
+
+Full project structure:
+${allFilesList}${contextNote}
+
+Write the COMPLETE content of ${filePath} now:`;
+
+  send({ step: "writing_file", message: `Writing ${filePath}...`, filePath });
+
+  // Use faster model for data/config files, best coder for core logic
+  const isComplexFile = isHtml || isRouter || (isJs && (filePath.includes("app.js") || filePath.includes("api.js")));
+  const model = isComplexFile
+    ? "qwen/qwen3-coder-480b-a35b:free"
+    : "meta-llama/llama-3.3-70b-instruct:free";
+
+  const content = await streamCollect(
+    model,
+    [{ role: "system", content: systemPrompt }, { role: "user", content: userMessage }],
+    4096,
+    (token) => send({ step: "file_token", filePath, token })
+  );
+
   send({
     step: "file_done",
-    message: `${filePath} complete (${content.length} chars)`,
+    message: `${filePath} complete`,
     filePath,
     lineCount: content.split("\n").length,
   });
@@ -203,8 +342,7 @@ Write the COMPLETE content of: ${filePath}${previousContext}`;
   return content.trim();
 }
 
-// ── SSE stream route ─────────────────────────────────────────────────────────
-
+// ── SSE stream route ──────────────────────────────────────────────────────────
 router.post("/agent/build", async (req: Request, res: Response): Promise<void> => {
   const userId = getUserId(req);
   if (!userId) { res.status(401).json({ error: "Not authenticated" }); return; }
@@ -227,52 +365,65 @@ router.post("/agent/build", async (req: Request, res: Response): Promise<void> =
   }
 
   try {
-    // ── Phase 1: Analyse ───────────────────────────────────────────────────
+    // ── Phase 1: Plan ─────────────────────────────────────────────────────
     const plan = await analyseAndPlan(prompt.trim(), send);
 
     send({
       step: "planning",
-      message: `Planned ${plan.filePlan.length} files: ${plan.filePlan.join(", ")}`,
-      files: plan.filePlan,
+      message: `Planned ${plan.filePlan.length} files`,
+      files: plan.filePlan.map(f => f.path),
       projectName: plan.projectName,
     });
 
-    // ── Phase 2: Generate files one by one ────────────────────────────────
-    const generatedFiles: Array<{ path: string; name: string; content: string; language: string }> = [];
+    // ── Phase 2: Generate index.html first (others depend on its CDN links) ──
+    const generatedMap = new Map<string, string>();
 
-    for (const filePath of plan.filePlan) {
-      try {
-        const content = await generateFile(
-          filePath,
-          prompt.trim(),
-          plan.projectName,
-          plan.filePlan,
-          generatedFiles.map(f => ({ path: f.path, content: f.content })),
-          send
-        );
+    const htmlFile = plan.filePlan.find(f => f.path.endsWith(".html")) ?? plan.filePlan[0];
+    const htmlContent = await generateFile({
+      filePath: htmlFile.path,
+      role: htmlFile.role,
+      prompt: prompt.trim(),
+      projectName: plan.projectName,
+      allFiles: plan.filePlan,
+      send,
+    });
+    generatedMap.set(htmlFile.path, htmlContent);
 
-        generatedFiles.push({
-          path: filePath,
-          name: filePath.split("/").pop() ?? filePath,
-          content,
-          language: getLanguage(filePath),
-        });
-      } catch (fileErr: any) {
-        send({
-          step: "file_error",
-          filePath,
-          message: `Failed to generate ${filePath}: ${fileErr.message}`,
-        });
-      }
+    // ── Phase 3: Generate all remaining files in parallel (2 at a time) ──
+    const remaining = plan.filePlan.filter(f => f.path !== htmlFile.path);
+    const CONCURRENCY = 2;
+
+    // Extract a short snippet of index.html as context for other files
+    const indexSnippet = htmlContent.slice(0, 800);
+
+    for (let i = 0; i < remaining.length; i += CONCURRENCY) {
+      const batch = remaining.slice(i, i + CONCURRENCY);
+      const results = await Promise.allSettled(
+        batch.map(file => generateFile({
+          filePath: file.path,
+          role: file.role,
+          prompt: prompt.trim(),
+          projectName: plan.projectName,
+          allFiles: plan.filePlan,
+          indexHtmlSnippet: indexSnippet,
+          send,
+        }))
+      );
+      results.forEach((result, j) => {
+        if (result.status === "fulfilled") {
+          generatedMap.set(batch[j].path, result.value);
+        } else {
+          send({ step: "file_error", filePath: batch[j].path, message: String(result.reason) });
+          generatedMap.set(batch[j].path, `// Error generating this file`);
+        }
+      });
     }
 
-    if (generatedFiles.length === 0) {
-      throw new Error("No files were generated. Please try again.");
-    }
+    if (generatedMap.size === 0) throw new Error("No files were generated. Please try again.");
 
     send({ step: "saving", message: "Saving project..." });
 
-    // ── Phase 3: Save to database ─────────────────────────────────────────
+    // ── Phase 4: Save to database ─────────────────────────────────────────
     const [createdProject] = await db.insert(projectsTable).values({
       name: plan.projectName,
       description: plan.description,
@@ -280,48 +431,34 @@ router.post("/agent/build", async (req: Request, res: Response): Promise<void> =
       userId,
     }).returning();
 
-    const createdFiles = await db.insert(projectFilesTable).values(
-      generatedFiles.map(f => ({
-        projectId: createdProject.id,
-        name: f.name,
-        path: f.path,
-        content: f.content,
-        language: f.language,
-      }))
-    ).returning();
+    const fileRows = plan.filePlan.map(f => ({
+      projectId: createdProject.id,
+      name: f.path.split("/").pop()!,
+      path: f.path,
+      content: generatedMap.get(f.path) ?? "",
+      language: getLanguage(f.path),
+    }));
 
-    // ── Phase 4: Basic validation ─────────────────────────────────────────
-    send({ step: "checking", message: "Checking for errors..." });
+    const createdFiles = await db.insert(projectFilesTable).values(fileRows).returning();
+
+    send({ step: "checking", message: "Checking files..." });
 
     const errors: string[] = [];
     for (const file of createdFiles) {
-      if (file.language === "json") {
-        try { JSON.parse(file.content); } catch (e: any) {
-          errors.push(`${file.path}: Invalid JSON — ${e.message}`);
-        }
-      }
-      if (file.content.trim().length === 0) {
-        errors.push(`${file.path}: File is empty`);
-      }
+      if (file.content.trim().length < 10) errors.push(`${file.path}: File appears empty`);
     }
 
-    if (errors.length > 0) {
-      send({ step: "fixing", message: `Fixing ${errors.length} issue(s)...`, errors });
-    } else {
-      send({ step: "clean", message: "All files look good!" });
-    }
+    send(errors.length > 0
+      ? { step: "fixing", message: `${errors.length} file(s) had issues`, errors }
+      : { step: "clean", message: "All files generated successfully!" }
+    );
 
     const fileTree = buildFileTree(createdFiles.map(f => f.path));
 
     send({
       step: "done",
       message: "Your app is ready!",
-      project: {
-        id: createdProject.id,
-        name: createdProject.name,
-        description: createdProject.description,
-        language: createdProject.language,
-      },
+      project: { id: createdProject.id, name: createdProject.name, description: createdProject.description, language: createdProject.language },
       files: createdFiles.map(f => ({ id: f.id, name: f.name, path: f.path, language: f.language })),
       fileTree,
       errors,
@@ -329,7 +466,7 @@ router.post("/agent/build", async (req: Request, res: Response): Promise<void> =
 
     res.end();
   } catch (err: any) {
-    send({ step: "error", message: err.message });
+    send({ step: "error", message: err.message ?? "Build failed" });
     res.end();
   }
 });
