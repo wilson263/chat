@@ -213,8 +213,8 @@ async function streamReplitAI(
   const stream = await createChatCompletionStream({
     model,
     messages: messages as any,
-
-    max_completion_tokens: 8192,
+    stream: true,
+    max_tokens: 4096,
   });
 
   for await (const chunk of stream) {
