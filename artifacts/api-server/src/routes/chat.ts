@@ -221,10 +221,10 @@ async function streamReplitAI(
     messages.push({ role: "user", content: userContent });
   }
 
-  const stream = await openai.chat.completions.create({
+  const stream = await createChatCompletionStream({
     model,
     messages: messages as any,
-    stream: true,
+    ,
     max_completion_tokens: 8192,
   });
 
