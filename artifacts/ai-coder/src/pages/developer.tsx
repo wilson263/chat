@@ -859,55 +859,6 @@ Write complete, working code. No placeholders. No TODO comments.${layoutContext}
       return;
     }
 
-    const isCodeRequest = /\b(build|create|make|generate|write|code|implement|fix|refactor|add|develop|update|rewrite|change|modify|create the|build the|can you make|can you create|i need|help me build|help me create)\b/i.test(userMsg);
-    if (!isCodeRequest) {
-      const conversationalPrompt = `You are ZorvixAI, a helpful AI coding assistant. The user is asking a casual or general question. Reply in plain, friendly conversational text. Do NOT output any ===FILE:=== blocks. Do NOT generate code unless asked directly.`;
-      setIsAiStreaming(true);
-      let assistantContent = '';
-      setAiMessages(prev => [...prev, { role: 'assistant', content: '' }]);
-      try {
-        const res = await fetch(`${BASE_PATH}/api/chat/stream`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ messages: [...newMessages.map(m => ({ role: m.role, content: m.content }))], systemPrompt: conversationalPrompt }),
-        });
-        if (!res.ok || !res.body) { const d = await res.json(); throw new Error(d.error || 'AI error'); }
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder();
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          const chunk = decoder.decode(value, { stream: true });
-          for (const line of chunk.split('\n')) {
-            const trimmed = line.trim();
-            if (trimmed.startsWith('data: ')) {
-              const data = trimmed.slice(6);
-              if (data === '[DONE]') break;
-              try {
-                const parsed = JSON.parse(data);
-                const delta = parsed.choices?.[0]?.delta?.content || '';
-                if (delta) {
-                  assistantContent += delta;
-                  setAiMessages(prev => {
-                    const msgs = [...prev];
-                    msgs[msgs.length - 1] = { role: 'assistant', content: assistantContent };
-                    return msgs;
-                  });
-                }
-              } catch {}
-            }
-          }
-        }
-      } catch (err: any) {
-        setAiMessages(prev => { const msgs = [...prev]; msgs[msgs.length - 1] = { role: 'assistant', content: `Error: ${err.message}` }; return msgs; });
-      } finally {
-        setIsAiStreaming(false);
-      }
-      return;
-    }
-
-    const isUIBuildRequest = /\b(build|create|make|generate|design|develop)\b.*\b(website|site|page|app|portfolio|landing|store|shop|dashboard|blog|restaurant|hotel|agency|business|company|school|clinic|hospital|gym|salon|gallery|travel|booking|ecommerce|e-commerce|saas|startup|service|product)\b|\b(website|site|landing page|web app)\b.*\b(build|create|make|generate)\b/i.test(userMsg);
     const shouldShowLayouts = isUIBuildRequest && (aiCategory === 'frontend' || aiCategory === null);
     if (shouldShowLayouts) {
       setIsLoadingLayouts(true);
@@ -928,64 +879,30 @@ Write complete, working code. No placeholders. No TODO comments.${layoutContext}
       }
     }
 
-    let systemPrompt: string | undefined;
-    if (aiCategory === 'frontend') {
-      systemPrompt = `You are a senior frontend developer helping with code in an IDE.
-Focus ONLY on Frontend (HTML/CSS/JS/React/UI). Do not include backend or server code.
-RULE: When generating multi-page HTML sites, you MUST create a SEPARATE .html file for EACH page. NEVER put multiple pages inside one index.html. NEVER say "I cannot create separate HTML files" — always create them.
-When generating files, use this exact format so they are auto-created in the editor:
-===FILE: index.html===
-[complete home page html only]
-===FILE: about.html===
-[complete about page html]
-===FILE: contact.html===
-[complete contact page html]
-===FILE: styles.css===
-[complete shared css]
-===FILE: script.js===
-[complete shared js]
-Navigation links MUST use real hrefs pointing to the correct file: <a href="about.html">About</a> — NEVER use href="#"
-Every HTML page must include the full shared header/navbar and footer (duplicate them per file).
-Write complete, working code. No placeholders. No TODO comments.`;
-    } else if (aiCategory === 'backend') {
-      systemPrompt = `You are a senior backend developer helping with code in an IDE.
-Focus ONLY on Backend (Node.js/Python/databases/APIs/business logic). Do not include frontend UI code.
-When generating files, use this exact format so they are auto-created in the editor:
-===FILE: server.js===
-[complete file content here]
-===FILE: package.json===
-[complete package.json here]
-Write complete, working code. No placeholders. No TODO comments.`;
-    } else if (aiCategory === 'server') {
-      systemPrompt = `You are a senior DevOps/server engineer helping with configuration in an IDE.
-Focus ONLY on Server/DevOps (deployment, nginx, docker, CI/CD, environment config).
-When generating config files, use this exact format so they are auto-created in the editor:
-===FILE: Dockerfile===
-[complete file content here]
-===FILE: nginx.conf===
-[complete config here]
-Write complete, working configurations. No placeholders.`;
-    } else {
-      systemPrompt = `You are ZorvixAI, an expert developer code assistant embedded in a code editor IDE.
-You help with code questions, debugging, refactoring, and building features.
-For general questions, greetings, or explanations — respond in plain conversational text. Do NOT output file blocks.
-Only use the FILE format below when the user explicitly asks you to BUILD, CREATE, or WRITE files:
-===FILE: path/filename.ext===
-[complete file content here]
-===FILE: path/filename2.ext===
-[complete file content here]
-Write complete, working code. No placeholders. No TODO comments. No truncation.`;
+    // Build rich context: active file + all other open files
+    const contextParts: string[] = [];
+    if (activeTabData) {
+      contextParts.push(`=== ACTIVE FILE: ${activeTabData.path} ===\n${activeTabData.content.slice(0, 6000)}`);
     }
+    const otherTabs = openTabs.filter(t => t.path !== activeTab).slice(0, 8);
+    if (otherTabs.length > 0) {
+      contextParts.push('=== OTHER OPEN FILES IN EDITOR ===');
+      let remainingChars = 8000;
+      for (const tab of otherTabs) {
+        const snippet = tab.content.slice(0, Math.min(2000, remainingChars));
+        contextParts.push(`--- ${tab.path} ---\n${snippet}${tab.content.length > snippet.length ? '\n[... truncated ...]' : ''}`);
+        remainingChars -= snippet.length;
+        if (remainingChars <= 0) break;
+      }
+    }
+    const context = contextParts.length > 0 ? contextParts.join('\n\n') : undefined;
 
     setIsAiStreaming(true);
     let assistantContent = '';
-    const context = activeTabData
-      ? `Current file: ${activeTabData.name}\n\`\`\`${activeTabData.language}\n${activeTabData.content.slice(0, 4000)}\n\`\`\``
-      : undefined;
     try {
       const res = await fetch(`${BASE_PATH}/api/chat/message`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-        body: JSON.stringify({ userMessage: userMsg, history: aiMessages.slice(-6), context, systemPrompt }),
+        body: JSON.stringify({ userMessage: userMsg, history: aiMessages.slice(-8), context }),
       });
       const reader = res.body?.getReader();
       const decoder = new TextDecoder();
@@ -1013,8 +930,7 @@ Write complete, working code. No placeholders. No TODO comments. No truncation.`
           }
         }
       }
-      const isCodeRequest2 = /\b(build|create|make|generate|write|code|implement|fix|refactor|add|develop|update the file|rewrite|change the file)\b/i.test(userMsg);
-      const fileCount = isCodeRequest2 ? applyChatFiles(assistantContent) : 0;
+      const fileCount = applyChatFiles(assistantContent);
       if (fileCount > 0) {
         toast({ title: `${fileCount} file${fileCount !== 1 ? 's' : ''} created in editor` });
         setAiMessages(prev => {
