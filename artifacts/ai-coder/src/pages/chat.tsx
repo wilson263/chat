@@ -21,6 +21,7 @@ import {
   Star, Share2, Brain, GitBranch, Flame, Palette, Minimize2, Maximize2,
   Code, MessageSquare, Link2, GitCompare, Clock, MessageCircle, Webhook, Play,
   FolderOpen, FolderPlus, ChevronDown, ChevronRight, Trophy, LayoutTemplate,
+  Monitor, ExternalLink,
 } from 'lucide-react';
 
 interface Attachment {
@@ -208,6 +209,11 @@ export default function ChatPage() {
   const [webSearchMode, setWebSearchMode] = useState(false);
   const [imageGenMode, setImageGenMode] = useState(false);
 
+  // ── LIVE PREVIEW PANEL ──────────────────────────────────────────────────
+  const [previewContent, setPreviewContent] = useState<string | null>(null);
+  const [showPreviewPanel, setShowPreviewPanel] = useState(false);
+  const [followUpSuggestions, setFollowUpSuggestions] = useState<string[]>([]);
+
   // ── VOICE / TTS ─────────────────────────────────────────────────────────
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -373,6 +379,7 @@ export default function ChatPage() {
 
     setLastUserMessage(trimmed);
     setLastAttachments(atts);
+    setFollowUpSuggestions([]);
 
     // Image generation mode
     if (imageGenMode && trimmed) {
@@ -449,6 +456,7 @@ export default function ChatPage() {
         onFinish: async (fullText) => {
           const finalMessages = [...newMessages, { role: 'assistant' as const, content: fullText }];
           setMessages(finalMessages);
+          setFollowUpSuggestions(generateFollowUps(fullText));
           let chatId = activeChatId;
           if (!chatId) {
             chatId = Date.now().toString();
@@ -519,6 +527,33 @@ export default function ChatPage() {
     } else {
       toast({ title: 'No code found in this message', variant: 'destructive' });
     }
+  };
+
+  const openPreview = (html: string) => {
+    setPreviewContent(html);
+    setShowPreviewPanel(true);
+  };
+
+  const generateFollowUps = (content: string): string[] => {
+    const hasHTML = /```html/i.test(content);
+    const hasJS = /```(?:javascript|js|typescript|ts)/i.test(content);
+    const hasPython = /```python/i.test(content);
+    const hasCss = /```css/i.test(content);
+    const hasCode = content.includes('```');
+    const lower = content.toLowerCase();
+    const hasError = lower.includes('error') || lower.includes('bug') || lower.includes('exception') || lower.includes('fix');
+    const hasExplanation = lower.includes('in simple terms') || lower.includes('this means') || lower.includes('concept');
+    const hasSteps = lower.includes('step 1') || lower.includes('first,') || lower.includes('follow these');
+
+    if (hasHTML) return ['Make it mobile responsive', 'Add smooth CSS animations', 'Add a dark mode toggle'];
+    if (hasJS && hasCss) return ['Add interactivity to the UI', 'Make it responsive', 'Add a loading animation'];
+    if (hasJS) return ['Add error handling', 'Write unit tests for this', 'Optimize performance'];
+    if (hasPython) return ['Add type hints and docstrings', 'Handle edge cases', 'Convert to async/await'];
+    if (hasError) return ['How do I prevent this in the future?', 'Show the complete working solution', 'Explain the root cause'];
+    if (hasSteps) return ['Show me the full code', 'What could go wrong?', 'How do I test this?'];
+    if (hasExplanation) return ['Give me a hands-on example', 'How do I implement this?', 'What are the tradeoffs?'];
+    if (hasCode) return ['Add more comments to explain', 'Show example usage', 'What edge cases should I handle?'];
+    return ['Explain with a real example', 'How do I get started?', 'What should I do next?'];
   };
 
   const exportMarkdown = () => {
@@ -1098,7 +1133,7 @@ export default function ChatPage() {
                         ) : msg.role === 'assistant' && !msg.content ? (
                           <div className="flex gap-1 py-1"><span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce"/><span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce [animation-delay:0.15s]"/><span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce [animation-delay:0.3s]"/></div>
                         ) : msg.role === 'assistant' ? (
-                          <MarkdownRenderer content={msg.content}/>
+                          <MarkdownRenderer content={msg.content} onPreview={openPreview}/>
                         ) : (
                           <div>
                             <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
@@ -1169,6 +1204,21 @@ export default function ChatPage() {
                   </div>
                 </div>
               ))}
+              {/* ── FOLLOW-UP SUGGESTION CHIPS ────────────────────────── */}
+              {!aiLoading && followUpSuggestions.length > 0 && messages.length > 0 && messages[messages.length - 1]?.role === 'assistant' && (
+                <div className="flex flex-wrap gap-2 px-1 pb-2">
+                  {followUpSuggestions.map((s, i) => (
+                    <button
+                      key={i}
+                      onClick={() => { sendMessage(s); }}
+                      className="px-3 py-1.5 rounded-full text-xs border border-primary/30 text-primary/80 hover:bg-primary/10 hover:border-primary/60 hover:text-primary transition-all flex items-center gap-1.5 bg-primary/5"
+                    >
+                      <Sparkles className="w-3 h-3" />
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              )}
               <div ref={messagesEndRef}/>
             </div>
           )}
@@ -1253,6 +1303,45 @@ export default function ChatPage() {
           </div>
         </div>
       </main>
+
+      {/* ── LIVE PREVIEW PANEL ──────────────────────────────────────── */}
+      {showPreviewPanel && previewContent && (
+        <div className="w-[480px] shrink-0 border-l border-border/50 bg-card flex flex-col h-full overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/50 bg-card/80 shrink-0">
+            <div className="flex items-center gap-2">
+              <Monitor className="w-4 h-4 text-primary" />
+              <span className="text-sm font-medium">Live Preview</span>
+              <span className="px-2 py-0.5 rounded-full text-xs bg-green-500/10 text-green-400 border border-green-500/20">Running</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => { const w = window.open(); if(w) { w.document.write(previewContent); w.document.close(); }}}
+                className="p-1.5 rounded text-muted-foreground hover:text-foreground transition-colors"
+                title="Open in new tab"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+              </button>
+              <button onClick={() => setShowPreviewPanel(false)} className="p-1.5 rounded text-muted-foreground hover:text-foreground transition-colors">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+          <iframe
+            srcDoc={previewContent}
+            className="flex-1 w-full bg-white"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-modals"
+            title="Live Preview"
+          />
+          <div className="px-4 py-2 border-t border-border/50 flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => { navigator.clipboard.writeText(previewContent); toast({ title: 'HTML copied!' }); }}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <Copy className="w-3 h-3" /> Copy HTML
+            </button>
+          </div>
+        </div>
+      )}
 
       {agentPrompt && (
         <div className="fixed inset-0 z-50 bg-background">
