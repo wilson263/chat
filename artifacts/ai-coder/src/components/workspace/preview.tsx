@@ -150,6 +150,10 @@ function buildCodePreview(content: string, language: string, langInfo: { label: 
   </body></html>`;
 }
 
+function isEsModuleContent(js: string): boolean {
+  return /^\s*(import\s|export\s(default\s|const\s|function\s|class\s|\{))/m.test(js);
+}
+
 function buildJsInteractivePreview(files: Array<{ name: string; path: string; content: string; language: string }>): string {
   const htmlFile = files.find(f => f.language === 'html' || f.name.endsWith('.html'));
   const cssFiles = files.filter(f => f.language === 'css' || f.name.endsWith('.css'));
@@ -160,6 +164,10 @@ function buildJsInteractivePreview(files: Array<{ name: string; path: string; co
 
   const cssContent = cssFiles.map(f => f.content).join('\n\n');
   const jsContent = jsFiles.map(f => `/* === ${f.name} === */\n${f.content}`).join('\n\n');
+
+  // Use type="module" when JS uses ES module import/export syntax
+  const useModule = isEsModuleContent(jsContent);
+  const openTag = useModule ? '<script type="module">' : '<script>';
 
   if (htmlFile) {
     let html = htmlFile.content;
@@ -176,7 +184,10 @@ function buildJsInteractivePreview(files: Array<{ name: string; path: string; co
       html = consoleCaptureScript + html;
     }
     if (jsContent && !html.includes('<script')) {
-      html = html.replace('</body>', `<script>\n${jsContent}\n</script>\n</body>`);
+      html = html.replace('</body>', `${openTag}\n${jsContent}\n</script>\n</body>`);
+    } else if (jsContent && useModule) {
+      // Upgrade any plain <script> tags to modules so import/export works
+      html = html.replace(/<script(?!\s+type=)/g, '<script type="module"');
     }
     return html;
   }
@@ -197,7 +208,7 @@ function buildJsInteractivePreview(files: Array<{ name: string; path: string; co
 <body>
   <div id="app"></div>
   <div id="root"></div>
-  <script>
+  ${openTag}
 ${jsContent}
   </script>
 </body>
