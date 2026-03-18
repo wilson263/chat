@@ -4,7 +4,14 @@ import { register } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Sparkles, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Eye, EyeOff, Code2, Check } from 'lucide-react';
+
+const PERKS = [
+  'Free access to 50+ AI models',
+  'Full IDE workspace with Monaco editor',
+  'Slash commands, vision input & more',
+  'No credit card required',
+];
 
 export default function SignupPage() {
   const [, setLocation] = useLocation();
@@ -31,51 +38,110 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4">
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-accent/5 pointer-events-none" />
-      <div className="w-full max-w-md relative">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-primary/60 shadow-lg shadow-primary/20 mb-4">
-            <Sparkles className="w-7 h-7 text-white" />
-          </div>
-          <h1 className="text-3xl font-bold text-foreground">Create account</h1>
-          <p className="text-muted-foreground mt-2">Start building with ZorvixAI for free</p>
+    <div className="min-h-screen bg-background flex">
+      {/* ── Left brand panel ── */}
+      <div className="hidden lg:flex lg:w-[52%] relative flex-col justify-between p-12 overflow-hidden border-r border-border">
+        <div className="pointer-events-none absolute inset-0 -z-10">
+          <div className="mesh-orb-1 absolute -top-32 -left-32 w-[480px] h-[480px] rounded-full bg-accent/10 blur-3xl" />
+          <div className="mesh-orb-2 absolute bottom-0 right-0 w-[400px] h-[400px] rounded-full bg-primary/8 blur-3xl" />
+          <div className="dot-grid absolute inset-0 opacity-30" />
         </div>
 
-        <div className="bg-card border border-border/50 rounded-2xl p-8 shadow-xl shadow-black/20">
+        <div>
+          <div className="flex items-center gap-2.5 mb-16">
+            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-lg shadow-primary/30">
+              <Code2 className="w-4 h-4 text-white" />
+            </div>
+            <span className="font-bold text-lg tracking-tight">ZorvixAI</span>
+          </div>
+
+          <h2 className="text-4xl font-bold leading-tight tracking-tight mb-4">
+            Start coding smarter<br />
+            <span className="text-gradient-brand">for free, forever</span>
+          </h2>
+          <p className="text-muted-foreground text-base leading-relaxed max-w-sm">
+            Join thousands of developers who use ZorvixAI to write, debug, and ship code faster with AI.
+          </p>
+        </div>
+
+        <div className="space-y-3">
+          {PERKS.map((perk) => (
+            <div key={perk} className="flex items-center gap-3">
+              <div className="w-5 h-5 rounded-full bg-primary/15 border border-primary/30 flex items-center justify-center shrink-0">
+                <Check className="w-3 h-3 text-primary" />
+              </div>
+              <span className="text-sm text-foreground">{perk}</span>
+            </div>
+          ))}
+        </div>
+
+        <div className="pt-6 border-t border-border">
+          <blockquote className="text-sm text-muted-foreground italic leading-relaxed">
+            "ZorvixAI cut my debugging time in half. The inline code annotations alone are worth it."
+          </blockquote>
+          <div className="flex items-center gap-2 mt-3">
+            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-[10px] font-bold text-white">S</div>
+            <span className="text-xs text-muted-foreground">Sarah K. — Senior Frontend Engineer</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Right form panel ── */}
+      <div className="flex-1 flex items-center justify-center px-6 py-16">
+        <div className="w-full max-w-sm animate-fade-up">
+          <div className="mb-8">
+            <div className="lg:hidden flex items-center gap-2 mb-8">
+              <div className="w-7 h-7 rounded-md bg-primary flex items-center justify-center">
+                <Code2 className="w-3.5 h-3.5 text-white" />
+              </div>
+              <span className="font-bold">ZorvixAI</span>
+            </div>
+            <h1 className="text-2xl font-bold tracking-tight">Create your account</h1>
+            <p className="text-muted-foreground text-sm mt-1">Free to start — no card required</p>
+          </div>
+
           {error && (
-            <div className="mb-4 px-4 py-3 bg-destructive/10 border border-destructive/20 rounded-xl text-sm text-destructive">
+            <div className="mb-5 px-3.5 py-2.5 bg-destructive/8 border border-destructive/20 rounded-lg text-xs text-destructive">
               {error}
             </div>
           )}
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="name" className="text-sm font-medium">Full Name</Label>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="name" className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Full Name
+              </Label>
               <Input
                 id="name"
                 type="text"
                 placeholder="John Doe"
                 value={name}
                 onChange={e => setName(e.target.value)}
-                className="bg-background/50 border-border/60 h-11"
+                className="h-10 bg-surface-1 border-border text-sm"
                 required
                 autoFocus
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-medium">Email</Label>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Email
+              </Label>
               <Input
                 id="email"
                 type="email"
                 placeholder="you@example.com"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                className="bg-background/50 border-border/60 h-11"
+                className="h-10 bg-surface-1 border-border text-sm"
                 required
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-sm font-medium">Password</Label>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="password" className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Password
+              </Label>
               <div className="relative">
                 <Input
                   id="password"
@@ -83,34 +149,52 @@ export default function SignupPage() {
                   placeholder="Min. 6 characters"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  className="bg-background/50 border-border/60 h-11 pr-10"
+                  className="h-10 bg-surface-1 border-border text-sm pr-10"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
             </div>
-            <Button type="submit" className="w-full h-11 bg-primary shadow-lg shadow-primary/20 text-base font-medium" disabled={loading}>
-              {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Creating account...</> : 'Create account'}
+
+            <Button
+              type="submit"
+              className="w-full h-10 bg-primary text-sm font-medium shadow-lg shadow-primary/20 hover:shadow-primary/30"
+              disabled={loading}
+            >
+              {loading ? (
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Creating account…</>
+              ) : 'Create account'}
             </Button>
+
+            <p className="text-center text-xs text-muted-foreground">
+              The first account created gets admin access.
+            </p>
           </form>
 
-          <div className="mt-6 text-center text-sm text-muted-foreground">
-            Already have an account?{' '}
-            <button onClick={() => setLocation('/login')} className="text-primary hover:underline font-medium">
-              Sign in
-            </button>
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-border" />
+            </div>
+            <div className="relative flex justify-center text-xs">
+              <span className="px-2 bg-background text-muted-foreground">Already have an account?</span>
+            </div>
           </div>
-        </div>
 
-        <p className="text-center text-xs text-muted-foreground mt-6">
-          The first account created automatically gets admin access.
-        </p>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full h-10 text-sm border-border"
+            onClick={() => setLocation('/login')}
+          >
+            Sign in instead
+          </Button>
+        </div>
       </div>
     </div>
   );
