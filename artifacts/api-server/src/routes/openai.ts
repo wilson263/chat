@@ -100,7 +100,6 @@ import { Router, type IRouter } from "express";
 
     const ai = getAIClient();
     const stream = await ai.chat.completions.create({
-      model: "meta-llama/llama-3.3-70b-instruct:free",
       messages: [
         { role: "system", content: "You are an expert AI coding assistant. You can help with any programming language, framework, or technology. Provide clear, accurate, production-ready code with explanations." },
         ...chatMessages,
