@@ -13,12 +13,12 @@ import { createChatCompletionStream } from "../lib/ai";
     ListOpenaiConversationsResponse,
     ListOpenaiMessagesResponse,
   } from "@workspace/api-zod";
-      const stream = await ai.chat.completions.create({
+    const stream = await createChatCompletionStream({
+      model: "meta-llama/llama-3.3-70b-instruct:free",
       messages: [
         { role: "system", content: "You are an expert AI coding assistant. You can help with any programming language, framework, or technology. Provide clear, accurate, production-ready code with explanations." },
         ...chatMessages,
       ],
-      stream: true,
       max_tokens: 8192,
     });
 
