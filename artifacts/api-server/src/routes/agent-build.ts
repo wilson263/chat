@@ -27,6 +27,25 @@ function extractJson(text: string): string {
   return text.trim();
 }
 
+// Build a flat file tree for display
+function buildFileTree(paths: string[]): Record<string, any> {
+  const tree: Record<string, any> = {};
+  for (const p of paths) {
+    const parts = p.replace(/^\//, "").split("/");
+    let node = tree;
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i];
+      if (i === parts.length - 1) {
+        node[part] = null;
+      } else {
+        node[part] = node[part] ?? {};
+        node = node[part];
+      }
+    }
+  }
+  return tree;
+}
+
 async function generateProject(prompt: string, attempt = 1): Promise<{
   projectName: string;
   description: string;
@@ -35,37 +54,102 @@ async function generateProject(prompt: string, attempt = 1): Promise<{
 }> {
   const { groq } = await import("@workspace/integrations-groq-ai");
 
-  const systemPrompt = `You are an expert software engineer. When given a project request, you MUST respond with ONLY a valid JSON object — no markdown, no explanation, just raw JSON.
+  const systemPrompt = `You are an expert full-stack web developer building browser-runnable apps. You MUST respond with ONLY a valid JSON object — no markdown, no explanation, just the raw JSON.
 
-The JSON must follow this exact structure:
+JSON structure:
 {
   "projectName": "kebab-case-name",
-  "description": "one line description",
-  "language": "primary language (javascript/typescript/python/etc)",
+  "description": "short one-line description",
+  "language": "javascript",
   "files": [
-    {
-      "path": "relative/path/to/file.ext",
-      "name": "filename.ext",
-      "content": "complete file content here"
-    }
+    { "path": "index.html", "name": "index.html", "content": "...full file content..." },
+    { "path": "style.css", "name": "style.css", "content": "...full file content..." },
+    { "path": "app.js", "name": "app.js", "content": "...full file content..." }
   ]
 }
 
-RULES:
-- Generate ALL files needed (HTML, CSS, JS, config files, etc.)
-- Every file must have complete, working, production-ready content
-- No placeholder comments like "add code here"
-- Include a README.md explaining how to run the project
-- For web apps: always include index.html, styles.css, and main JS/TS files
-- IMPORTANT - For browser-based apps (HTML/JS/CSS): DO NOT use npm-style imports like "import { x } from 'package'". Instead load libraries via CDN <script> tags in the HTML (e.g. use unpkg.com, cdn.jsdelivr.net, or esm.sh). The code runs directly in a browser sandbox with no build step.
-- For React apps: use React via CDN script tags (e.g. <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.development.js"></script>) in a single index.html file, NOT npm/vite setup — it must preview in a browser directly.
-- If you need ES module imports, use full CDN URLs: import { something } from 'https://esm.sh/package-name'
-- Make the code visually impressive — dark theme, modern UI
-- Respond ONLY with the JSON object, nothing else`;
+═══════════════════════════════════════════════
+CRITICAL RULES — READ CAREFULLY:
+═══════════════════════════════════════════════
+
+1. ALWAYS generate a complete, working index.html as the main entry point.
+2. The app runs DIRECTLY in a browser — there is NO build step, NO npm install, NO node_modules.
+3. ALL external libraries must be loaded via CDN in index.html <script> or <link> tags.
+
+═══════════════════════════════════════════════
+HOW TO LOAD LIBRARIES (CDN ONLY):
+═══════════════════════════════════════════════
+
+For React apps — use this exact pattern in index.html:
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  Then write JSX in <script type="text/babel"> tags.
+  Access React globals: const { useState, useEffect, useRef } = React;
+  Render: ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+
+For Vue apps:
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  Then use Vue.createApp({...}).mount('#app')
+
+For charts/graphs:
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+For icons:
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
+For animations:
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+For HTTP requests — use native fetch() API (no axios needed in browser).
+
+For data/state — use localStorage, sessionStorage, or in-memory JS objects.
+
+NEVER write: import React from 'react' — that breaks in browsers.
+NEVER write: require('something') — that breaks in browsers.
+NEVER write: npm-style imports without full CDN URLs.
+
+═══════════════════════════════════════════════
+WHAT TO BUILD:
+═══════════════════════════════════════════════
+
+- Build the COMPLETE app with ALL features the user requested
+- Make it FULLY FUNCTIONAL — not a skeleton, not placeholder content
+- Professional, beautiful UI — dark theme preferred, modern design
+- Responsive — works on mobile and desktop
+- Interactive — real buttons that do things, forms that work, animations
+- For data apps: include real sample data (at least 10-20 items)
+- For games: include complete game logic (collision, scoring, game over, restart)
+- For tools: include all input validation and error handling
+
+═══════════════════════════════════════════════
+FILE STRUCTURE RULES:
+═══════════════════════════════════════════════
+
+Simple apps (calculator, todo, weather UI):
+  - index.html (all-in-one with embedded CSS + JS)
+  OR
+  - index.html + style.css + app.js
+
+React apps:
+  - index.html (with CDN scripts + <div id="root">)
+  - app.jsx or App.jsx (React component in JSX syntax)
+  Note: Files ending in .jsx or .tsx will be auto-compiled by Babel
+
+Complex apps:
+  - index.html
+  - style.css
+  - app.js or app.jsx
+  - components/ (if needed, e.g. components/Header.jsx)
+  - data.js (if using sample data)
+
+DO NOT generate: package.json, vite.config, node_modules, tsconfig, webpack
+
+REMEMBER: Respond with ONLY the raw JSON object.`;
 
   const userMessage = attempt === 1
-    ? `Build this project: ${prompt}`
-    : `Build this project: ${prompt}\n\nIMPORTANT: Previous attempt failed to return valid JSON. You MUST respond with ONLY a raw JSON object, no markdown, no explanation.`;
+    ? `Build this: ${prompt}`
+    : `Build this: ${prompt}\n\nPREVIOUS ATTEMPT FAILED. You MUST respond with ONLY a raw JSON object. No markdown fences, no explanation text.`;
 
   const response = await groq.chat.completions.create({
     model: "llama-3.3-70b-versatile",
@@ -74,7 +158,7 @@ RULES:
       { role: "user", content: userMessage },
     ],
     max_tokens: 32768,
-    temperature: 0.5,
+    temperature: 0.4,
   });
 
   const raw = response.choices[0]?.message?.content ?? "";
@@ -99,7 +183,7 @@ RULES:
     language: parsed.language ?? "javascript",
     files: parsed.files.map((f: any) => ({
       path: f.path ?? f.name ?? "file.txt",
-      name: f.name ?? (f.path ? f.path.split("/").pop() : "file.txt"),
+      name: f.name ?? (f.path ? f.path.split("/").pop()! : "file.txt"),
       content: f.content ?? "",
       language: getLanguage(f.path ?? f.name ?? ""),
     })),
@@ -121,58 +205,40 @@ async function fixErrors(
       {
         role: "user",
         content: `Fix the following errors in these project files. Return ONLY a JSON array of fixed files:
-[{"path": "file.ext", "content": "fixed content"}, ...]
+[{"path": "...", "content": "...complete fixed content..."}]
 
-ERRORS:
-${errorsText}
-
-FILES:
+Files:
 ${filesContext}
 
-Return ONLY the JSON array, no explanation.`,
+Errors to fix:
+${errorsText}
+
+Return ONLY the JSON array, nothing else.`,
       },
     ],
-    max_tokens: 32768,
+    max_tokens: 16384,
+    temperature: 0.3,
   });
 
   const raw = response.choices[0]?.message?.content ?? "";
-  const jsonStr = raw.match(/\[[\s\S]*\]/)?.[0] ?? "[]";
+  const jsonBlock = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
+  const jsonStr = jsonBlock ? jsonBlock[1].trim() : raw.slice(raw.indexOf("["), raw.lastIndexOf("]") + 1);
 
   try {
-    const fixed = JSON.parse(jsonStr);
-    if (Array.isArray(fixed) && fixed.length > 0) {
-      const fixedMap = new Map(fixed.map((f: any) => [f.path, f.content]));
-      return files.map(f => ({ ...f, content: fixedMap.get(f.path) ?? f.content }));
-    }
-  } catch {}
-
-  return files;
-}
-
-function buildFileTree(paths: string[]): object {
-  const tree: Record<string, any> = {};
-  for (const filePath of paths) {
-    const parts = filePath.split("/");
-    let node = tree;
-    for (let i = 0; i < parts.length; i++) {
-      const part = parts[i];
-      if (i === parts.length - 1) {
-        node[part] = "file";
-      } else {
-        node[part] = node[part] || {};
-        node = node[part];
-      }
-    }
+    return JSON.parse(jsonStr);
+  } catch {
+    return files;
   }
-  return tree;
 }
 
-router.post("/agent/build", async (req: Request, res: Response): Promise<void> => {
+// ── SSE stream route ──────────────────────────────────────────────────────────
+
+router.post("/build", async (req: Request, res: Response): Promise<void> => {
   const userId = getUserId(req);
   if (!userId) { res.status(401).json({ error: "Not authenticated" }); return; }
 
   const { prompt } = req.body;
-  if (!prompt || typeof prompt !== "string") {
+  if (!prompt || typeof prompt !== "string" || !prompt.trim()) {
     res.status(400).json({ error: "prompt is required" });
     return;
   }
@@ -180,13 +246,16 @@ router.post("/agent/build", async (req: Request, res: Response): Promise<void> =
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
+  res.flushHeaders();
 
-  const send = (data: object) => res.write(`data: ${JSON.stringify(data)}\n\n`);
+  function send(data: Record<string, any>) {
+    res.write(`data: ${JSON.stringify(data)}\n\n`);
+  }
 
   try {
-    send({ step: "generating", message: "Generating project structure..." });
+    send({ step: "thinking", message: "Analyzing your request..." });
 
-    const project = await generateProject(prompt);
+    const project = await generateProject(prompt.trim());
 
     send({ step: "writing", message: `Writing ${project.files.length} files...`, projectName: project.projectName });
 
@@ -222,7 +291,7 @@ router.post("/agent/build", async (req: Request, res: Response): Promise<void> =
     }
 
     if (errors.length > 0) {
-      send({ step: "fixing", message: `Fixing ${errors.length} error(s)...`, errors });
+      send({ step: "fixing", message: `Fixing ${errors.length} issue(s)...`, errors });
 
       const fixedFiles = await fixErrors(
         createdFiles.map(f => ({ path: f.path, content: f.content })),
@@ -238,16 +307,16 @@ router.post("/agent/build", async (req: Request, res: Response): Promise<void> =
         }
       }
 
-      send({ step: "fixed", message: "All errors fixed!" });
+      send({ step: "fixed", message: "Issues resolved!" });
     } else {
-      send({ step: "clean", message: "No errors found — code is clean!" });
+      send({ step: "clean", message: "All files look good!" });
     }
 
     const fileTree = buildFileTree(createdFiles.map(f => f.path));
 
     send({
       step: "done",
-      message: "Project ready!",
+      message: "Your app is ready!",
       project: {
         id: createdProject.id,
         name: createdProject.name,
