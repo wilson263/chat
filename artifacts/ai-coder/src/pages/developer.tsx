@@ -434,18 +434,18 @@ export default function DeveloperPage() {
   };
 
   const fetchLayoutOptions = async (prompt: string): Promise<LayoutOption[]> => {
-    const systemPrompt = `You are a UI/UX layout expert. Given a project request, suggest exactly 3 DISTINCT layout designs tailored to that specific project type.
-Return ONLY a valid JSON array — no text before or after it. Example format:
-[{"name":"Modern Hero","style":"bold","description":"Full-screen hero banner with animated text, feature cards below, and sticky navigation","colorScheme":"dark bg + electric blue accents","sections":"Hero, Features, Testimonials, Pricing, Footer","emoji":"⚡"},
-{"name":"Clean Minimal","style":"minimal","description":"Whitespace-focused layout with subtle typography, grid-based content, and minimal decoration","colorScheme":"white + charcoal gray","sections":"Header, About, Gallery, Contact, Footer","emoji":"🤍"},
-{"name":"Card Grid","style":"vibrant","description":"Colorful card-based layout with bold headings, icon blocks, and gradient call-to-action sections","colorScheme":"gradient purple-to-pink + white cards","sections":"Navbar, Hero, Service Cards, Stats, CTA, Footer","emoji":"🎨"}]
-Tailor all 3 layouts specifically to: "${prompt}". Make them genuinely different from each other in style, structure, and feel.`;
+    const systemPrompt = `You are a UI/UX layout expert. Given a project request, suggest exactly 20 DISTINCT layout designs tailored to that specific project type.
+Return ONLY a valid JSON array with exactly 20 items — no text before or after it.
+Each layout must be genuinely different in style, color, structure, and feel. Cover a wide range: minimal, bold, dark, vibrant, elegant, retro, glassmorphism, brutalist, corporate, playful, magazine, sidebar, fullscreen, card-grid, editorial, neon, earthy, pastel, futuristic, luxury.
+Format for each item:
+{"name":"2-3 word name","style":"one word style tag","description":"15-25 words describing the visual style and layout","colorScheme":"primary + accent colors","sections":"comma-separated main sections","emoji":"one relevant emoji"}
+Tailor all 20 layouts specifically to this project: "${prompt}". Every layout must be unique — no duplicates in style or structure.`;
     try {
       const res = await fetch(`${BASE_PATH}/api/chat/stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ messages: [{ role: 'user', content: `Suggest 3 layout designs for: ${prompt}` }], systemPrompt }),
+        body: JSON.stringify({ messages: [{ role: 'user', content: `Suggest 20 layout designs for: ${prompt}` }], systemPrompt }),
       });
       if (!res.ok || !res.body) return [];
       const reader = res.body.getReader();
@@ -1311,18 +1311,31 @@ Format EXACTLY like this:
                       </div>
                       <div className={`flex-1 min-w-0 ${msg.isPicker ? '' : `text-xs rounded-lg px-2.5 py-2 overflow-hidden ${msg.role === 'user' ? 'bg-primary/10 text-white' : 'bg-[#21262d] text-[#c9d1d9]'}`}`}>
                         {msg.isPicker && msg.layoutOptions ? (
-                          <div className="space-y-2">
-                            <p className="text-xs text-white font-medium mb-2">🎨 Choose a layout for your project:</p>
+                          <div className="w-full">
+                            <p className="text-xs text-white font-medium mb-2">🎨 Choose a layout — {msg.layoutOptions.length} options tailored to your project:</p>
+                            <div className="grid grid-cols-2 gap-1.5">
                             {msg.layoutOptions.map((layout, li) => {
                               const styleColors: Record<string, string> = {
-                                bold: 'border-orange-500/40 hover:border-orange-400/70 hover:bg-orange-500/5',
-                                minimal: 'border-gray-500/40 hover:border-gray-400/70 hover:bg-gray-500/5',
-                                vibrant: 'border-purple-500/40 hover:border-purple-400/70 hover:bg-purple-500/5',
-                                dark: 'border-blue-500/40 hover:border-blue-400/70 hover:bg-blue-500/5',
-                                elegant: 'border-yellow-500/40 hover:border-yellow-400/70 hover:bg-yellow-500/5',
-                                modern: 'border-cyan-500/40 hover:border-cyan-400/70 hover:bg-cyan-500/5',
-                                corporate: 'border-green-500/40 hover:border-green-400/70 hover:bg-green-500/5',
-                                playful: 'border-pink-500/40 hover:border-pink-400/70 hover:bg-pink-500/5',
+                                bold: 'border-orange-500/40 hover:border-orange-400 hover:bg-orange-500/10',
+                                minimal: 'border-gray-500/40 hover:border-gray-400 hover:bg-gray-500/10',
+                                vibrant: 'border-purple-500/40 hover:border-purple-400 hover:bg-purple-500/10',
+                                dark: 'border-blue-500/40 hover:border-blue-400 hover:bg-blue-500/10',
+                                elegant: 'border-yellow-500/40 hover:border-yellow-400 hover:bg-yellow-500/10',
+                                modern: 'border-cyan-500/40 hover:border-cyan-400 hover:bg-cyan-500/10',
+                                corporate: 'border-green-500/40 hover:border-green-400 hover:bg-green-500/10',
+                                playful: 'border-pink-500/40 hover:border-pink-400 hover:bg-pink-500/10',
+                                retro: 'border-amber-500/40 hover:border-amber-400 hover:bg-amber-500/10',
+                                glassmorphism: 'border-sky-500/40 hover:border-sky-400 hover:bg-sky-500/10',
+                                brutalist: 'border-red-500/40 hover:border-red-400 hover:bg-red-500/10',
+                                magazine: 'border-indigo-500/40 hover:border-indigo-400 hover:bg-indigo-500/10',
+                                sidebar: 'border-teal-500/40 hover:border-teal-400 hover:bg-teal-500/10',
+                                fullscreen: 'border-violet-500/40 hover:border-violet-400 hover:bg-violet-500/10',
+                                editorial: 'border-rose-500/40 hover:border-rose-400 hover:bg-rose-500/10',
+                                neon: 'border-lime-500/40 hover:border-lime-400 hover:bg-lime-500/10',
+                                earthy: 'border-stone-500/40 hover:border-stone-400 hover:bg-stone-500/10',
+                                pastel: 'border-fuchsia-500/40 hover:border-fuchsia-400 hover:bg-fuchsia-500/10',
+                                futuristic: 'border-emerald-500/40 hover:border-emerald-400 hover:bg-emerald-500/10',
+                                luxury: 'border-yellow-600/40 hover:border-yellow-500 hover:bg-yellow-600/10',
                               };
                               const badgeColors: Record<string, string> = {
                                 bold: 'bg-orange-500/20 text-orange-300',
@@ -1333,6 +1346,18 @@ Format EXACTLY like this:
                                 modern: 'bg-cyan-500/20 text-cyan-300',
                                 corporate: 'bg-green-500/20 text-green-300',
                                 playful: 'bg-pink-500/20 text-pink-300',
+                                retro: 'bg-amber-500/20 text-amber-300',
+                                glassmorphism: 'bg-sky-500/20 text-sky-300',
+                                brutalist: 'bg-red-500/20 text-red-300',
+                                magazine: 'bg-indigo-500/20 text-indigo-300',
+                                sidebar: 'bg-teal-500/20 text-teal-300',
+                                fullscreen: 'bg-violet-500/20 text-violet-300',
+                                editorial: 'bg-rose-500/20 text-rose-300',
+                                neon: 'bg-lime-500/20 text-lime-300',
+                                earthy: 'bg-stone-500/20 text-stone-300',
+                                pastel: 'bg-fuchsia-500/20 text-fuchsia-300',
+                                futuristic: 'bg-emerald-500/20 text-emerald-300',
+                                luxury: 'bg-yellow-600/20 text-yellow-300',
                               };
                               const borderClass = styleColors[layout.style] || 'border-[#30363d] hover:border-[#6e7681] hover:bg-[#21262d]/50';
                               const badgeClass = badgeColors[layout.style] || 'bg-[#30363d] text-gray-300';
@@ -1340,32 +1365,20 @@ Format EXACTLY like this:
                                 <button
                                   key={li}
                                   disabled={isAiStreaming}
-                                  onClick={() => {
-                                    const pickerIdx = aiMessages.findIndex((m, idx) => idx === i);
-                                    generateWithLayout(layout, layoutPendingPrompt, layoutPendingMsgs, pickerIdx);
-                                  }}
-                                  className={`w-full text-left border rounded-lg p-2.5 transition-all cursor-pointer ${borderClass} bg-[#0d1117] border-solid`}
+                                  onClick={() => generateWithLayout(layout, layoutPendingPrompt, layoutPendingMsgs, i)}
+                                  className={`text-left border rounded-lg p-2 transition-all cursor-pointer ${borderClass} bg-[#0d1117] border-solid`}
                                 >
-                                  <div className="flex items-start justify-between gap-2 mb-1">
-                                    <div className="flex items-center gap-1.5">
-                                      <span className="text-base leading-none">{layout.emoji}</span>
-                                      <span className="text-xs font-semibold text-white">{layout.name}</span>
-                                    </div>
-                                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0 ${badgeClass}`}>{layout.style}</span>
+                                  <div className="flex items-center gap-1 mb-1">
+                                    <span className="text-sm leading-none">{layout.emoji}</span>
+                                    <span className="text-[11px] font-semibold text-white leading-tight flex-1 min-w-0 truncate">{layout.name}</span>
                                   </div>
-                                  <p className="text-[11px] text-[#8b949e] leading-relaxed mb-1.5">{layout.description}</p>
-                                  <div className="flex items-center gap-1 flex-wrap">
-                                    <span className="text-[9px] text-muted-foreground/60">🎨</span>
-                                    <span className="text-[9px] text-muted-foreground/80 italic">{layout.colorScheme}</span>
-                                  </div>
-                                  <div className="mt-1.5 flex flex-wrap gap-1">
-                                    {layout.sections.split(',').map((s, si) => (
-                                      <span key={si} className="text-[9px] bg-[#21262d] text-[#8b949e] px-1.5 py-0.5 rounded">{s.trim()}</span>
-                                    ))}
-                                  </div>
+                                  <span className={`text-[9px] px-1 py-0.5 rounded-full font-medium ${badgeClass}`}>{layout.style}</span>
+                                  <p className="text-[10px] text-[#8b949e] leading-relaxed mt-1 line-clamp-2">{layout.description}</p>
+                                  <p className="text-[9px] text-muted-foreground/60 mt-1 italic truncate">{layout.colorScheme}</p>
                                 </button>
                               );
                             })}
+                            </div>
                           </div>
                         ) : msg.role === 'assistant' ? (
                           <MarkdownRenderer content={msg.content} />
