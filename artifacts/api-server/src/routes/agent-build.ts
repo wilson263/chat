@@ -76,22 +76,29 @@ You MUST respond with ONLY valid JSON — no markdown, no explanation:
   "language": "javascript",
   "thinking": "3-5 sentences: what you are building, the architecture, technologies used via CDN, why this approach creates a Play-Store quality experience",
   "filePlan": [
-    { "path": "index.html", "role": "Entry point — loads all CDN scripts and links all JS/CSS files" },
-    { "path": "css/style.css", "role": "Global styles, CSS variables, animations, responsive layout" },
-    { "path": "css/components.css", "role": "Component-specific styles: cards, buttons, modals, inputs" },
-    { "path": "js/app.js", "role": "App router, state management, initialisation" },
-    { "path": "js/api.js", "role": "API service layer — fetch wrappers, mock data, localStorage persistence" },
-    { "path": "js/pages/home.js", "role": "Home page/screen logic and rendering" },
-    ...more files as needed
+    { "path": "index.html", "role": "Entry point — links ALL CSS files via <link href> and loads ALL JS files via <script src> tags" },
+    { "path": "frontend/css/style.css", "role": "Global styles, CSS variables, animations, responsive layout" },
+    { "path": "frontend/css/components.css", "role": "Component-specific styles: cards, buttons, modals, inputs" },
+    { "path": "frontend/js/app.js", "role": "App router, state management, page navigation, initialisation" },
+    { "path": "frontend/js/pages/home.js", "role": "Home page/screen — separate file for this screen" },
+    { "path": "frontend/js/pages/detail.js", "role": "Detail/inner page — separate file for this screen" },
+    { "path": "frontend/js/components/navbar.js", "role": "Reusable navigation bar component" },
+    { "path": "backend/api.js", "role": "API/data service layer — fetch wrappers, mock data, localStorage" },
+    { "path": "backend/data.js", "role": "Sample data — 20+ realistic records for each entity" }
   ]
 }
 
 RULES for filePlan:
-- index.html MUST be first
+- index.html MUST be first and at the ROOT level (not inside any folder)
+- index.html MUST reference files using their folder paths e.g. <link href="frontend/css/style.css"> and <script src="backend/api.js">
+- NEVER put CSS or JS inline in index.html — always use separate files linked via <link> or <script src>
 - Generate 10-15 files total — enough for a real, structured app
-- Separate CSS into at least 2 files: global styles + component styles
-- Separate JS into: app.js (router), api.js (data layer), pages/ (each screen), components/ (reusable UI)
-- Include a data/sample-data.js or js/data.js with realistic sample data (20+ records)
+- MANDATORY folder structure:
+    frontend/css/          — all stylesheets (style.css + components.css minimum)
+    frontend/js/pages/     — one SEPARATE file per page/screen (never combine pages into one file)
+    frontend/js/components/— reusable UI pieces (navbar, cards, modals)
+    backend/               — api.js (data service layer) + data.js (sample data, 20+ records)
+- Each page/screen MUST be its own separate file in frontend/js/pages/
 - All files must be browser-runnable via CDN — no npm, no build step
 - The app should feel like a Play Store / App Store quality mobile app`;
 
@@ -115,15 +122,15 @@ RULES for filePlan:
       language: "javascript",
       thinking: "Building a full-featured browser app with modern design.",
       filePlan: [
-        { path: "index.html", role: "Entry point" },
-        { path: "css/style.css", role: "Global styles" },
-        { path: "css/components.css", role: "Component styles" },
-        { path: "js/app.js", role: "App router and state" },
-        { path: "js/api.js", role: "Data layer" },
-        { path: "js/pages/home.js", role: "Home screen" },
-        { path: "js/pages/detail.js", role: "Detail screen" },
-        { path: "js/components/navbar.js", role: "Navigation bar" },
-        { path: "js/data.js", role: "Sample data" },
+        { path: "index.html", role: "Entry point — links CSS and JS files" },
+        { path: "frontend/css/style.css", role: "Global styles" },
+        { path: "frontend/css/components.css", role: "Component styles" },
+        { path: "frontend/js/app.js", role: "App router and state" },
+        { path: "frontend/js/pages/home.js", role: "Home screen" },
+        { path: "frontend/js/pages/detail.js", role: "Detail screen" },
+        { path: "frontend/js/components/navbar.js", role: "Navigation bar" },
+        { path: "backend/api.js", role: "Data layer" },
+        { path: "backend/data.js", role: "Sample data" },
       ],
     };
   }
@@ -171,13 +178,16 @@ async function generateFile(opts: {
 You are writing index.html — the ENTRY POINT of the app.
 
 CRITICAL REQUIREMENTS:
-1. Load ALL CDN libraries at the top of <head> — React (if React app), Tailwind CSS CDN, Font Awesome icons, Google Fonts, Chart.js (if charts), GSAP (if animations), etc.
-2. Link every CSS file: css/style.css, css/components.css, etc.
-3. Load every JS file at the bottom of <body> in dependency order
+1. Load ALL CDN libraries at the top of <head> — Tailwind CSS CDN, Font Awesome icons, Google Fonts, Chart.js (if charts), GSAP (if animations), etc.
+2. Link every CSS file using <link> tags with correct folder paths: frontend/css/style.css, frontend/css/components.css, etc.
+3. Load every JS file at the bottom of <body> in dependency order using <script src> tags: backend/api.js, backend/data.js, frontend/js/components/navbar.js, frontend/js/pages/home.js, frontend/js/app.js (last)
 4. Add a splash screen / loading animation that fades out
 5. Create the root HTML structure with proper semantic tags
 6. Add PWA meta tags: viewport, theme-color, apple-mobile-web-app-capable
 7. The app must look and feel like a native mobile app
+
+NEVER inline CSS in index.html — always use <link href="frontend/css/style.css">
+NEVER inline JS in index.html — always use <script src="backend/api.js"> etc.
 
 CDN LINKS TO USE:
 - Tailwind: <script src="https://cdn.tailwindcss.com"></script>
