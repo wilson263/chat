@@ -343,6 +343,20 @@ export default function Dashboard() {
             </div>
             <ArrowRight className="h-4 w-4 text-orange-400 group-hover:translate-x-1 transition-transform mt-1 shrink-0" />
           </button>
+
+          <button
+            onClick={() => setLocation('/settings')}
+            className="group relative flex items-start gap-4 p-5 rounded-2xl border border-border/50 bg-card hover:border-primary/30 hover:scale-[1.01] transition-all duration-200 text-left cursor-pointer"
+          >
+            <div className="w-12 h-12 rounded-xl bg-secondary/80 border border-border/50 flex items-center justify-center shrink-0">
+              <Settings className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-foreground mb-1">Settings</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">Manage your account, API keys, preferences, and appearance settings.</p>
+            </div>
+            <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all mt-1 shrink-0" />
+          </button>
         </div>
 
         <div className="flex justify-between items-end mb-6">
