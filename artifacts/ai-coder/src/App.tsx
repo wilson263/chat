@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useCallback } from "react";
 import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -24,6 +24,7 @@ import TemplatesPage from "@/pages/templates";
 import PromptGeneratorPage from "@/pages/prompt-generator";
 import ExplorePage from "@/pages/explore";
 import { OnboardingTour } from "@/components/onboarding-tour";
+import { ZorvixIntro } from "@/components/zorvix-intro";
 import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient({
@@ -85,9 +86,13 @@ function Router() {
 }
 
 function App() {
+  const [introComplete, setIntroComplete] = useState(false);
+  const handleIntroComplete = useCallback(() => setIntroComplete(true), []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
+        {!introComplete && <ZorvixIntro onComplete={handleIntroComplete} />}
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
           <AuthGuard>
             <Router />
