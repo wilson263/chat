@@ -242,8 +242,9 @@ Return ONLY the JSON array, nothing else.`,
 }
 
 // ── SSE stream route ──────────────────────────────────────────────────────────
+// Registered at /agent/build so the full path is POST /api/agent/build
 
-router.post("/build", async (req: Request, res: Response): Promise<void> => {
+router.post("/agent/build", async (req: Request, res: Response): Promise<void> => {
   const userId = getUserId(req);
   if (!userId) { res.status(401).json({ error: "Not authenticated" }); return; }
 
@@ -253,13 +254,16 @@ router.post("/build", async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
+  // Disable Render/nginx proxy buffering so SSE events stream immediately
   res.setHeader("Content-Type", "text/event-stream");
-  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Cache-Control", "no-cache, no-transform");
   res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no");
   res.flushHeaders();
 
   function send(data: Record<string, any>) {
     res.write(`data: ${JSON.stringify(data)}\n\n`);
+    (res as any).flush?.(); // force immediate flush through any middleware buffers
   }
 
   try {
