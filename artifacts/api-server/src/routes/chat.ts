@@ -1,13 +1,16 @@
 import { Router, type IRouter } from "express";
-import Groq from "groq-sdk";
+import OpenAI from "openai";
 
-  function getGroqClient(): Groq {
-    const apiKey = process.env.GROQ_API_KEY;
-    if (!apiKey) throw new Error("GROQ_API_KEY environment variable is not set.");
-    return new Groq({ apiKey });
+  function getAIClient(): OpenAI {
+    const apiKey = process.env.OPENROUTER_API_KEY;
+    if (!apiKey) throw new Error("OPENROUTER_API_KEY environment variable is not set.");
+    return new OpenAI({
+      apiKey,
+      baseURL: "https://openrouter.ai/api/v1",
+    });
   }
 
-  const openai = getGroqClient() as any;
+  const openai = getAIClient();
 
 const router: IRouter = Router();
 
@@ -35,17 +38,17 @@ interface ChatRequest {
 }
 
 const MODEL_MAP: Record<string, string> = {
-  "llama-3.3-70b-versatile": "llama-3.3-70b-versatile",
-  "llama-3.1-70b-versatile": "llama-3.3-70b-versatile",
-  "llama-3.1-8b-instant": "llama-3.1-8b-instant",
-  "mixtral-8x7b-32768": "llama-3.3-70b-versatile",
-  "gemma2-9b-it": "llama-3.1-8b-instant",
-  "llama-3.3-70b-specdec": "llama-3.3-70b-versatile",
-  "deepseek-r1-distill-llama-70b": "llama-3.3-70b-versatile",
-  "llama-3.3-70b-versatile": "llama-3.3-70b-versatile",
-  "llama-3.3-70b-versatile": "llama-3.1-8b-instant",
-  "llama-3.3-70b-versatile": "llama-3.3-70b-versatile",
-  "llama-3.3-70b-versatile": "llama-3.3-70b-versatile",
+  "meta-llama/llama-3.3-70b-instruct:free": "meta-llama/llama-3.3-70b-instruct:free",
+  "meta-llama/llama-3.3-70b-instruct:free": "meta-llama/llama-3.3-70b-instruct:free",
+  "meta-llama/llama-3.1-8b-instruct:free": "meta-llama/llama-3.1-8b-instruct:free",
+  "mixtral-8x7b-32768": "meta-llama/llama-3.3-70b-instruct:free",
+  "gemma2-9b-it": "meta-llama/llama-3.1-8b-instruct:free",
+  "meta-llama/llama-3.3-70b-instruct:free": "meta-llama/llama-3.3-70b-instruct:free",
+  "deepseek-r1-distill-llama-70b": "meta-llama/llama-3.3-70b-instruct:free",
+  "meta-llama/llama-3.3-70b-instruct:free": "meta-llama/llama-3.3-70b-instruct:free",
+  "meta-llama/llama-3.3-70b-instruct:free": "meta-llama/llama-3.1-8b-instruct:free",
+  "meta-llama/llama-3.3-70b-instruct:free": "meta-llama/llama-3.3-70b-instruct:free",
+  "meta-llama/llama-3.3-70b-instruct:free": "meta-llama/llama-3.3-70b-instruct:free",
 };
 
 const BASE_SYSTEM_PROMPT = `You are ZorvixAI, an elite full-stack AI engineer and architect. You build complete, production-grade applications — not skeletons, not stubs, not placeholders.
@@ -172,8 +175,8 @@ ABSOLUTE RULES — NEVER VIOLATE:
 ✗ NEVER leave any function body empty`;
 
 function resolveModel(requestedModel?: string): string {
-  if (!requestedModel) return "llama-3.3-70b-versatile";
-  return MODEL_MAP[requestedModel] ?? "llama-3.3-70b-versatile";
+  if (!requestedModel) return "meta-llama/llama-3.3-70b-instruct:free";
+  return MODEL_MAP[requestedModel] ?? "meta-llama/llama-3.3-70b-instruct:free";
 }
 
 async function streamReplitAI(
