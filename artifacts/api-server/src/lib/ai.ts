@@ -2,9 +2,15 @@ import OpenAI from "openai";
 
 const FREE_MODELS = [
   "meta-llama/llama-3.3-70b-instruct:free",
+  "nvidia/llama-3.3-nemotron-super-49b-v1:free",
+  "nvidia/llama-3.3-nemotron-nano-8b-v1:free",
   "meta-llama/llama-3.1-8b-instruct:free",
   "deepseek/deepseek-r1:free",
   "deepseek/deepseek-v3-base:free",
+  "arcee-ai/arcee-blitz:free",
+  "stepfun/step-3.5-flash:free",
+  "minimax/minimax-m2.5-1.5t:free",
+  "liquid/lfm2.5-1.2b:free",
   "google/gemma-2-9b-it:free",
 ];
 
