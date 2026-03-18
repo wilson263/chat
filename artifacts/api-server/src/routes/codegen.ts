@@ -79,7 +79,7 @@ async function streamToResponse(res: any, messages: { role: string; content: str
   res.setHeader("Connection", "keep-alive");
 
   const stream = await openai.chat.completions.create({
-    model: "gpt-5.2",
+    model: "llama-3.3-70b-versatile",
     messages: [
       { role: "system", content: systemPrompt },
       ...messages.map(m => ({ role: m.role as "user" | "assistant", content: m.content })),
