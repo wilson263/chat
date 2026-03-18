@@ -1,4 +1,5 @@
 import { Router, type IRouter, type Request, type Response } from "express";
+import { openai } from "@workspace/integrations-openai-ai-server";
 
 const router: IRouter = Router();
 
@@ -29,8 +30,6 @@ async function generatePlaygroundProject(prompt: string, attempt = 1): Promise<{
   description: string;
   files: Array<{ path: string; name: string; content: string; language: string }>;
 }> {
-  const { groq } = await import("@workspace/integrations-groq-ai");
-
   const systemPrompt = `You are an expert web developer. When given a project request, respond with ONLY a valid JSON object — no markdown, no explanation, just raw JSON.
 
 JSON structure:
@@ -60,14 +59,13 @@ RULES:
     ? `Build this web app: ${prompt}`
     : `Build this web app: ${prompt}\n\nIMPORTANT: Previous attempt failed. Respond with ONLY raw JSON, no markdown, no code blocks.`;
 
-  const response = await groq.chat.completions.create({
-    model: "llama-3.3-70b-versatile",
+  const response = await openai.chat.completions.create({
+    model: "gpt-5.2",
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: userMessage },
     ],
-    max_tokens: 32768,
-    temperature: 0.5,
+    max_completion_tokens: 8192,
   });
 
   const raw = response.choices[0]?.message?.content ?? "";
