@@ -3,9 +3,9 @@ import OpenAI from "openai";
 const FREE_MODELS = [
   "meta-llama/llama-3.3-70b-instruct:free",
   "meta-llama/llama-3.1-8b-instruct:free",
-  "google/gemma-3-27b-it:free",
   "deepseek/deepseek-r1:free",
-  "mistralai/mistral-small-3.2-24b-instruct:free",
+  "deepseek/deepseek-v3-base:free",
+  "google/gemma-2-9b-it:free",
 ];
 
 export function getAIClient(): OpenAI {
