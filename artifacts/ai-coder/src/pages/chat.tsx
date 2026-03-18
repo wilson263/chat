@@ -1297,6 +1297,30 @@ export default function ChatPage() {
             )}
           </div>
 
+          {/* Page navigation */}
+          <div className="px-3 py-2 border-t border-border/30">
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-medium mb-1.5">Navigate</p>
+            <div className="grid grid-cols-2 gap-1">
+              {[
+                { icon: FolderKanban, label: 'Dashboard', path: '/projects', color: 'hover:text-primary' },
+                { icon: Monitor, label: 'Workspace', path: '/projects', color: 'hover:text-blue-400' },
+                { icon: Wand2, label: 'Prompts', path: '/prompt-generator', color: 'hover:text-violet-400' },
+                { icon: Globe, label: 'Explore', path: '/explore', color: 'hover:text-teal-400' },
+                { icon: Settings, label: 'Settings', path: '/settings', color: 'hover:text-muted-foreground' },
+                { icon: Shield, label: 'Admin', path: '/admin', color: 'hover:text-orange-400' },
+              ].map(item => (
+                <button
+                  key={item.label}
+                  onClick={() => setLocation(item.path)}
+                  className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs text-muted-foreground ${item.color} hover:bg-muted/60 transition-colors text-left w-full`}
+                >
+                  <item.icon className="w-3 h-3 shrink-0" />
+                  <span>{item.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* User footer */}
           {user && (
             <div className="p-3 border-t border-border/50">
