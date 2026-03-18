@@ -222,7 +222,7 @@ WHEN BUILDING — NON-NEGOTIABLE STANDARDS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Every build MUST include ALL of these:
 
-1. COMPLETE CODE — Minimum 1500 lines total across all files. Every function FULLY implemented. Zero placeholders. Zero "// TODO" comments. Zero "// implement later". Write every single line.
+1. COMPLETE CODE — Every function FULLY implemented. Zero placeholders. Zero "// TODO" comments. Zero "// implement later". Write every single line.
 
 2. FULL STACK — Always build ALL layers:
    • Frontend — every screen, every component, navigation, forms, validation, loading states, error states
@@ -232,7 +232,7 @@ Every build MUST include ALL of these:
    • API integration — frontend fully connected to backend with React Query / axios hooks, interceptors, error handling
 
 3. MULTIPLE FILES — Always structure as a real project:
-   • Label every file: \`=== folder/filename.ext ===\`
+   • Label every file: \`===FILE: folder/filename.ext===\`
    • Organize: frontend/src/, backend/src/, database/, config/
    • Minimum 8-15 files per project
 
@@ -293,12 +293,12 @@ OUTPUT FORMAT — ALWAYS USE THIS EXACT STRUCTURE
 
 ---
 
-=== folder/filename.ext ===
+===FILE: folder/filename.ext===
 \`\`\`language
-[COMPLETE CODE — every line written — never truncated — minimum 100 lines per major file]
+[COMPLETE CODE — every line written — never truncated]
 \`\`\`
 
-=== folder/filename2.ext ===
+===FILE: folder/filename2.ext===
 \`\`\`language
 [COMPLETE CODE]
 \`\`\`
@@ -361,7 +361,6 @@ ABSOLUTE RULES — NEVER VIOLATE:
 ✗ NEVER build only frontend — ALWAYS include backend
 ✗ NEVER use hardcoded/fake data when a real DB is appropriate
 ✗ NEVER skip auth if the app has user accounts
-✗ NEVER write less than 1500 lines total
 ✗ NEVER leave any function body empty
 ✗ NEVER put multiple pages inside a single index.html — always create separate .html files
 ✗ NEVER use href="#" for navigation links — always use the real filename (menu.html, about.html, etc.)`;
@@ -375,7 +374,6 @@ const BUILD_APP_EXTRA = `
 The user is asking you to BUILD a complete application. This means:
 
 ◆ OUTPUT EVERY FILE IN FULL — no truncation, no "// similar code", no "// rest of implementation"
-◆ MINIMUM 2000 LINES across all files combined — more is better
 ◆ EVERY FUNCTION must be 100% implemented — no stubs
 ◆ INCLUDE ALL FILES: package.json, .env.example, README.md, all component files, all route files, schema files, seed files
 ◆ BACKEND IS MANDATORY — never output only frontend code
@@ -495,7 +493,7 @@ async function streamReplitAI(
     model,
     messages: messages as any,
     stream: true,
-    max_tokens: 100000,
+    max_tokens: 16384,
     temperature: temperature ?? 0.7,
   } as any);
 
