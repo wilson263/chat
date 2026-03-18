@@ -1,13 +1,16 @@
 import { Router, type IRouter } from "express";
-import Groq from "groq-sdk";
+import OpenAI from "openai";
 
-  function getGroqClient(): Groq {
-    const apiKey = process.env.GROQ_API_KEY;
-    if (!apiKey) throw new Error("GROQ_API_KEY environment variable is not set.");
-    return new Groq({ apiKey });
+  function getAIClient(): OpenAI {
+    const apiKey = process.env.OPENROUTER_API_KEY;
+    if (!apiKey) throw new Error("OPENROUTER_API_KEY environment variable is not set.");
+    return new OpenAI({
+      apiKey,
+      baseURL: "https://openrouter.ai/api/v1",
+    });
   }
 
-  const openai = getGroqClient() as any;
+  const openai = getAIClient();
 import {
   GenerateCodeBody,
   ExplainCodeBody,
@@ -79,7 +82,7 @@ async function streamToResponse(res: any, messages: { role: string; content: str
   res.setHeader("Connection", "keep-alive");
 
   const stream = await openai.chat.completions.create({
-    model: "llama-3.3-70b-versatile",
+    model: "meta-llama/llama-3.3-70b-instruct:free",
     messages: [
       { role: "system", content: systemPrompt },
       ...messages.map(m => ({ role: m.role as "user" | "assistant", content: m.content })),
