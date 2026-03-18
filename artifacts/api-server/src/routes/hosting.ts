@@ -49,6 +49,10 @@ async function runMigrationOnce(): Promise<void> {
   }
 }
 
+function isEsModule(content: string): boolean {
+  return /^\s*(import\s|export\s(default\s|const\s|function\s|class\s|\{))/m.test(content);
+}
+
 function buildHtmlWithAssets(
   htmlContent: string,
   cssFiles: { name: string; content: string }[],
@@ -66,7 +70,10 @@ function buildHtmlWithAssets(
   }
   if (jsFiles.length > 0) {
     const scriptTag = jsFiles
-      .map((f) => `<script>/* ${f.name} */\n${f.content}</script>`)
+      .map((f) => {
+        const moduleAttr = isEsModule(f.content) ? ' type="module"' : '';
+        return `<script${moduleAttr}>/* ${f.name} */\n${f.content}</script>`;
+      })
       .join("\n");
     html = html.includes("</body>")
       ? html.replace("</body>", `${scriptTag}\n</body>`)
@@ -218,7 +225,10 @@ router.get("/:projectId/*splat", async (req: Request, res: Response): Promise<vo
   ${cssOnly.map((f) => `<style>/* ${f.name} */\n${f.content}</style>`).join("\n")}
 </head>
 <body>
-  ${jsOnly.map((f) => `<script>/* ${f.name} */\n${f.content}</script>`).join("\n")}
+  ${jsOnly.map((f) => {
+    const moduleAttr = isEsModule(f.content) ? ' type="module"' : '';
+    return `<script${moduleAttr}>/* ${f.name} */\n${f.content}</script>`;
+  }).join("\n")}
 </body>
 </html>`;
     res.setHeader("Content-Type", "text/html; charset=utf-8");
