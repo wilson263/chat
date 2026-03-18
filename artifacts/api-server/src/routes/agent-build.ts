@@ -1,7 +1,7 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { db, projectsTable, projectFilesTable } from "@workspace/db";
 import { getUserId } from "./auth";
-import { createChatCompletionStream } from "../lib/ai";
+import { createChatCompletionStreamFromList, AGENT_BUILD_MODELS, PLANNING_MODELS } from "../lib/ai";
 
 const router: IRouter = Router();
 
@@ -43,17 +43,16 @@ function buildFileTree(paths: string[]): Record<string, any> {
 
 // ── Streaming helper: collect full text and stream tokens ─────────────────────
 async function streamCollect(
-  model: string,
+  modelList: string[],
   messages: Array<{ role: "system" | "user"; content: string }>,
   maxTokens: number,
   onToken?: (token: string) => void
 ): Promise<string> {
-  const stream = await createChatCompletionStream({
-    model,
+  const { stream } = await createChatCompletionStreamFromList({
     messages,
     max_tokens: maxTokens,
     stream: true,
-  } as any);
+  } as any, modelList);
   let raw = "";
   for await (const chunk of stream) {
     const token = chunk.choices[0]?.delta?.content;
@@ -98,9 +97,9 @@ RULES for filePlan:
 
   send({ step: "thinking", message: "Analysing your request..." });
 
-  // Use llama-70b for planning — it's much faster than qwen-480b
+  // Use the planning model list — fast models first for quick analysis
   const raw = await streamCollect(
-    "meta-llama/llama-3.3-70b-instruct:free",
+    PLANNING_MODELS,
     [{ role: "system", content: systemPrompt }, { role: "user", content: `Plan this app: ${prompt}` }],
     1500,
     (token) => send({ step: "thinking_token", token })
@@ -319,14 +318,11 @@ Write the COMPLETE content of ${filePath} now:`;
 
   send({ step: "writing_file", message: `Writing ${filePath}...`, filePath });
 
-  // Use faster model for data/config files, best coder for core logic
-  const isComplexFile = isHtml || isRouter || (isJs && (filePath.includes("app.js") || filePath.includes("api.js")));
-  const model = isComplexFile
-    ? "qwen/qwen3-coder-480b-a35b:free"
-    : "meta-llama/llama-3.3-70b-instruct:free";
-
+  // All files use AGENT_BUILD_MODELS — tries best coders first, falls back to fast working models.
+  // This means if qwen3-coder is unavailable, we quickly fall to step-3.5-flash (which works) instead
+  // of wasting time cycling through 10+ failing models.
   const content = await streamCollect(
-    model,
+    AGENT_BUILD_MODELS,
     [{ role: "system", content: systemPrompt }, { role: "user", content: userMessage }],
     4096,
     (token) => send({ step: "file_token", filePath, token })
