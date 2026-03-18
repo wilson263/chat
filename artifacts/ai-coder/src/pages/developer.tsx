@@ -371,17 +371,56 @@ export default function DeveloperPage() {
     return null;
   };
 
+  const parseChatFileBlocks = (text: string): { name: string; content: string }[] => {
+    const parsed: { name: string; content: string }[] = [];
+    const pattern = /===FILE:\s*([^\n=]+?)===\n?([\s\S]*?)(?====FILE:|$)/g;
+    let match;
+    while ((match = pattern.exec(text)) !== null) {
+      const name = match[1].trim();
+      const content = match[2].trim();
+      if (name && content) parsed.push({ name, content });
+    }
+    return parsed;
+  };
+
+  const applyChatFiles = (responseText: string) => {
+    const parsed = parseChatFileBlocks(responseText);
+    if (parsed.length === 0) return 0;
+    const newFileNodes: FileNode[] = parsed.map(f => ({
+      name: f.name.split('/').pop()!,
+      path: f.name,
+      type: 'file' as const,
+      content: f.content,
+      language: getLanguage(f.name),
+    }));
+    const newTabs: OpenTab[] = parsed.map(f => ({
+      path: f.name,
+      name: f.name.split('/').pop()!,
+      content: f.content,
+      language: getLanguage(f.name),
+      isDirty: false,
+    }));
+    setFlatFiles(prev => {
+      const filtered = prev.filter(existing => !parsed.some(p => p.name === existing.path));
+      return [...filtered, ...newFileNodes];
+    });
+    setFileTree(prev => [...prev.filter(n => !parsed.some(p => p.name === n.path)), ...newFileNodes]);
+    setOpenTabs(prev => {
+      const filtered = prev.filter(existing => !parsed.some(p => p.name === existing.path));
+      return [...filtered, ...newTabs];
+    });
+    setRepoLoaded(true);
+    if (newTabs.length > 0) {
+      setActiveTab(newTabs[0].path);
+      setSelectedPath(newTabs[0].path);
+    }
+    return parsed.length;
+  };
+
   const sendAiMessage = async () => {
     if (!aiInput.trim() || isAiStreaming) return;
     const activeTabData = openTabs.find(t => t.path === activeTab);
     const userMsg = aiInput.trim();
-    const categoryPrefix = aiCategory === 'frontend'
-      ? '[FRONTEND] Focus exclusively on Frontend (HTML/CSS/JS/React/UI). Do not include backend or server code.\n'
-      : aiCategory === 'backend'
-      ? '[BACKEND] Focus exclusively on Backend (Node.js/Python/databases/APIs/business logic). Do not include frontend UI code.\n'
-      : aiCategory === 'server'
-      ? '[SERVER] Focus exclusively on Server/DevOps (deployment, hosting, nginx, docker, environment). \n'
-      : '';
     setAiInput('');
     const newMessages: AiMessage[] = [...aiMessages, { role: 'user', content: userMsg }];
     setAiMessages(newMessages);
@@ -440,6 +479,46 @@ export default function DeveloperPage() {
       return;
     }
 
+    // Build a focused system prompt based on the selected category
+    let systemPrompt: string | undefined;
+    if (aiCategory === 'frontend') {
+      systemPrompt = `You are a senior frontend developer helping with code in an IDE.
+Focus ONLY on Frontend (HTML/CSS/JS/React/UI). Do not include backend or server code.
+When generating files, use this exact format so they are auto-created in the editor:
+===FILE: filename.ext===
+[complete file content here]
+===FILE: styles.css===
+[complete css here]
+Write complete, working code. No placeholders. No TODO comments.`;
+    } else if (aiCategory === 'backend') {
+      systemPrompt = `You are a senior backend developer helping with code in an IDE.
+Focus ONLY on Backend (Node.js/Python/databases/APIs/business logic). Do not include frontend UI code.
+When generating files, use this exact format so they are auto-created in the editor:
+===FILE: server.js===
+[complete file content here]
+===FILE: package.json===
+[complete package.json here]
+Write complete, working code. No placeholders. No TODO comments.`;
+    } else if (aiCategory === 'server') {
+      systemPrompt = `You are a senior DevOps/server engineer helping with configuration in an IDE.
+Focus ONLY on Server/DevOps (deployment, nginx, docker, CI/CD, environment config).
+When generating config files, use this exact format so they are auto-created in the editor:
+===FILE: Dockerfile===
+[complete file content here]
+===FILE: nginx.conf===
+[complete config here]
+Write complete, working configurations. No placeholders.`;
+    } else {
+      systemPrompt = `You are ZorvixAI, an expert developer code assistant embedded in a code editor IDE.
+You help with code questions, debugging, refactoring, and building features.
+When generating multi-file code, use this exact format so files are auto-created in the editor:
+===FILE: path/filename.ext===
+[complete file content here]
+===FILE: path/filename2.ext===
+[complete file content here]
+Write complete, working code. No placeholders. No TODO comments. No truncation.`;
+    }
+
     setIsAiStreaming(true);
     let assistantContent = '';
     const context = activeTabData
@@ -448,7 +527,7 @@ export default function DeveloperPage() {
     try {
       const res = await fetch(`${BASE_PATH}/api/chat/message`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-        body: JSON.stringify({ userMessage: categoryPrefix + userMsg, history: aiMessages.slice(-6), context }),
+        body: JSON.stringify({ userMessage: userMsg, history: aiMessages.slice(-6), context, systemPrompt }),
       });
       const reader = res.body?.getReader();
       const decoder = new TextDecoder();
@@ -475,6 +554,19 @@ export default function DeveloperPage() {
             }
           }
         }
+      }
+      // Auto-create any ===FILE:=== blocks found in the response
+      const fileCount = applyChatFiles(assistantContent);
+      if (fileCount > 0) {
+        toast({ title: `${fileCount} file${fileCount !== 1 ? 's' : ''} created in editor` });
+        setAiMessages(prev => {
+          const msgs = [...prev];
+          msgs[msgs.length - 1] = {
+            role: 'assistant',
+            content: assistantContent + `\n\n✅ **${fileCount} file${fileCount !== 1 ? 's' : ''} auto-created in the editor.**`,
+          };
+          return msgs;
+        });
       }
     } catch (err: any) {
       setAiMessages(prev => [...prev, { role: 'assistant', content: `Error: ${err.message}` }]);
