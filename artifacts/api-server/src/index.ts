@@ -25,6 +25,12 @@ if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
-app.listen(port, () => {
+const server = app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
+
+// Render's proxy can drop long-running SSE connections (e.g. large AI code builds
+// that stream for 3–5 minutes). Raise the Node.js server timeouts so the server
+// side never closes the connection first. Render's own limit is ~10 minutes.
+server.keepAliveTimeout = 600000;  // 10 minutes
+server.headersTimeout  = 605000;  // slightly above keepAliveTimeout

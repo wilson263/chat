@@ -499,9 +499,19 @@ async function streamReplitAI(
     temperature: temperature ?? 0.7,
   } as any);
 
-  for await (const chunk of stream) {
-    const content = chunk.choices[0]?.delta?.content;
-    if (content) res.write(`data: ${JSON.stringify({ content })}\n\n`);
+  // Send a keepalive comment every 20s so Render's proxy doesn't drop the connection
+  // during long AI responses (large code builds can take 3–5 minutes to stream)
+  const keepalive = setInterval(() => {
+    try { res.write(': keepalive\n\n'); } catch { /* connection already closed */ }
+  }, 20000);
+
+  try {
+    for await (const chunk of stream) {
+      const content = chunk.choices[0]?.delta?.content;
+      if (content) res.write(`data: ${JSON.stringify({ content })}\n\n`);
+    }
+  } finally {
+    clearInterval(keepalive);
   }
 }
 
