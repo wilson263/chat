@@ -1,27 +1,21 @@
 import { Router } from "express";
+import { openai } from "@workspace/integrations-openai-ai-server";
 
 const router = Router();
-
-async function getGroqClient() {
-  const { groq } = await import("@workspace/integrations-groq-ai");
-  return groq;
-}
 
 router.post("/api/chat/auto-title", async (req, res) => {
   try {
     const { firstMessage } = req.body as { firstMessage: string };
     if (!firstMessage) return res.json({ title: "New Chat" });
-    const groq = await getGroqClient();
-    const result = await groq.chat.completions.create({
-      model: "llama-3.1-8b-instant",
+    const result = await openai.chat.completions.create({
+      model: "gpt-5-mini",
       messages: [
         {
           role: "user",
           content: `Generate a short (3-6 words), descriptive title for a chat that starts with this message. Return ONLY the title, no quotes, no punctuation at end:\n\n"${firstMessage.slice(0, 200)}"`,
         },
       ],
-      max_tokens: 20,
-      temperature: 0.5,
+      max_completion_tokens: 20,
     });
     const title = (result.choices[0]?.message?.content ?? "")
       .trim()
@@ -54,20 +48,18 @@ router.post("/api/chat/websearch", async (req, res) => {
     const { query } = req.body as { query: string };
     if (!query) return res.status(400).json({ error: "Query required" });
 
-    const groq = await getGroqClient();
-    const result = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
+    const result = await openai.chat.completions.create({
+      model: "gpt-5.2",
       messages: [
         {
           role: "user",
           content: `Answer the following question as accurately and comprehensively as possible. Note if any information might be outdated:\n\n${query}`,
         },
       ],
-      max_tokens: 2048,
-      temperature: 0.5,
+      max_completion_tokens: 2048,
     });
     const text = result.choices[0]?.message?.content ?? "";
-    res.json({ answer: text, note: "Powered by Groq AI" });
+    res.json({ answer: text, note: "Powered by Replit AI" });
   } catch (e: any) {
     res.status(500).json({ error: "Search failed: " + e.message });
   }
