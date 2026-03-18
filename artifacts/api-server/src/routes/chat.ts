@@ -35,17 +35,17 @@ interface ChatRequest {
 }
 
 const MODEL_MAP: Record<string, string> = {
-  "llama-3.3-70b-versatile": "gpt-5.2",
-  "llama-3.1-70b-versatile": "gpt-5.2",
-  "llama-3.1-8b-instant": "gpt-5-mini",
-  "mixtral-8x7b-32768": "gpt-5.2",
-  "gemma2-9b-it": "gpt-5-mini",
-  "llama-3.3-70b-specdec": "gpt-5.2",
-  "deepseek-r1-distill-llama-70b": "gpt-5.2",
-  "gpt-4o": "gpt-5.2",
-  "gpt-4o-mini": "gpt-5-mini",
-  "o1-mini": "gpt-5.2",
-  "gpt-4-turbo": "gpt-5.2",
+  "llama-3.3-70b-versatile": "llama-3.3-70b-versatile",
+  "llama-3.1-70b-versatile": "llama-3.3-70b-versatile",
+  "llama-3.1-8b-instant": "llama-3.1-8b-instant",
+  "mixtral-8x7b-32768": "llama-3.3-70b-versatile",
+  "gemma2-9b-it": "llama-3.1-8b-instant",
+  "llama-3.3-70b-specdec": "llama-3.3-70b-versatile",
+  "deepseek-r1-distill-llama-70b": "llama-3.3-70b-versatile",
+  "llama-3.3-70b-versatile": "llama-3.3-70b-versatile",
+  "llama-3.3-70b-versatile": "llama-3.1-8b-instant",
+  "o1-mini": "llama-3.3-70b-versatile",
+  "llama-3.3-70b-versatile": "llama-3.3-70b-versatile",
 };
 
 const BASE_SYSTEM_PROMPT = `You are ZorvixAI, an elite full-stack AI engineer and architect. You build complete, production-grade applications — not skeletons, not stubs, not placeholders.
@@ -172,8 +172,8 @@ ABSOLUTE RULES — NEVER VIOLATE:
 ✗ NEVER leave any function body empty`;
 
 function resolveModel(requestedModel?: string): string {
-  if (!requestedModel) return "gpt-5.2";
-  return MODEL_MAP[requestedModel] ?? "gpt-5.2";
+  if (!requestedModel) return "llama-3.3-70b-versatile";
+  return MODEL_MAP[requestedModel] ?? "llama-3.3-70b-versatile";
 }
 
 async function streamReplitAI(
