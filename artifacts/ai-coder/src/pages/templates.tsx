@@ -194,20 +194,30 @@ export default function TemplatesPage() {
       const res = await fetch('/api/playground/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ prompt: aiPrompt.trim() }),
         signal: controller.signal,
       });
 
-      if (!res.ok || !res.body) throw new Error('Server error');
+      if (!res.ok || !res.body) {
+        const errText = await res.text().catch(() => '');
+        throw new Error(errText || `Server error (${res.status})`);
+      }
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let generatedProject: GenerateStep['project'] | null = null;
+      let buffer = '';
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        for (const line of decoder.decode(value).split('\n').filter(l => l.startsWith('data: '))) {
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        // Keep the last (potentially incomplete) line in the buffer
+        buffer = lines.pop() ?? '';
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
           try {
             const d: GenerateStep = JSON.parse(line.slice(6));
             if (d.message) setGenerateLog(prev => [...prev, d.message]);
@@ -222,8 +232,8 @@ export default function TemplatesPage() {
       }
 
       if (generatedProject) {
-        const encoded = encodeURIComponent(JSON.stringify(generatedProject));
-        setLocation(`/playground?template=${encoded}`);
+        sessionStorage.setItem('playground_template', JSON.stringify(generatedProject));
+        setLocation('/playground');
       }
     } catch (err: any) {
       if (err.name !== 'AbortError') {
