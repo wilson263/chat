@@ -152,17 +152,17 @@ function extractCodeFromMarkdown(text: string): string {
 export default function DeveloperPage() {
   const { toast } = useToast();
 
-  const [repoUrl, setRepoUrl] = useState('');
+  const [repoUrl, setRepoUrl] = useState(() => localStorage.getItem('dev_repoUrl') || '');
   const [token, setToken] = useState(() => localStorage.getItem('github_token') || '');
   const [branch, setBranch] = useState('');
   const [isCloning, setIsCloning] = useState(false);
-  const [repoLoaded, setRepoLoaded] = useState(false);
-  const [repoName, setRepoName] = useState('');
-  const [fileTree, setFileTree] = useState<FileNode[]>([]);
-  const [flatFiles, setFlatFiles] = useState<FileNode[]>([]);
+  const [repoLoaded, setRepoLoaded] = useState(() => localStorage.getItem('dev_repoLoaded') === 'true');
+  const [repoName, setRepoName] = useState(() => localStorage.getItem('dev_repoName') || '');
+  const [fileTree, setFileTree] = useState<FileNode[]>(() => { try { return JSON.parse(localStorage.getItem('dev_fileTree') || '[]'); } catch { return []; } });
+  const [flatFiles, setFlatFiles] = useState<FileNode[]>(() => { try { return JSON.parse(localStorage.getItem('dev_flatFiles') || '[]'); } catch { return []; } });
 
-  const [openTabs, setOpenTabs] = useState<OpenTab[]>([]);
-  const [activeTab, setActiveTab] = useState<string | null>(null);
+  const [openTabs, setOpenTabs] = useState<OpenTab[]>(() => { try { return JSON.parse(localStorage.getItem('dev_openTabs') || '[]'); } catch { return []; } });
+  const [activeTab, setActiveTab] = useState<string | null>(() => localStorage.getItem('dev_activeTab') || null);
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const [isLoadingFile, setIsLoadingFile] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -476,6 +476,55 @@ export default function DeveloperPage() {
         toast({ title: 'Clone failed', description: err.message, variant: 'destructive' });
       } finally {
         setIsCloning(false);
+      }
+      return;
+    }
+
+    // If message is casual/conversational, always respond in plain text regardless of category
+    const isCodeRequest = /\b(build|create|make|generate|write|code|implement|fix|refactor|add|develop|update|rewrite|change|modify|create the|build the|can you make|can you create|i need|help me build|help me create)\b/i.test(userMsg);
+    if (!isCodeRequest) {
+      const conversationalPrompt = `You are ZorvixAI, a helpful AI coding assistant. The user is asking a casual or general question. Reply in plain, friendly conversational text. Do NOT output any ===FILE:=== blocks. Do NOT generate code unless asked directly.`;
+      setIsAiStreaming(true);
+      let assistantContent = '';
+      setAiMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+      try {
+        const res = await fetch(`${BASE_PATH}/api/chat/stream`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ messages: [...newMessages.map(m => ({ role: m.role, content: m.content }))], systemPrompt: conversationalPrompt }),
+        });
+        if (!res.ok || !res.body) { const d = await res.json(); throw new Error(d.error || 'AI error'); }
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value, { stream: true });
+          for (const line of chunk.split('\n')) {
+            const trimmed = line.trim();
+            if (trimmed.startsWith('data: ')) {
+              const data = trimmed.slice(6);
+              if (data === '[DONE]') break;
+              try {
+                const parsed = JSON.parse(data);
+                const delta = parsed.choices?.[0]?.delta?.content || '';
+                if (delta) {
+                  assistantContent += delta;
+                  setAiMessages(prev => {
+                    const msgs = [...prev];
+                    msgs[msgs.length - 1] = { role: 'assistant', content: assistantContent };
+                    return msgs;
+                  });
+                }
+              } catch {}
+            }
+          }
+        }
+      } catch (err: any) {
+        setAiMessages(prev => { const msgs = [...prev]; msgs[msgs.length - 1] = { role: 'assistant', content: `Error: ${err.message}` }; return msgs; });
+      } finally {
+        setIsAiStreaming(false);
       }
       return;
     }
@@ -810,6 +859,54 @@ Format EXACTLY like this:
     if (rewriteScrollRef.current) rewriteScrollRef.current.scrollTop = rewriteScrollRef.current.scrollHeight;
   }, [phaseStatuses]);
 
+  // Persist workspace state so it survives page navigation
+  useEffect(() => { localStorage.setItem('dev_flatFiles', JSON.stringify(flatFiles)); }, [flatFiles]);
+  useEffect(() => { localStorage.setItem('dev_fileTree', JSON.stringify(fileTree)); }, [fileTree]);
+  useEffect(() => { localStorage.setItem('dev_openTabs', JSON.stringify(openTabs)); }, [openTabs]);
+  useEffect(() => { if (activeTab) localStorage.setItem('dev_activeTab', activeTab); }, [activeTab]);
+  useEffect(() => { localStorage.setItem('dev_repoName', repoName); }, [repoName]);
+  useEffect(() => { localStorage.setItem('dev_repoLoaded', String(repoLoaded)); }, [repoLoaded]);
+  useEffect(() => { localStorage.setItem('dev_repoUrl', repoUrl); }, [repoUrl]);
+
+  const [isSavingProject, setIsSavingProject] = useState(false);
+
+  const saveToMyProjects = async () => {
+    if (flatFiles.length === 0) {
+      toast({ title: 'No files to save', description: 'Generate or create some files first.', variant: 'destructive' });
+      return;
+    }
+    setIsSavingProject(true);
+    try {
+      const name = repoName || `Project ${new Date().toLocaleDateString()}`;
+      const lang = flatFiles.some(f => f.name.endsWith('.ts') || f.name.endsWith('.tsx')) ? 'typescript'
+        : flatFiles.some(f => f.name.endsWith('.py')) ? 'python'
+        : flatFiles.some(f => f.name.endsWith('.html')) ? 'html'
+        : 'javascript';
+      const projRes = await fetch(`${BASE_PATH}/api/projects`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ name, description: `Created in Developer Studio`, language: lang }),
+      });
+      if (!projRes.ok) throw new Error('Failed to create project');
+      const proj = await projRes.json();
+      const filesToSave = openTabs.length > 0 ? openTabs.map(t => ({ name: t.name, path: t.path, content: t.content, language: t.language })) : flatFiles.map(f => ({ name: f.name, path: f.path, content: f.content || '', language: f.language || getLanguage(f.name) }));
+      await Promise.all(filesToSave.map(f =>
+        fetch(`${BASE_PATH}/api/files/${proj.id}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ name: f.name, path: f.path, content: f.content, language: f.language }),
+        })
+      ));
+      toast({ title: `"${name}" saved to My Projects!`, description: `${filesToSave.length} files saved.` });
+    } catch (err: any) {
+      toast({ title: 'Save failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setIsSavingProject(false);
+    }
+  };
+
   const activeTabData = openTabs.find(t => t.path === activeTab);
   const filteredFiles = searchQuery
     ? flatFiles.filter(f => f.path.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -846,6 +943,11 @@ Format EXACTLY like this:
           {openTabs.length > 0 && (
             <Button variant="ghost" size="sm" className="h-7 text-xs text-green-400 hover:text-green-300 hover:bg-green-400/10" onClick={downloadFiles}>
               <Download className="h-3.5 w-3.5 mr-1.5" /> Download ZIP
+            </Button>
+          )}
+          {flatFiles.length > 0 && (
+            <Button variant="ghost" size="sm" className="h-7 text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-400/10" onClick={saveToMyProjects} disabled={isSavingProject}>
+              {isSavingProject ? <><Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />Saving...</> : <><Save className="h-3.5 w-3.5 mr-1" />Save to Projects</>}
             </Button>
           )}
           {activeTabData?.name.match(/\.html?$/i) && (
