@@ -177,6 +177,7 @@ export default function DeveloperPage() {
   const [aiTab, setAiTab] = useState<'chat' | 'rewrite'>('chat');
   const [aiMessages, setAiMessages] = useState<AiMessage[]>([]);
   const [aiInput, setAiInput] = useState('');
+  const [aiCategory, setAiCategory] = useState<'frontend' | 'backend' | 'server' | null>(null);
   const [isAiStreaming, setIsAiStreaming] = useState(false);
   const [rewriteInstruction, setRewriteInstruction] = useState('');
   const [isRewriting, setIsRewriting] = useState(false);
@@ -374,6 +375,13 @@ export default function DeveloperPage() {
     if (!aiInput.trim() || isAiStreaming) return;
     const activeTabData = openTabs.find(t => t.path === activeTab);
     const userMsg = aiInput.trim();
+    const categoryPrefix = aiCategory === 'frontend'
+      ? '[FRONTEND] Focus exclusively on Frontend (HTML/CSS/JS/React/UI). Do not include backend or server code.\n'
+      : aiCategory === 'backend'
+      ? '[BACKEND] Focus exclusively on Backend (Node.js/Python/databases/APIs/business logic). Do not include frontend UI code.\n'
+      : aiCategory === 'server'
+      ? '[SERVER] Focus exclusively on Server/DevOps (deployment, hosting, nginx, docker, environment). \n'
+      : '';
     setAiInput('');
     const newMessages: AiMessage[] = [...aiMessages, { role: 'user', content: userMsg }];
     setAiMessages(newMessages);
@@ -440,7 +448,7 @@ export default function DeveloperPage() {
     try {
       const res = await fetch(`${BASE_PATH}/api/chat/message`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-        body: JSON.stringify({ userMessage: userMsg, history: aiMessages.slice(-6), context }),
+        body: JSON.stringify({ userMessage: categoryPrefix + userMsg, history: aiMessages.slice(-6), context }),
       });
       const reader = res.body?.getReader();
       const decoder = new TextDecoder();
@@ -961,6 +969,18 @@ Format EXACTLY like this:
                 )}
               </div>
               <div className="p-3 border-t border-[#30363d] shrink-0">
+                <div className="flex gap-1 mb-1.5">
+                  {([
+                    { id: 'frontend' as const, label: '🎨 Frontend', active: 'bg-blue-500/20 text-blue-400 border-blue-500/40', inactive: 'border-[#30363d] text-muted-foreground hover:text-white hover:border-[#6e7681]' },
+                    { id: 'backend' as const, label: '⚙️ Backend', active: 'bg-orange-500/20 text-orange-400 border-orange-500/40', inactive: 'border-[#30363d] text-muted-foreground hover:text-white hover:border-[#6e7681]' },
+                    { id: 'server' as const, label: '🖥️ Server', active: 'bg-green-500/20 text-green-400 border-green-500/40', inactive: 'border-[#30363d] text-muted-foreground hover:text-white hover:border-[#6e7681]' },
+                  ]).map(cat => (
+                    <button key={cat.id} onClick={() => setAiCategory(prev => prev === cat.id ? null : cat.id)}
+                      className={`flex-1 py-1 rounded text-[10px] font-medium border transition-colors ${aiCategory === cat.id ? cat.active : cat.inactive}`}>
+                      {cat.label}
+                    </button>
+                  ))}
+                </div>
                 <div className="flex gap-1.5">
                   <Input
                     placeholder="Ask about your code..."
