@@ -1,9 +1,16 @@
 import { useState, useCallback, useRef } from 'react';
 
+export type ModelInfo = {
+  model: string;
+  intent: 'build_app' | 'fix_code' | 'explain_code' | 'reasoning' | 'general';
+  autoSelected: boolean;
+};
+
 type StreamOptions = {
   onChunk?: (chunk: string) => void;
   onFinish?: (fullText: string) => void;
   onError?: (error: Error) => void;
+  onModelInfo?: (info: ModelInfo) => void;
 };
 
 export function useAiStream(endpoint: string = 'chat/message') {
@@ -11,6 +18,7 @@ export function useAiStream(endpoint: string = 'chat/message') {
   const [loading, setLoading] = useState(false);
   const [content, setContent] = useState('');
   const [error, setError] = useState<Error | null>(null);
+  const [modelInfo, setModelInfo] = useState<ModelInfo | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const stop = useCallback(() => {
@@ -32,6 +40,7 @@ export function useAiStream(endpoint: string = 'chat/message') {
     setLoading(true);
     setContent('');
     setError(null);
+    setModelInfo(null);
     let fullText = '';
 
     try {
@@ -64,6 +73,15 @@ export function useAiStream(endpoint: string = 'chat/message') {
             try {
               const data = JSON.parse(dataStr);
               if (data.done) break;
+
+              // Handle model routing info from the backend
+              if (data.modelInfo) {
+                const info = data.modelInfo as ModelInfo;
+                setModelInfo(info);
+                options?.onModelInfo?.(info);
+                continue;
+              }
+
               if (data.content) {
                 fullText += data.content;
                 setContent(prev => prev + data.content);
@@ -92,5 +110,5 @@ export function useAiStream(endpoint: string = 'chat/message') {
     }
   }, [endpoint]);
 
-  return { stream, stop, isStreaming, loading, content, error, setContent };
+  return { stream, stop, isStreaming, loading, content, error, setContent, modelInfo };
 }

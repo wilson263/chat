@@ -26,6 +26,17 @@ const FREE_MODELS = [
   "google/gemma-2-9b-it:free",
 ];
 
+// Ordered fallback list for coding tasks — best coders first
+const CODING_FALLBACKS = [
+  "qwen/qwen3-coder-480b-a35b:free",
+  "deepseek/deepseek-r1:free",
+  "openai/gpt-oss-120b:free",
+  "meta-llama/llama-3.3-70b-instruct:free",
+  "nvidia/llama-3.3-nemotron-super-49b-v1:free",
+  "nousresearch/hermes-3-llama-3.1-405b:free",
+  "mistralai/mistral-small-3.1-24b-instruct:free",
+];
+
 export function getAIClient(): OpenAI {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) throw new Error("OPENROUTER_API_KEY environment variable is not set.");
@@ -33,7 +44,7 @@ export function getAIClient(): OpenAI {
 }
 
 export const FREE_MODEL = FREE_MODELS[0];
-export const FREE_MODEL_FAST = FREE_MODELS[1];
+export const FREE_MODEL_FAST = CODING_FALLBACKS[0];
 
 function isAuthError(err: any): boolean {
   const status = err?.status ?? err?.response?.status;
@@ -49,8 +60,30 @@ function isRetryableError(err: any): boolean {
     msg.includes("no endpoints found") ||
     msg.includes("not a valid model") ||
     msg.includes("overloaded") ||
-    msg.includes("unavailable")
+    msg.includes("unavailable") ||
+    msg.includes("rate limit") ||
+    msg.includes("context length")
   );
+}
+
+/**
+ * Build the fallback model list for a given preferred model.
+ * If the model is a coding model, we fall back within coding models first,
+ * then the general pool — so we always stay with the best available model.
+ */
+function buildFallbackList(preferredModel?: string): string[] {
+  if (!preferredModel) return FREE_MODELS;
+
+  const isCodingModel = CODING_FALLBACKS.includes(preferredModel);
+
+  if (isCodingModel) {
+    // Start with the preferred, then the rest of the coding fallbacks, then general
+    const codingFallbacks = [preferredModel, ...CODING_FALLBACKS.filter(m => m !== preferredModel)];
+    const generalFallbacks = FREE_MODELS.filter(m => !codingFallbacks.includes(m));
+    return [...codingFallbacks, ...generalFallbacks];
+  }
+
+  return [preferredModel, ...FREE_MODELS.filter(m => m !== preferredModel)];
 }
 
 export async function createChatCompletion(
@@ -58,9 +91,7 @@ export async function createChatCompletion(
   preferredModel?: string
 ): Promise<OpenAI.Chat.ChatCompletion> {
   const client = getAIClient();
-  const modelsToTry = preferredModel
-    ? [preferredModel, ...FREE_MODELS.filter((m) => m !== preferredModel)]
-    : FREE_MODELS;
+  const modelsToTry = buildFallbackList(preferredModel ?? params.model as string | undefined);
 
   let lastError: any;
   for (let i = 0; i < modelsToTry.length; i++) {
@@ -87,9 +118,7 @@ export async function createChatCompletionStream(
   preferredModel?: string
 ): Promise<AsyncIterable<OpenAI.Chat.ChatCompletionChunk>> {
   const client = getAIClient();
-  const modelsToTry = preferredModel
-    ? [preferredModel, ...FREE_MODELS.filter((m) => m !== preferredModel)]
-    : FREE_MODELS;
+  const modelsToTry = buildFallbackList(preferredModel ?? params.model as string | undefined);
 
   let lastError: any;
   for (let i = 0; i < modelsToTry.length; i++) {
