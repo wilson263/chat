@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import {
   Loader2, CheckCircle2, XCircle, FolderOpen, File, Download,
-  Rocket, ChevronRight, ChevronDown, Sparkles, Globe, ExternalLink
+  Rocket, ChevronRight, ChevronDown, Sparkles, Globe, ExternalLink,
+  Brain, Code2, FileCode, Pencil, Save, AlertTriangle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,22 +12,25 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { useToast } from '@/hooks/use-toast';
 
 interface BuildFile { id: number; name: string; path: string; language: string }
-interface BuildStep { step: string; message: string; errors?: string[]; project?: any; files?: BuildFile[]; fileTree?: any }
 
-const STEP_LABELS: Record<string, string> = {
-  generating: 'Generating project structure',
-  writing: 'Writing files to project',
-  checking: 'Checking for errors',
-  fixing: 'Auto-fixing errors',
-  fixed: 'All errors fixed',
-  clean: 'Code is clean',
-  done: 'Build complete!',
-  error: 'Build failed',
-};
+interface BuildEvent {
+  step: string;
+  message?: string;
+  errors?: string[];
+  project?: any;
+  files?: BuildFile[];
+  fileTree?: any;
+  thinking?: string;
+  filePlan?: string[];
+  filePath?: string;
+  token?: string;
+  lineCount?: number;
+  projectName?: string;
+}
 
 function FileTreeNode({ name, node, depth = 0 }: { name: string; node: any; depth?: number }) {
   const [open, setOpen] = useState(true);
-  const isFile = node === 'file';
+  const isFile = node === null;
   return (
     <div style={{ paddingLeft: depth * 16 }}>
       <div
@@ -38,7 +42,7 @@ function FileTreeNode({ name, node, depth = 0 }: { name: string; node: any; dept
         <span className="truncate">{name}</span>
       </div>
       {!isFile && open && Object.entries(node).map(([childName, childNode]) => (
-        <FileTreeNode key={childName} name={childName} node={childNode} depth={depth + 1} />
+        <FileTreeNode key={childName} name={childName} node={childNode as any} depth={depth + 1} />
       ))}
     </div>
   );
@@ -145,9 +149,22 @@ interface AgentBuilderProps {
   onClose: () => void;
 }
 
+type PhaseState = 'idle' | 'thinking' | 'planning' | 'writing' | 'saving' | 'checking' | 'done' | 'error';
+
+interface FileProgress {
+  path: string;
+  content: string;
+  done: boolean;
+  lineCount?: number;
+}
+
 export function AgentBuilder({ prompt, onClose }: AgentBuilderProps) {
-  const [steps, setSteps] = useState<BuildStep[]>([]);
-  const [currentStep, setCurrentStep] = useState('');
+  const [phase, setPhase] = useState<PhaseState>('idle');
+  const [thinkingText, setThinkingText] = useState('');
+  const [filePlan, setFilePlan] = useState<string[]>([]);
+  const [projectName, setProjectName] = useState('');
+  const [fileProgresses, setFileProgresses] = useState<Record<string, FileProgress>>({});
+  const [activeFile, setActiveFile] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   const [failed, setFailed] = useState(false);
   const [project, setProject] = useState<any>(null);
@@ -155,9 +172,12 @@ export function AgentBuilder({ prompt, onClose }: AgentBuilderProps) {
   const [fileTree, setFileTree] = useState<any>(null);
   const [showDeploy, setShowDeploy] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [statusMessage, setStatusMessage] = useState('Starting...');
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const started = useRef(false);
+  const thinkingRef = useRef<HTMLDivElement>(null);
+  const activeFileRef = useRef<HTMLPreElement>(null);
 
   useEffect(() => {
     if (started.current) return;
@@ -165,7 +185,20 @@ export function AgentBuilder({ prompt, onClose }: AgentBuilderProps) {
     startBuild();
   }, []);
 
+  useEffect(() => {
+    if (thinkingRef.current) {
+      thinkingRef.current.scrollTop = thinkingRef.current.scrollHeight;
+    }
+  }, [thinkingText]);
+
+  useEffect(() => {
+    if (activeFileRef.current) {
+      activeFileRef.current.scrollTop = activeFileRef.current.scrollHeight;
+    }
+  }, [fileProgresses, activeFile]);
+
   const startBuild = async () => {
+    setPhase('thinking');
     try {
       const res = await fetch('/api/agent/build', {
         method: 'POST',
@@ -174,26 +207,147 @@ export function AgentBuilder({ prompt, onClose }: AgentBuilderProps) {
         body: JSON.stringify({ prompt }),
       });
       if (!res.body) throw new Error('No response body');
+
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
+
       while (true) {
         const { done: streamDone, value } = await reader.read();
         if (streamDone) break;
-        const text = decoder.decode(value);
+
+        const text = decoder.decode(value, { stream: true });
         const lines = text.split('\n').filter(l => l.startsWith('data: '));
+
         for (const line of lines) {
           try {
-            const data: BuildStep = JSON.parse(line.slice(6));
-            setCurrentStep(data.step);
-            setSteps(prev => [...prev, data]);
-            if (data.step === 'done') { setDone(true); setProject(data.project); setFiles(data.files ?? []); setFileTree(data.fileTree); }
-            if (data.step === 'error') setFailed(true);
-          } catch {}
+            const data: BuildEvent = JSON.parse(line.slice(6));
+            handleEvent(data);
+          } catch {
+            // ignore partial JSON
+          }
         }
       }
     } catch (err: any) {
       setFailed(true);
-      setSteps(prev => [...prev, { step: 'error', message: err.message }]);
+      setPhase('error');
+      setStatusMessage(err.message);
+    }
+  };
+
+  const handleEvent = (data: BuildEvent) => {
+    switch (data.step) {
+      case 'thinking':
+        setPhase('thinking');
+        setStatusMessage(data.message ?? 'Thinking...');
+        break;
+
+      case 'thinking_token':
+        // Raw JSON tokens arrive here — accumulate in a ref and display as-is for now
+        // They get replaced by the clean parsed thinking text in the 'analysed' event
+        if (data.token) {
+          setThinkingText(prev => prev + data.token);
+        }
+        break;
+
+      case 'analysed':
+        // Replace raw streamed tokens with the clean extracted thinking text
+        setThinkingText(data.thinking ?? '');
+        if (data.projectName) setProjectName(data.projectName);
+        break;
+
+      case 'planning':
+        setPhase('planning');
+        setStatusMessage(data.message ?? 'Planning files...');
+        if (data.files) setFilePlan(data.files);
+        if (data.projectName) setProjectName(data.projectName);
+        if (data.files) {
+          const initial: Record<string, FileProgress> = {};
+          for (const fp of data.files) {
+            initial[fp] = { path: fp, content: '', done: false };
+          }
+          setFileProgresses(initial);
+        }
+        break;
+
+      case 'writing_file':
+        setPhase('writing');
+        if (data.filePath) {
+          setActiveFile(data.filePath);
+          setStatusMessage(`Writing ${data.filePath}...`);
+        }
+        break;
+
+      case 'file_token':
+        if (data.filePath && data.token) {
+          setFileProgresses(prev => ({
+            ...prev,
+            [data.filePath!]: {
+              ...prev[data.filePath!],
+              content: (prev[data.filePath!]?.content ?? '') + data.token,
+            },
+          }));
+        }
+        break;
+
+      case 'file_done':
+        if (data.filePath) {
+          setFileProgresses(prev => ({
+            ...prev,
+            [data.filePath!]: {
+              ...prev[data.filePath!],
+              done: true,
+              lineCount: data.lineCount,
+            },
+          }));
+        }
+        break;
+
+      case 'file_error':
+        if (data.filePath) {
+          setFileProgresses(prev => ({
+            ...prev,
+            [data.filePath!]: {
+              ...prev[data.filePath!],
+              done: true,
+              content: `// Error generating this file: ${data.message}`,
+            },
+          }));
+        }
+        break;
+
+      case 'saving':
+        setPhase('saving');
+        setStatusMessage('Saving project to database...');
+        break;
+
+      case 'checking':
+        setPhase('checking');
+        setStatusMessage('Checking for errors...');
+        break;
+
+      case 'fixing':
+        setStatusMessage(`Auto-fixing ${data.errors?.length ?? 0} issue(s)...`);
+        break;
+
+      case 'clean':
+        setStatusMessage('All files look good!');
+        break;
+
+      case 'done':
+        setPhase('done');
+        setDone(true);
+        setActiveFile(null);
+        setProject(data.project);
+        setFiles(data.files ?? []);
+        setFileTree(data.fileTree);
+        setStatusMessage('Your app is ready!');
+        break;
+
+      case 'error':
+        setPhase('error');
+        setFailed(true);
+        setStatusMessage(data.message ?? 'Build failed');
+        break;
     }
   };
 
@@ -215,70 +369,182 @@ export function AgentBuilder({ prompt, onClose }: AgentBuilderProps) {
     finally { setDownloading(false); }
   };
 
+  const doneFileCount = Object.values(fileProgresses).filter(f => f.done).length;
+  const totalFileCount = filePlan.length;
+
   return (
     <div className="flex flex-col h-full bg-background">
-      <div className="flex items-center justify-between px-6 py-4 border-b border-border/50">
+      {/* Header */}
+      <div className="flex items-center justify-between px-6 py-4 border-b border-border/50 shrink-0">
         <div className="flex items-center gap-2">
           <Sparkles className="w-5 h-5 text-primary animate-pulse" />
           <span className="font-semibold">AI Agent Builder</span>
+          {projectName && (
+            <span className="text-sm text-muted-foreground">— {projectName}</span>
+          )}
         </div>
         <Button variant="ghost" size="sm" onClick={onClose}>✕ Close</Button>
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
-        <div className="flex-1 p-6 overflow-y-auto space-y-3">
-          <div className="text-sm text-muted-foreground mb-4 bg-card border border-border/50 rounded-lg px-4 py-2">
-            <span className="text-primary font-medium">Building:</span> {prompt}
+      {/* Prompt */}
+      <div className="px-6 py-3 border-b border-border/30 shrink-0">
+        <p className="text-sm text-muted-foreground">
+          <span className="text-primary font-medium">Building: </span>{prompt}
+        </p>
+      </div>
+
+      <div className="flex flex-1 overflow-hidden min-h-0">
+        {/* Left: Live progress */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+
+          {/* Status bar */}
+          <div className={`px-6 py-2.5 border-b border-border/30 flex items-center gap-2 text-sm shrink-0
+            ${phase === 'error' ? 'bg-destructive/10 text-destructive' :
+              phase === 'done' ? 'bg-emerald-500/10 text-emerald-400' :
+              'bg-primary/5 text-primary'}`}>
+            {phase === 'error' ? <XCircle className="w-4 h-4" /> :
+             phase === 'done' ? <CheckCircle2 className="w-4 h-4" /> :
+             <Loader2 className="w-4 h-4 animate-spin" />}
+            <span className="font-medium">{statusMessage}</span>
+            {totalFileCount > 0 && phase === 'writing' && (
+              <span className="ml-auto text-xs text-muted-foreground">
+                {doneFileCount}/{totalFileCount} files
+              </span>
+            )}
           </div>
 
-          {steps.map((s, i) => (
-            <div key={i} className={`flex items-start gap-3 px-4 py-3 rounded-xl border ${s.step === 'error' ? 'border-destructive/30 bg-destructive/5' : s.step === 'done' ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-border/50 bg-card'}`}>
-              <div className="mt-0.5">
-                {s.step === 'error' ? <XCircle className="w-4 h-4 text-destructive" /> :
-                 s.step === 'done' || s.step === 'fixed' || s.step === 'clean' ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> :
-                 i === steps.length - 1 && !done && !failed ? <Loader2 className="w-4 h-4 text-primary animate-spin" /> :
-                 <CheckCircle2 className="w-4 h-4 text-primary/50" />}
+          {/* Thinking section */}
+          {(thinkingText || phase === 'thinking') && (
+            <div className="mx-6 mt-4 rounded-xl border border-primary/20 bg-primary/5 overflow-hidden shrink-0">
+              <div className="flex items-center gap-2 px-4 py-2 border-b border-primary/10 bg-primary/5">
+                <Brain className="w-4 h-4 text-primary" />
+                <span className="text-xs font-semibold text-primary uppercase tracking-wider">AI Thinking</span>
+                {phase === 'thinking' && <Loader2 className="w-3 h-3 animate-spin text-primary ml-auto" />}
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium">{STEP_LABELS[s.step] ?? s.step}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{s.message}</p>
-                {s.errors && s.errors.length > 0 && (
-                  <div className="mt-2 space-y-1">
-                    {s.errors.map((e, j) => (
-                      <p key={j} className="text-xs text-destructive font-mono bg-destructive/5 px-2 py-1 rounded">{e}</p>
-                    ))}
-                  </div>
-                )}
+              <div
+                ref={thinkingRef}
+                className="px-4 py-3 text-sm text-muted-foreground leading-relaxed max-h-28 overflow-y-auto font-mono"
+              >
+                {thinkingText || <span className="opacity-50">Analysing your request...</span>}
+                {phase === 'thinking' && <span className="animate-pulse text-primary">▌</span>}
               </div>
-            </div>
-          ))}
-
-          {!done && !failed && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground px-4">
-              <Loader2 className="w-4 h-4 animate-spin text-primary" />
-              {STEP_LABELS[currentStep] ?? 'Working...'}
             </div>
           )}
 
+          {/* File plan */}
+          {filePlan.length > 0 && (
+            <div className="mx-6 mt-3 shrink-0">
+              <div className="flex items-center gap-2 mb-2">
+                <Code2 className="w-4 h-4 text-muted-foreground" />
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Files to create ({totalFileCount})
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {filePlan.map(fp => {
+                  const prog = fileProgresses[fp];
+                  const isActive = fp === activeFile;
+                  const isDone = prog?.done;
+                  return (
+                    <button
+                      key={fp}
+                      onClick={() => setActiveFile(fp)}
+                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs border transition-all
+                        ${isActive ? 'border-primary bg-primary/10 text-primary' :
+                          isDone ? 'border-emerald-500/30 bg-emerald-500/5 text-emerald-400' :
+                          prog?.content ? 'border-blue-500/30 bg-blue-500/5 text-blue-400' :
+                          'border-border/40 text-muted-foreground'}`}
+                    >
+                      {isDone ? <CheckCircle2 className="w-3 h-3" /> :
+                       isActive ? <Loader2 className="w-3 h-3 animate-spin" /> :
+                       prog?.content ? <Pencil className="w-3 h-3" /> :
+                       <File className="w-3 h-3" />}
+                      {fp}
+                      {isDone && prog?.lineCount && (
+                        <span className="opacity-60">{prog.lineCount}L</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Live file content viewer */}
+          {activeFile && fileProgresses[activeFile] && (
+            <div className="mx-6 mt-3 flex-1 min-h-0 flex flex-col rounded-xl border border-border/40 overflow-hidden">
+              <div className="flex items-center gap-2 px-4 py-2 border-b border-border/40 bg-card shrink-0">
+                <FileCode className="w-4 h-4 text-primary/70" />
+                <span className="text-xs font-mono text-muted-foreground">{activeFile}</span>
+                {!fileProgresses[activeFile].done && (
+                  <Loader2 className="w-3 h-3 animate-spin text-primary ml-auto" />
+                )}
+                {fileProgresses[activeFile].done && (
+                  <CheckCircle2 className="w-3 h-3 text-emerald-400 ml-auto" />
+                )}
+              </div>
+              <pre
+                ref={activeFileRef}
+                className="flex-1 min-h-0 overflow-y-auto p-4 text-xs font-mono text-muted-foreground leading-relaxed bg-background/50 whitespace-pre-wrap break-all"
+              >
+                {fileProgresses[activeFile].content || (
+                  <span className="opacity-40">Generating...</span>
+                )}
+                {!fileProgresses[activeFile].done && (
+                  <span className="animate-pulse text-primary">▌</span>
+                )}
+              </pre>
+            </div>
+          )}
+
+          {/* Done actions */}
           {done && project && (
-            <div className="flex flex-wrap gap-2 pt-2">
-              <Button onClick={() => setLocation(`/workspace/${project.id}`)} className="gap-2">
-                <FolderOpen className="w-4 h-4" />Open in Editor
-              </Button>
-              <Button variant="outline" className="gap-2" onClick={downloadZip} disabled={downloading}>
-                {downloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}Download ZIP
-              </Button>
-              <Button variant="outline" className="gap-2" onClick={() => setShowDeploy(true)}>
-                <Globe className="w-4 h-4" />Deploy
+            <div className="px-6 py-4 border-t border-border/30 shrink-0">
+              <div className="flex flex-wrap gap-2">
+                <Button onClick={() => setLocation(`/workspace/${project.id}`)} className="gap-2">
+                  <FolderOpen className="w-4 h-4" />Open in Editor
+                </Button>
+                <Button variant="outline" className="gap-2" onClick={downloadZip} disabled={downloading}>
+                  {downloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                  Download ZIP
+                </Button>
+                <Button variant="outline" className="gap-2" onClick={() => setShowDeploy(true)}>
+                  <Globe className="w-4 h-4" />Deploy
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Error retry */}
+          {failed && (
+            <div className="px-6 py-4 border-t border-border/30 shrink-0">
+              <p className="text-sm text-destructive mb-3 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4" />
+                {statusMessage}
+              </p>
+              <Button variant="outline" onClick={() => {
+                started.current = false;
+                setPhase('idle');
+                setFailed(false);
+                setThinkingText('');
+                setFilePlan([]);
+                setFileProgresses({});
+                setActiveFile(null);
+                setStatusMessage('Starting...');
+                started.current = true;
+                startBuild();
+              }}>
+                Try Again
               </Button>
             </div>
           )}
         </div>
 
+        {/* Right: File tree (shown when done) */}
         {done && fileTree && (
-          <div className="w-64 border-l border-border/50 p-4 overflow-y-auto">
+          <div className="w-56 border-l border-border/50 p-4 overflow-y-auto shrink-0">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
-              <FolderOpen className="w-3.5 h-3.5" />{files.length} Files Created
+              <FolderOpen className="w-3.5 h-3.5" />{files.length} Files
             </p>
             <div className="space-y-0.5">
               {Object.entries(fileTree).map(([name, node]) => (
