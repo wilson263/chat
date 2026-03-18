@@ -12,6 +12,15 @@ import {
   ListOpenaiConversationsResponse,
   ListOpenaiMessagesResponse,
 } from "@workspace/api-zod";
+import Groq from "groq-sdk";
+
+function getGroqClient(): Groq {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) {
+    throw new Error("No Groq API key found. Set GROQ_API_KEY environment variable.");
+  }
+  return new Groq({ apiKey });
+}
 
 const router: IRouter = Router();
 
@@ -92,7 +101,7 @@ router.post("/openai/conversations/:id/messages", async (req, res): Promise<void
 
   let fullResponse = "";
 
-  const { groq } = await import("@workspace/integrations-groq-ai");
+  const groq = getGroqClient();
   const stream = await groq.chat.completions.create({
     model: "llama-3.3-70b-versatile",
     messages: [
