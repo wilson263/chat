@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import { openai } from "@workspace/integrations-openai-ai-server";
 
 const router: IRouter = Router();
 
@@ -25,17 +26,19 @@ interface ChatRequest {
   systemPrompt?: string;
 }
 
-const GROQ_MODELS: Record<string, string> = {
-  "llama-3.3-70b-versatile": "llama-3.3-70b-versatile",
-  "llama-3.1-70b-versatile": "llama-3.1-70b-versatile",
-  "llama-3.1-8b-instant": "llama-3.1-8b-instant",
-  "mixtral-8x7b-32768": "mixtral-8x7b-32768",
-  "gemma2-9b-it": "gemma2-9b-it",
-  "llama-3.3-70b-specdec": "llama-3.3-70b-specdec",
-  "deepseek-r1-distill-llama-70b": "deepseek-r1-distill-llama-70b",
+const MODEL_MAP: Record<string, string> = {
+  "llama-3.3-70b-versatile": "gpt-5.2",
+  "llama-3.1-70b-versatile": "gpt-5.2",
+  "llama-3.1-8b-instant": "gpt-5-mini",
+  "mixtral-8x7b-32768": "gpt-5.2",
+  "gemma2-9b-it": "gpt-5-mini",
+  "llama-3.3-70b-specdec": "gpt-5.2",
+  "deepseek-r1-distill-llama-70b": "gpt-5.2",
+  "gpt-4o": "gpt-5.2",
+  "gpt-4o-mini": "gpt-5-mini",
+  "o1-mini": "gpt-5.2",
+  "gpt-4-turbo": "gpt-5.2",
 };
-
-const OPENAI_MODELS = new Set(["gpt-4o", "gpt-4o-mini", "o1-mini", "gpt-4-turbo"]);
 
 const BASE_SYSTEM_PROMPT = `You are ZorvixAI, an elite full-stack AI engineer and architect. You build complete, production-grade applications — not skeletons, not stubs, not placeholders.
 
@@ -160,101 +163,21 @@ ABSOLUTE RULES — NEVER VIOLATE:
 ✗ NEVER write less than 1500 lines total
 ✗ NEVER leave any function body empty`;
 
-async function streamGroqWithRetry(
+function resolveModel(requestedModel?: string): string {
+  if (!requestedModel) return "gpt-5.2";
+  return MODEL_MAP[requestedModel] ?? "gpt-5.2";
+}
+
+async function streamReplitAI(
   res: any,
   model: string,
-  messages: { role: "system" | "user" | "assistant"; content: string }[],
-  temperature: number,
-  attempt = 1
+  userMessage: string,
+  history: HistoryMessage[],
+  attachments: Attachment[],
+  context?: string,
+  temperature?: number,
+  systemPrompt?: string
 ): Promise<void> {
-  try {
-    const { groq } = await import("@workspace/integrations-groq-ai");
-    const stream = await groq.chat.completions.create({
-      model,
-      messages,
-      stream: true,
-      max_tokens: 32768,
-      temperature,
-    });
-
-    for await (const chunk of stream) {
-      const content = chunk.choices[0]?.delta?.content;
-      if (content) res.write(`data: ${JSON.stringify({ content })}\n\n`);
-    }
-  } catch (err: any) {
-    const isRateLimit = err?.status === 429 || err?.message?.includes("rate limit") || err?.message?.includes("429");
-    const isContextLength = err?.status === 400 && err?.message?.includes("context");
-
-    if (isRateLimit && attempt <= 3) {
-      const delay = attempt * 2000;
-      await new Promise(r => setTimeout(r, delay));
-      return streamGroqWithRetry(res, model, messages, temperature, attempt + 1);
-    }
-
-    if (isContextLength && attempt === 1) {
-      const truncatedMessages = [
-        messages[0],
-        ...messages.slice(1).map(m => ({
-          ...m,
-          content: m.content.slice(0, 4000),
-        })),
-      ];
-      return streamGroqWithRetry(res, model, truncatedMessages, temperature, attempt + 1);
-    }
-
-    if (attempt <= 2) {
-      const fallbackModel = model === "llama-3.3-70b-versatile" ? "llama-3.1-8b-instant" : "llama-3.3-70b-versatile";
-      return streamGroqWithRetry(res, fallbackModel, messages, temperature, attempt + 1);
-    }
-
-    throw err;
-  }
-}
-
-async function streamGroq(
-  res: any,
-  model: string,
-  userMessage: string,
-  history: HistoryMessage[],
-  attachments: Attachment[],
-  context?: string,
-  temperature?: number,
-  systemPrompt?: string
-) {
-  const textAttachments = attachments.filter(a => a.type === "text");
-
-  let fullText = "";
-  if (context) fullText += `Current code context:\n${context}\n\n`;
-  for (const att of textAttachments) {
-    fullText += `--- Uploaded file: ${att.name} ---\n${att.data}\n\n`;
-  }
-  fullText += userMessage;
-
-  const finalSystemPrompt = systemPrompt
-    ? `${BASE_SYSTEM_PROMPT}\n\nAdditional user instructions:\n${systemPrompt}`
-    : BASE_SYSTEM_PROMPT;
-
-  const messages: { role: "system" | "user" | "assistant"; content: string }[] = [
-    { role: "system", content: finalSystemPrompt },
-    ...history.map(m => ({ role: m.role as "user" | "assistant", content: m.content })),
-    { role: "user", content: fullText },
-  ];
-
-  const temp = typeof temperature === "number" ? temperature : 0.7;
-  await streamGroqWithRetry(res, model, messages, temp);
-}
-
-async function streamOpenAI(
-  res: any,
-  model: string,
-  userMessage: string,
-  history: HistoryMessage[],
-  attachments: Attachment[],
-  apiKey: string,
-  context?: string,
-  temperature?: number,
-  systemPrompt?: string
-) {
   const textAttachments = attachments.filter(a => a.type === "text");
   const imageAttachments = attachments.filter(a => a.type === "image");
 
@@ -269,10 +192,10 @@ async function streamOpenAI(
     ? `${BASE_SYSTEM_PROMPT}\n\nAdditional user instructions:\n${systemPrompt}`
     : BASE_SYSTEM_PROMPT;
 
-  type OpenAIContent = string | { type: string; text?: string; image_url?: { url: string } }[];
-  const openaiMessages: { role: string; content: OpenAIContent }[] = [
+  type MessageContent = string | { type: string; text?: string; image_url?: { url: string } }[];
+  const messages: { role: "system" | "user" | "assistant"; content: MessageContent }[] = [
     { role: "system", content: finalSystemPrompt },
-    ...history.map(m => ({ role: m.role, content: m.content })),
+    ...history.map(m => ({ role: m.role as "user" | "assistant", content: m.content })),
   ];
 
   if (imageAttachments.length > 0) {
@@ -282,63 +205,33 @@ async function streamOpenAI(
     for (const img of imageAttachments) {
       parts.push({ type: "image_url", image_url: { url: img.data } });
     }
-    openaiMessages.push({ role: "user", content: parts });
+    messages.push({ role: "user", content: parts });
   } else {
-    openaiMessages.push({ role: "user", content: userContent });
+    messages.push({ role: "user", content: userContent });
   }
 
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({
-      model,
-      messages: openaiMessages,
-      stream: true,
-      max_tokens: 32768,
-      temperature: typeof temperature === "number" ? temperature : 0.7,
-    }),
+  const stream = await openai.chat.completions.create({
+    model,
+    messages: messages as any,
+    stream: true,
+    max_completion_tokens: 8192,
   });
 
-  if (!response.ok) {
-    const errText = await response.text().catch(() => "");
-    throw new Error(`OpenAI API error ${response.status}: ${errText.slice(0, 200)}`);
-  }
-
-  const body = response.body;
-  if (!body) throw new Error("No response body from OpenAI");
-
-  const reader = body.getReader();
-  const decoder = new TextDecoder();
-  let buf = "";
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buf += decoder.decode(value, { stream: true });
-    const lines = buf.split("\n");
-    buf = lines.pop() ?? "";
-    for (const line of lines) {
-      if (!line.startsWith("data: ")) continue;
-      const dataStr = line.slice(6).trim();
-      if (dataStr === "[DONE]") break;
-      try {
-        const parsed = JSON.parse(dataStr);
-        const delta = parsed.choices?.[0]?.delta?.content;
-        if (delta) res.write(`data: ${JSON.stringify({ content: delta })}\n\n`);
-      } catch {}
-    }
+  for await (const chunk of stream) {
+    const content = chunk.choices[0]?.delta?.content;
+    if (content) res.write(`data: ${JSON.stringify({ content })}\n\n`);
   }
 }
 
-router.post("/chat/stream", async (req, res): Promise<void> => {
+async function handleChatRequest(req: any, res: any): Promise<void> {
   const body = req.body as ChatRequest;
   if (!body || typeof body.userMessage !== "string") {
     res.status(400).json({ error: "userMessage is required" });
     return;
   }
 
-  const { userMessage, history = [], attachments = [], context, model, openaiApiKey, temperature, systemPrompt } = body;
-  const isOpenAI = OPENAI_MODELS.has(model ?? "");
+  const { userMessage, history = [], attachments = [], context, model, temperature, systemPrompt } = body;
+  const resolvedModel = resolveModel(model);
 
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
@@ -346,69 +239,19 @@ router.post("/chat/stream", async (req, res): Promise<void> => {
   res.setHeader("X-Accel-Buffering", "no");
 
   try {
-    if (isOpenAI) {
-      if (!openaiApiKey) {
-        res.write(`data: ${JSON.stringify({ content: "⚠️ OpenAI API key is required for GPT models. Go to Settings → API Keys to add yours." })}\n\n`);
-      } else {
-        await streamOpenAI(res, model!, userMessage, history, attachments, openaiApiKey, context, temperature, systemPrompt);
-      }
-    } else {
-      const resolvedModel = GROQ_MODELS[model ?? ""] ?? "llama-3.3-70b-versatile";
-      await streamGroq(res, resolvedModel, userMessage, history, attachments, context, temperature, systemPrompt);
-    }
+    await streamReplitAI(res, resolvedModel, userMessage, history, attachments, context, temperature, systemPrompt);
     res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
     res.end();
   } catch (err: any) {
     const errMsg = err?.message ?? "An unexpected error occurred";
-    const isRateLimit = errMsg.includes("429") || errMsg.toLowerCase().includes("rate limit");
-    const friendlyMsg = isRateLimit
-      ? "⚠️ Rate limit reached. Please wait a moment and try again."
-      : `⚠️ Error: ${errMsg}`;
-    res.write(`data: ${JSON.stringify({ content: `\n\n${friendlyMsg}` })}\n\n`);
+    res.write(`data: ${JSON.stringify({ content: `\n\n⚠️ Error: ${errMsg}` })}\n\n`);
     res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
     res.end();
   }
-});
+}
 
-router.post("/chat/message", async (req, res): Promise<void> => {
-  const body = req.body as ChatRequest;
-  if (!body || typeof body.userMessage !== "string") {
-    res.status(400).json({ error: "userMessage is required" });
-    return;
-  }
-
-  const { userMessage, history = [], attachments = [], context, model, openaiApiKey, temperature, systemPrompt } = body;
-  const isOpenAI = OPENAI_MODELS.has(model ?? "");
-
-  res.setHeader("Content-Type", "text/event-stream");
-  res.setHeader("Cache-Control", "no-cache");
-  res.setHeader("Connection", "keep-alive");
-  res.setHeader("X-Accel-Buffering", "no");
-
-  try {
-    if (isOpenAI) {
-      if (!openaiApiKey) {
-        res.write(`data: ${JSON.stringify({ content: "⚠️ OpenAI API key is required for GPT models. Go to Settings → API Keys to add yours." })}\n\n`);
-      } else {
-        await streamOpenAI(res, model!, userMessage, history, attachments, openaiApiKey, context, temperature, systemPrompt);
-      }
-    } else {
-      const resolvedModel = GROQ_MODELS[model ?? ""] ?? "llama-3.3-70b-versatile";
-      await streamGroq(res, resolvedModel, userMessage, history, attachments, context, temperature, systemPrompt);
-    }
-    res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
-    res.end();
-  } catch (err: any) {
-    const errMsg = err?.message ?? "An unexpected error occurred";
-    const isRateLimit = errMsg.includes("429") || errMsg.toLowerCase().includes("rate limit");
-    const friendlyMsg = isRateLimit
-      ? "⚠️ Rate limit reached. Please wait a moment and try again."
-      : `⚠️ Error: ${errMsg}`;
-    res.write(`data: ${JSON.stringify({ content: `\n\n${friendlyMsg}` })}\n\n`);
-    res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
-    res.end();
-  }
-});
+router.post("/chat/stream", handleChatRequest);
+router.post("/chat/message", handleChatRequest);
 
 router.post("/chat/generate-image", async (_req, res): Promise<void> => {
   res.status(501).json({ error: "Image generation is not supported with the current AI provider." });
