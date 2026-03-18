@@ -14,7 +14,7 @@ import { useAuth, logout } from '@/hooks/use-auth';
 import {
   Code2, FolderKanban, Plus, Clock, TerminalSquare, Trash2, ArrowRight, Github, Rocket,
   Loader2, Globe, Sparkles, Info, Mail, Grid3X3, LogOut, MessageSquare, Terminal, Settings,
-  BarChart3, Wand2, ChevronDown, ExternalLink,
+  BarChart3, Wand2, ChevronDown, ExternalLink, Layout,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import {
@@ -159,6 +159,22 @@ export default function Dashboard() {
 
           <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={() => setLocation('/developer')}>
             <Terminal className="h-4 w-4 mr-2" /> Developer
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground hover:text-foreground bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border border-blue-500/20 hover:border-blue-500/40"
+            onClick={() => {
+              if (projects && projects.length > 0) {
+                openProject(projects[0].id);
+              } else {
+                setIsCreateOpen(true);
+              }
+            }}
+          >
+            <Layout className="h-4 w-4 mr-2 text-blue-400" />
+            <span className="text-blue-300">Workspace</span>
           </Button>
 
           <DropdownMenu>
