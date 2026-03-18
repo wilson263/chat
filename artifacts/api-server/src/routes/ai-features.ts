@@ -1,13 +1,16 @@
 import { Router } from "express";
-import Groq from "groq-sdk";
+import OpenAI from "openai";
 
-  function getGroqClient(): Groq {
-    const apiKey = process.env.GROQ_API_KEY;
-    if (!apiKey) throw new Error("GROQ_API_KEY environment variable is not set.");
-    return new Groq({ apiKey });
+  function getAIClient(): OpenAI {
+    const apiKey = process.env.OPENROUTER_API_KEY;
+    if (!apiKey) throw new Error("OPENROUTER_API_KEY environment variable is not set.");
+    return new OpenAI({
+      apiKey,
+      baseURL: "https://openrouter.ai/api/v1",
+    });
   }
 
-  const openai = getGroqClient() as any;
+  const openai = getAIClient();
 
 const router = Router();
 
@@ -16,7 +19,7 @@ router.post("/api/chat/auto-title", async (req, res) => {
     const { firstMessage } = req.body as { firstMessage: string };
     if (!firstMessage) return res.json({ title: "New Chat" });
     const result = await openai.chat.completions.create({
-      model: "llama-3.1-8b-instant",
+      model: "meta-llama/llama-3.1-8b-instruct:free",
       messages: [
         {
           role: "user",
@@ -57,7 +60,7 @@ router.post("/api/chat/websearch", async (req, res) => {
     if (!query) return res.status(400).json({ error: "Query required" });
 
     const result = await openai.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
+      model: "meta-llama/llama-3.3-70b-instruct:free",
       messages: [
         {
           role: "user",
