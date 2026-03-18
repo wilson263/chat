@@ -553,11 +553,29 @@ Rules:
 - For web apps: make them visually stunning with modern CSS
 - For non-web apps: include a README.md explaining how to run it`;
 
+    // System prompt tells the backend exactly which file format to use — overrides the default
+    const buildSystemPrompt = `You are an expert software engineer. Build complete, production-ready applications.
+Output ONLY file blocks — no introductions, explanations, or text outside the blocks.
+
+Format EXACTLY like this (one block per file):
+===FILE: filename.ext===
+[complete file content]
+===FILE: folder/filename2.ext===
+[complete file content]
+
+Rules:
+- Choose filenames that match the language/framework correctly
+- Generate ALL files needed to run the app
+- Write complete, working code — no placeholders, no TODOs, no "// implement later"
+- For web apps: stunning modern CSS, dark themes, smooth animations
+- For non-web apps: include a README.md explaining how to run it
+- ANY language supported: HTML/CSS/JS, React, Python, Rust, Go, Java, C++, Swift, Kotlin, etc.`;
+
     let fullResponse = '';
     try {
       const res = await fetch(`${BASE_PATH}/api/chat/message`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-        body: JSON.stringify({ userMessage: prompt, history: [] }),
+        body: JSON.stringify({ userMessage: `Build this: ${builderPrompt.trim()}`, history: [], systemPrompt: buildSystemPrompt }),
       });
       const reader = res.body?.getReader();
       const decoder = new TextDecoder();
@@ -578,12 +596,27 @@ Rules:
         }
       }
 
-      const filePattern = /===FILE:\s*([^\s=]+)===\n?([\s\S]*?)(?====FILE:|$)/g;
+      // Parse ===FILE: filename=== format (primary — what we instruct the AI to output)
+      const filePattern = /===FILE:\s*([^\n=]+?)===\n?([\s\S]*?)(?====FILE:|$)/g;
       const parsedFiles: { name: string; content: string }[] = [];
       let match;
       while ((match = filePattern.exec(fullResponse)) !== null) {
-        parsedFiles.push({ name: match[1].trim(), content: match[2].trim() });
+        const name = match[1].trim();
+        const content = match[2].trim();
+        if (name && content) parsedFiles.push({ name, content });
       }
+
+      // Fallback: parse === filename === format (used by some models)
+      if (parsedFiles.length === 0) {
+        const altPattern = /===\s*([^\n=]+\.[a-zA-Z0-9]+)\s*===\n?([\s\S]*?)(?====\s*[^\n=]+\.[a-zA-Z0-9]+\s*===|$)/g;
+        while ((match = altPattern.exec(fullResponse)) !== null) {
+          const name = match[1].trim();
+          const content = match[2].trim();
+          if (name && content) parsedFiles.push({ name, content });
+        }
+      }
+
+      // Last resort: treat entire response as index.html
       if (parsedFiles.length === 0) {
         parsedFiles.push({ name: 'index.html', content: extractCodeFromMarkdown(fullResponse) });
       }

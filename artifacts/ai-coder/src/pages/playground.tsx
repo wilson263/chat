@@ -180,7 +180,7 @@ export default function PlaygroundPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userMessage: `Explain this error and how to fix it in simple terms:\n\nCode:\n${selectedFile?.content?.slice(0, 2000)}\n\nError:\n${errors}`,
-          model: 'llama-3.3-70b-versatile', history: [], temperature: 0.3,
+          history: [], temperature: 0.3,
         }),
       });
       const reader = res.body!.getReader();
@@ -191,7 +191,7 @@ export default function PlaygroundPage() {
         if (done) break;
         const chunk = decoder.decode(value);
         for (const line of chunk.split('\n')) {
-          if (line.startsWith('data: ')) { try { const d = JSON.parse(line.slice(6)); if (d.text) { full += d.text; setAiExplanation(full); } } catch {} }
+          if (line.startsWith('data: ')) { try { const d = JSON.parse(line.slice(6)); if (d.content) { full += d.content; setAiExplanation(full); } } catch {} }
         }
       }
     } catch { toast({ title: 'AI explanation failed', variant: 'destructive' }); }

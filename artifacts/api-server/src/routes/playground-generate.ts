@@ -64,6 +64,7 @@ RULES:
       { role: "system", content: systemPrompt },
       { role: "user", content: userMessage },
     ],
+    model: "qwen/qwen3-coder-480b-a35b:free",
     max_completion_tokens: 8192,
   });
 

@@ -67,9 +67,9 @@ export function AiPanel() {
       history,
       attachments: attachments.map(a => ({ name: a.name, type: a.type, mimeType: a.mimeType, data: a.data })),
       context: buildFileContext(),
-      model: localStorage.getItem('last_model') || 'llama-3.3-70b-versatile',
+      model: (() => { const m = localStorage.getItem('last_model'); return (!m || m === 'auto' || m === 'llama-3.3-70b-versatile' || m === 'mixtral-8x7b-32768' || m === 'gemma2-9b-it') ? undefined : m; })(),
       temperature: parseFloat(localStorage.getItem('chat_temperature') || '0.7'),
-      systemPrompt: localStorage.getItem('custom_system_prompt') || '',
+      systemPrompt: localStorage.getItem('custom_system_prompt') || undefined,
     }, { onChunk: c => { aiMessage += c; } });
 
     setMessages(prev => [...prev, { role: 'assistant', content: aiMessage }]);
@@ -81,7 +81,7 @@ export function AiPanel() {
     await aiTools.stream({
       userMessage: `${prompt}\n\n\`\`\`${activeFile.language}\n${activeFile.content?.slice(0, 8000)}\n\`\`\``,
       history: [],
-      model: localStorage.getItem('last_model') || 'llama-3.3-70b-versatile',
+      model: (() => { const m = localStorage.getItem('last_model'); return (!m || m === 'auto' || m === 'llama-3.3-70b-versatile' || m === 'mixtral-8x7b-32768' || m === 'gemma2-9b-it') ? undefined : m; })(),
       temperature: 0.3,
     });
   };
