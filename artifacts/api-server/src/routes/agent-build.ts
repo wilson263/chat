@@ -2,15 +2,18 @@ import { Router, type IRouter, type Request, type Response } from "express";
 import { db, projectsTable, projectFilesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { getUserId } from "./auth";
-import Groq from "groq-sdk";
+import OpenAI from "openai";
 
-  function getGroqClient(): Groq {
-    const apiKey = process.env.GROQ_API_KEY;
-    if (!apiKey) throw new Error("GROQ_API_KEY environment variable is not set.");
-    return new Groq({ apiKey });
+  function getAIClient(): OpenAI {
+    const apiKey = process.env.OPENROUTER_API_KEY;
+    if (!apiKey) throw new Error("OPENROUTER_API_KEY environment variable is not set.");
+    return new OpenAI({
+      apiKey,
+      baseURL: "https://openrouter.ai/api/v1",
+    });
   }
 
-  const openai = getGroqClient() as any;
+  const openai = getAIClient();
 
 const router: IRouter = Router();
 
@@ -169,7 +172,7 @@ REMEMBER: Respond with ONLY the raw JSON object.`;
     : `Build this: ${prompt}\n\nPREVIOUS ATTEMPT FAILED. You MUST respond with ONLY a raw JSON object. No markdown fences, no explanation text.`;
 
   const response = await openai.chat.completions.create({
-    model: "llama-3.3-70b-versatile",
+    model: "meta-llama/llama-3.3-70b-instruct:free",
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: userMessage },
@@ -214,7 +217,7 @@ async function fixErrors(
   const errorsText = errors.join("\n");
 
   const response = await openai.chat.completions.create({
-    model: "llama-3.3-70b-versatile",
+    model: "meta-llama/llama-3.3-70b-instruct:free",
     messages: [
       {
         role: "user",
