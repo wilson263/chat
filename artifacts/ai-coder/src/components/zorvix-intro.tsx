@@ -10,82 +10,106 @@ interface Particle {
   color: string;
 }
 
+function bellTone(ctx: AudioContext, baseFreq: number, startTime: number, peakVol: number, decay: number) {
+  // Realistic bell via sine partials with natural harmonic ratios
+  const ratios = [1, 2.756, 5.404, 8.933, 13.34];
+  const vols   = [1.0,  0.5,   0.25,  0.12,  0.06];
+  ratios.forEach((r, i) => {
+    const osc = ctx.createOscillator();
+    const g   = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = baseFreq * r;
+    osc.connect(g);
+    g.connect(ctx.destination);
+    g.gain.setValueAtTime(0, startTime);
+    g.gain.linearRampToValueAtTime(peakVol * vols[i], startTime + 0.006);
+    g.gain.exponentialRampToValueAtTime(0.0001, startTime + decay * (1 - i * 0.12));
+    osc.start(startTime);
+    osc.stop(startTime + decay + 0.05);
+  });
+}
+
 function playIntroSound() {
   try {
     const ctx = new AudioContext();
+    const now = ctx.currentTime;
 
-    // --- Deep ambient hum that rises ---
-    const hum = ctx.createOscillator();
-    const humGain = ctx.createGain();
-    const humFilter = ctx.createBiquadFilter();
-    hum.type = 'sine';
-    hum.frequency.setValueAtTime(55, ctx.currentTime);
-    hum.frequency.exponentialRampToValueAtTime(220, ctx.currentTime + 2.5);
-    humFilter.type = 'lowpass';
-    humFilter.frequency.value = 600;
-    hum.connect(humFilter);
-    humFilter.connect(humGain);
-    humGain.connect(ctx.destination);
-    humGain.gain.setValueAtTime(0, ctx.currentTime);
-    humGain.gain.linearRampToValueAtTime(0.12, ctx.currentTime + 0.8);
-    humGain.gain.linearRampToValueAtTime(0.06, ctx.currentTime + 3.5);
-    humGain.gain.linearRampToValueAtTime(0, ctx.currentTime + 4.5);
-    hum.start(ctx.currentTime);
-    hum.stop(ctx.currentTime + 4.6);
-
-    // --- Digital data beeps ---
-    const beepTimes = [0.6, 0.75, 0.9, 1.1, 1.25, 1.6, 2.0];
-    const beepFreqs = [1320, 1760, 1100, 2200, 880, 1540, 1980];
-    beepTimes.forEach((t, i) => {
-      const osc = ctx.createOscillator();
-      const g = ctx.createGain();
-      osc.type = 'square';
-      osc.frequency.value = beepFreqs[i];
-      osc.connect(g);
-      g.connect(ctx.destination);
-      g.gain.setValueAtTime(0, ctx.currentTime + t);
-      g.gain.linearRampToValueAtTime(0.04, ctx.currentTime + t + 0.01);
-      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + 0.12);
-      osc.start(ctx.currentTime + t);
-      osc.stop(ctx.currentTime + t + 0.15);
-    });
-
-    // --- Power-up chord at logo reveal ---
-    const chordFreqs = [220, 277.18, 329.63, 440];
-    chordFreqs.forEach((freq, i) => {
-      const osc = ctx.createOscillator();
-      const g = ctx.createGain();
+    // --- Warm pad: soft Cmaj9 swell (C2, G2, E3, B3, D4) ---
+    const padFreqs = [65.41, 98.00, 164.81, 246.94, 293.66];
+    padFreqs.forEach((freq, i) => {
+      const osc    = ctx.createOscillator();
+      const gain   = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
       osc.type = 'sine';
       osc.frequency.value = freq;
-      osc.connect(g);
-      g.connect(ctx.destination);
-      g.gain.setValueAtTime(0, ctx.currentTime + 1.2);
-      g.gain.linearRampToValueAtTime(0.07 - i * 0.01, ctx.currentTime + 1.4);
-      g.gain.linearRampToValueAtTime(0, ctx.currentTime + 3.0);
-      osc.start(ctx.currentTime + 1.2);
-      osc.stop(ctx.currentTime + 3.1);
+      filter.type = 'lowpass';
+      filter.frequency.value = 700;
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.055 - i * 0.007, now + 1.8);
+      gain.gain.linearRampToValueAtTime(0.03, now + 3.8);
+      gain.gain.linearRampToValueAtTime(0, now + 4.9);
+      osc.start(now);
+      osc.stop(now + 5.0);
     });
 
-    // --- Whoosh at exit ---
-    const bufSize = ctx.sampleRate * 1.5;
+    // --- Ascending chime melody (C5 → D5 → E5 → G5 → A5 → C6) ---
+    const melody = [
+      { freq: 523.25, t: 0.45 },
+      { freq: 587.33, t: 0.72 },
+      { freq: 659.25, t: 0.98 },
+      { freq: 783.99, t: 1.26 },
+      { freq: 880.00, t: 1.55 },
+      { freq: 1046.5, t: 1.85 },
+    ];
+    melody.forEach(({ freq, t }) => {
+      bellTone(ctx, freq, now + t, 0.10, 1.0);
+    });
+
+    // --- Rich bell strike when ZORVIX logo appears ---
+    bellTone(ctx, 523.25, now + 1.0, 0.18, 2.0);
+
+    // --- Gentle second bell at tagline ---
+    bellTone(ctx, 659.25, now + 1.9, 0.10, 1.5);
+
+    // --- Soft resolution chord swell (Cmaj: C4, E4, G4) ---
+    const resolveFreqs = [261.63, 329.63, 392.00, 523.25];
+    resolveFreqs.forEach((freq, i) => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      gain.gain.setValueAtTime(0, now + 2.0);
+      gain.gain.linearRampToValueAtTime(0.045 - i * 0.007, now + 2.4);
+      gain.gain.linearRampToValueAtTime(0, now + 4.5);
+      osc.start(now + 2.0);
+      osc.stop(now + 4.6);
+    });
+
+    // --- Gentle airy shimmer at exit ---
+    const bufSize = Math.floor(ctx.sampleRate * 1.2);
     const noiseBuf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
     const nd = noiseBuf.getChannelData(0);
     for (let i = 0; i < bufSize; i++) nd[i] = Math.random() * 2 - 1;
-    const noise = ctx.createBufferSource();
-    noise.buffer = noiseBuf;
-    const noiseFilter = ctx.createBiquadFilter();
-    noiseFilter.type = 'bandpass';
-    noiseFilter.frequency.setValueAtTime(300, ctx.currentTime + 3.8);
-    noiseFilter.frequency.exponentialRampToValueAtTime(8000, ctx.currentTime + 4.8);
-    const noiseGain = ctx.createGain();
-    noise.connect(noiseFilter);
-    noiseFilter.connect(noiseGain);
-    noiseGain.connect(ctx.destination);
-    noiseGain.gain.setValueAtTime(0, ctx.currentTime + 3.8);
-    noiseGain.gain.linearRampToValueAtTime(0.25, ctx.currentTime + 4.0);
-    noiseGain.gain.linearRampToValueAtTime(0, ctx.currentTime + 4.8);
-    noise.start(ctx.currentTime + 3.8);
-    noise.stop(ctx.currentTime + 4.9);
+    const shimmer = ctx.createBufferSource();
+    shimmer.buffer = noiseBuf;
+    const shimFilter = ctx.createBiquadFilter();
+    shimFilter.type = 'highpass';
+    shimFilter.frequency.setValueAtTime(4000, now + 3.8);
+    shimFilter.frequency.exponentialRampToValueAtTime(9000, now + 4.7);
+    const shimGain = ctx.createGain();
+    shimmer.connect(shimFilter);
+    shimFilter.connect(shimGain);
+    shimGain.connect(ctx.destination);
+    shimGain.gain.setValueAtTime(0, now + 3.8);
+    shimGain.gain.linearRampToValueAtTime(0.06, now + 4.1);
+    shimGain.gain.linearRampToValueAtTime(0, now + 4.7);
+    shimmer.start(now + 3.8);
+    shimmer.stop(now + 4.8);
 
     return ctx;
   } catch {
