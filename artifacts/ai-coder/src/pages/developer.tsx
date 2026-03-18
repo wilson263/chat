@@ -76,9 +76,21 @@ interface OpenTab {
   sha?: string;
 }
 
+interface LayoutOption {
+  name: string;
+  style: string;
+  description: string;
+  colorScheme: string;
+  sections: string;
+  emoji: string;
+}
+
 interface AiMessage {
   role: 'user' | 'assistant';
   content: string;
+  layoutOptions?: LayoutOption[];
+  isPicker?: boolean;
+  chosenLayout?: string;
 }
 
 function buildTree(files: FileNode[]): FileNode[] {
@@ -186,6 +198,9 @@ export default function DeveloperPage() {
   const [rewriteCleanCode, setRewriteCleanCode] = useState('');
   const [rewriteMode, setRewriteMode] = useState<'build' | 'rewrite'>('build');
   const [builderPrompt, setBuilderPrompt] = useState('');
+  const [layoutPendingPrompt, setLayoutPendingPrompt] = useState('');
+  const [layoutPendingMsgs, setLayoutPendingMsgs] = useState<{role:string;content:string}[]>([]);
+  const [isLoadingLayouts, setIsLoadingLayouts] = useState(false);
   const [buildPhase, setBuildPhase] = useState<'frontend' | 'backend' | 'api' | null>(null);
   const [phaseStatuses, setPhaseStatuses] = useState<{
     frontend: { text: string; done: boolean; count: number };
@@ -418,6 +433,113 @@ export default function DeveloperPage() {
     return parsed.length;
   };
 
+  const fetchLayoutOptions = async (prompt: string): Promise<LayoutOption[]> => {
+    const systemPrompt = `You are a UI/UX layout expert. Given a project request, suggest exactly 3 DISTINCT layout designs tailored to that specific project type.
+Return ONLY a valid JSON array — no text before or after it. Example format:
+[{"name":"Modern Hero","style":"bold","description":"Full-screen hero banner with animated text, feature cards below, and sticky navigation","colorScheme":"dark bg + electric blue accents","sections":"Hero, Features, Testimonials, Pricing, Footer","emoji":"⚡"},
+{"name":"Clean Minimal","style":"minimal","description":"Whitespace-focused layout with subtle typography, grid-based content, and minimal decoration","colorScheme":"white + charcoal gray","sections":"Header, About, Gallery, Contact, Footer","emoji":"🤍"},
+{"name":"Card Grid","style":"vibrant","description":"Colorful card-based layout with bold headings, icon blocks, and gradient call-to-action sections","colorScheme":"gradient purple-to-pink + white cards","sections":"Navbar, Hero, Service Cards, Stats, CTA, Footer","emoji":"🎨"}]
+Tailor all 3 layouts specifically to: "${prompt}". Make them genuinely different from each other in style, structure, and feel.`;
+    try {
+      const res = await fetch(`${BASE_PATH}/api/chat/stream`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ messages: [{ role: 'user', content: `Suggest 3 layout designs for: ${prompt}` }], systemPrompt }),
+      });
+      if (!res.ok || !res.body) return [];
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let fullText = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        for (const line of chunk.split('\n')) {
+          const trimmed = line.trim();
+          if (trimmed.startsWith('data: ')) {
+            const data = trimmed.slice(6);
+            if (data === '[DONE]') break;
+            try {
+              const parsed = JSON.parse(data);
+              const delta = parsed.choices?.[0]?.delta?.content || parsed.content || '';
+              if (delta) fullText += delta;
+            } catch {}
+          }
+        }
+      }
+      const jsonMatch = fullText.match(/\[[\s\S]*\]/);
+      if (!jsonMatch) return [];
+      return JSON.parse(jsonMatch[0]) as LayoutOption[];
+    } catch { return []; }
+  };
+
+  const generateWithLayout = async (layout: LayoutOption, pendingPrompt: string, pendingMsgs: {role:string;content:string}[], pickerIndex: number) => {
+    setAiMessages(prev => prev.map((m, i) => i === pickerIndex ? { ...m, isPicker: false, chosenLayout: layout.name, layoutOptions: undefined, content: `${layout.emoji} **${layout.name}** layout selected — generating your code...` } : m));
+    const layoutContext = `\nUSER SELECTED LAYOUT: "${layout.name}" (${layout.style} style)\nDescription: ${layout.description}\nColor scheme: ${layout.colorScheme}\nMain sections: ${layout.sections}\nYou MUST implement this exact layout style. Make the design match the description precisely.`;
+    const activeTabData = openTabs.find(t => t.path === activeTab);
+    const context = activeTabData ? `\n\nCurrent file (${activeTabData.name}):\n\`\`\`${activeTabData.language}\n${activeTabData.content.slice(0, 3000)}\n\`\`\`` : '';
+    let systemPrompt = `You are a senior frontend developer helping with code in an IDE.
+Focus ONLY on Frontend (HTML/CSS/JS/React/UI). Do not include backend or server code.
+RULE: When generating multi-page HTML sites, you MUST create a SEPARATE .html file for EACH page. NEVER put multiple pages inside one index.html. NEVER say "I cannot create separate HTML files" — always create them.
+When generating files, use this exact format so they are auto-created in the editor:
+===FILE: index.html===
+[complete home page html only]
+===FILE: about.html===
+[complete about page html]
+===FILE: styles.css===
+[complete shared css]
+===FILE: script.js===
+[complete shared js]
+Navigation links MUST use real hrefs pointing to the correct file: <a href="about.html">About</a> — NEVER use href="#"
+Every HTML page must include the full shared header/navbar and footer (duplicate them per file).
+Write complete, working code. No placeholders. No TODO comments.${layoutContext}`;
+    setIsAiStreaming(true);
+    let assistantContent = '';
+    setAiMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+    try {
+      const msgs = [...pendingMsgs, { role: 'user', content: pendingPrompt + `\n\nLayout: ${layout.name} — ${layout.description}. Color: ${layout.colorScheme}. Sections: ${layout.sections}.` }];
+      const res = await fetch(`${BASE_PATH}/api/chat/stream`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ messages: msgs, systemPrompt, context }),
+      });
+      if (!res.ok || !res.body) { const d = await res.json(); throw new Error(d.error || 'AI error'); }
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        for (const line of chunk.split('\n')) {
+          const trimmed = line.trim();
+          if (trimmed.startsWith('data: ')) {
+            const data = trimmed.slice(6);
+            if (data === '[DONE]') break;
+            try {
+              const parsed = JSON.parse(data);
+              const delta = parsed.choices?.[0]?.delta?.content || parsed.content || '';
+              if (delta) {
+                assistantContent += delta;
+                setAiMessages(prev => { const msgs = [...prev]; msgs[msgs.length - 1] = { role: 'assistant', content: assistantContent }; return msgs; });
+              }
+            } catch {}
+          }
+        }
+      }
+      const fileCount = applyChatFiles(assistantContent);
+      if (fileCount > 0) {
+        toast({ title: `${fileCount} file${fileCount !== 1 ? 's' : ''} created in editor` });
+        setAiMessages(prev => { const m = [...prev]; m[m.length - 1] = { role: 'assistant', content: assistantContent + `\n\n✅ **${fileCount} file${fileCount !== 1 ? 's' : ''} created** with the ${layout.name} layout.` }; return m; });
+      }
+    } catch (err: any) {
+      setAiMessages(prev => [...prev, { role: 'assistant', content: `Error: ${err.message}` }]);
+    } finally {
+      setIsAiStreaming(false);
+    }
+  };
+
   const sendAiMessage = async () => {
     if (!aiInput.trim() || isAiStreaming) return;
     const activeTabData = openTabs.find(t => t.path === activeTab);
@@ -527,6 +649,28 @@ export default function DeveloperPage() {
         setIsAiStreaming(false);
       }
       return;
+    }
+
+    // For frontend/UI code build requests — show layout picker first
+    const isUIBuildRequest = /\b(build|create|make|generate|design|develop)\b.*\b(website|site|page|app|portfolio|landing|store|shop|dashboard|blog|restaurant|hotel|agency|business|company|school|clinic|hospital|gym|salon|gallery|travel|booking|ecommerce|e-commerce|saas|startup|service|product)\b|\b(website|site|landing page|web app)\b.*\b(build|create|make|generate)\b/i.test(userMsg);
+    const shouldShowLayouts = isUIBuildRequest && (aiCategory === 'frontend' || aiCategory === null);
+    if (shouldShowLayouts) {
+      setIsLoadingLayouts(true);
+      setAiMessages(prev => [...prev, { role: 'assistant', content: '🎨 Generating layout options tailored to your project...', isPicker: false }]);
+      const layouts = await fetchLayoutOptions(userMsg);
+      setIsLoadingLayouts(false);
+      if (layouts.length > 0) {
+        const pickerIndex = newMessages.length; // index in the AiMessages array after user msg
+        setAiMessages(prev => {
+          const msgs = [...prev];
+          msgs[msgs.length - 1] = { role: 'assistant', content: 'Choose a layout for your project:', layoutOptions: layouts, isPicker: true };
+          return msgs;
+        });
+        const msgHistory = newMessages.map(m => ({ role: m.role, content: m.content }));
+        setLayoutPendingPrompt(userMsg);
+        setLayoutPendingMsgs(msgHistory);
+        return;
+      }
     }
 
     // Build a focused system prompt based on the selected category
@@ -1165,20 +1309,81 @@ Format EXACTLY like this:
                       <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${msg.role === 'user' ? 'bg-primary/20' : 'bg-[#21262d]'}`}>
                         {msg.role === 'user' ? <span className="text-[8px] text-primary font-bold">YOU</span> : <Bot className="h-3 w-3 text-primary" />}
                       </div>
-                      <div className={`flex-1 text-xs rounded-lg px-2.5 py-2 overflow-hidden min-w-0 ${msg.role === 'user' ? 'bg-primary/10 text-white' : 'bg-[#21262d] text-[#c9d1d9]'}`}>
-                        {msg.role === 'assistant' ? <MarkdownRenderer content={msg.content} /> : <p className="whitespace-pre-wrap break-words">{msg.content}</p>}
+                      <div className={`flex-1 min-w-0 ${msg.isPicker ? '' : `text-xs rounded-lg px-2.5 py-2 overflow-hidden ${msg.role === 'user' ? 'bg-primary/10 text-white' : 'bg-[#21262d] text-[#c9d1d9]'}`}`}>
+                        {msg.isPicker && msg.layoutOptions ? (
+                          <div className="space-y-2">
+                            <p className="text-xs text-white font-medium mb-2">🎨 Choose a layout for your project:</p>
+                            {msg.layoutOptions.map((layout, li) => {
+                              const styleColors: Record<string, string> = {
+                                bold: 'border-orange-500/40 hover:border-orange-400/70 hover:bg-orange-500/5',
+                                minimal: 'border-gray-500/40 hover:border-gray-400/70 hover:bg-gray-500/5',
+                                vibrant: 'border-purple-500/40 hover:border-purple-400/70 hover:bg-purple-500/5',
+                                dark: 'border-blue-500/40 hover:border-blue-400/70 hover:bg-blue-500/5',
+                                elegant: 'border-yellow-500/40 hover:border-yellow-400/70 hover:bg-yellow-500/5',
+                                modern: 'border-cyan-500/40 hover:border-cyan-400/70 hover:bg-cyan-500/5',
+                                corporate: 'border-green-500/40 hover:border-green-400/70 hover:bg-green-500/5',
+                                playful: 'border-pink-500/40 hover:border-pink-400/70 hover:bg-pink-500/5',
+                              };
+                              const badgeColors: Record<string, string> = {
+                                bold: 'bg-orange-500/20 text-orange-300',
+                                minimal: 'bg-gray-500/20 text-gray-300',
+                                vibrant: 'bg-purple-500/20 text-purple-300',
+                                dark: 'bg-blue-500/20 text-blue-300',
+                                elegant: 'bg-yellow-500/20 text-yellow-300',
+                                modern: 'bg-cyan-500/20 text-cyan-300',
+                                corporate: 'bg-green-500/20 text-green-300',
+                                playful: 'bg-pink-500/20 text-pink-300',
+                              };
+                              const borderClass = styleColors[layout.style] || 'border-[#30363d] hover:border-[#6e7681] hover:bg-[#21262d]/50';
+                              const badgeClass = badgeColors[layout.style] || 'bg-[#30363d] text-gray-300';
+                              return (
+                                <button
+                                  key={li}
+                                  disabled={isAiStreaming}
+                                  onClick={() => {
+                                    const pickerIdx = aiMessages.findIndex((m, idx) => idx === i);
+                                    generateWithLayout(layout, layoutPendingPrompt, layoutPendingMsgs, pickerIdx);
+                                  }}
+                                  className={`w-full text-left border rounded-lg p-2.5 transition-all cursor-pointer ${borderClass} bg-[#0d1117] border-solid`}
+                                >
+                                  <div className="flex items-start justify-between gap-2 mb-1">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="text-base leading-none">{layout.emoji}</span>
+                                      <span className="text-xs font-semibold text-white">{layout.name}</span>
+                                    </div>
+                                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0 ${badgeClass}`}>{layout.style}</span>
+                                  </div>
+                                  <p className="text-[11px] text-[#8b949e] leading-relaxed mb-1.5">{layout.description}</p>
+                                  <div className="flex items-center gap-1 flex-wrap">
+                                    <span className="text-[9px] text-muted-foreground/60">🎨</span>
+                                    <span className="text-[9px] text-muted-foreground/80 italic">{layout.colorScheme}</span>
+                                  </div>
+                                  <div className="mt-1.5 flex flex-wrap gap-1">
+                                    {layout.sections.split(',').map((s, si) => (
+                                      <span key={si} className="text-[9px] bg-[#21262d] text-[#8b949e] px-1.5 py-0.5 rounded">{s.trim()}</span>
+                                    ))}
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        ) : msg.role === 'assistant' ? (
+                          <MarkdownRenderer content={msg.content} />
+                        ) : (
+                          <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+                        )}
                       </div>
                     </div>
                   ))
                 )}
-                {isAiStreaming && aiMessages[aiMessages.length - 1]?.role === 'user' && (
+                {(isAiStreaming || isLoadingLayouts) && aiMessages[aiMessages.length - 1]?.role === 'user' && (
                   <div className="flex gap-2">
                     <div className="w-5 h-5 rounded-full flex items-center justify-center bg-[#21262d] shrink-0 mt-0.5">
                       <Bot className="h-3 w-3 text-primary" />
                     </div>
                     <div className="flex items-center gap-1.5 bg-[#21262d] rounded-lg px-2.5 py-2">
                       <Loader2 className="h-3 w-3 animate-spin" />
-                      <span className="text-xs text-[#8b949e]">Thinking...</span>
+                      <span className="text-xs text-[#8b949e]">{isLoadingLayouts ? 'Generating layout options...' : 'Thinking...'}</span>
                     </div>
                   </div>
                 )}
