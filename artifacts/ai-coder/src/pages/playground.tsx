@@ -84,6 +84,7 @@ export default function PlaygroundPage() {
   const { toast } = useToast();
 
   const [prompt, setPrompt] = useState('');
+  const [codeCategory, setCodeCategory] = useState<'frontend' | 'backend' | 'server' | null>(null);
   const [isBuilding, setIsBuilding] = useState(false);
   const [buildLog, setBuildLog] = useState<string[]>([]);
   const [files, setFiles] = useState<ProjectFile[]>([]);
@@ -209,12 +210,19 @@ export default function PlaygroundPage() {
   };
 
   const handleBuild = async () => {
+    const categoryPrefix = codeCategory === 'frontend'
+      ? '[FRONTEND ONLY] Focus exclusively on Frontend (HTML/CSS/JS/React/UI). Do not include backend or server code. '
+      : codeCategory === 'backend'
+      ? '[BACKEND ONLY] Focus exclusively on Backend (Node.js/Python/databases/APIs). Do not include frontend UI code. '
+      : codeCategory === 'server'
+      ? '[SERVER ONLY] Focus exclusively on Server/DevOps (deployment, hosting, nginx, docker, config). '
+      : '';
     if (!prompt.trim()) return;
     setIsBuilding(true); setBuildLog([]); setFiles([]); setSelectedPath(''); setPreviewHtml(''); setError(''); setProjectName(''); setRunOutput([]); setAiExplanation('');
     try {
       const res = await fetch('/api/playground/generate', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: prompt.trim() }),
+        body: JSON.stringify({ prompt: (categoryPrefix + prompt).trim() }),
       });
       if (!res.ok || !res.body) throw new Error('Server error');
       const reader = res.body.getReader(); const decoder = new TextDecoder();
@@ -302,6 +310,19 @@ export default function PlaygroundPage() {
               onKeyDown={e => e.key === 'Enter' && !isBuilding && handleBuild()}
               placeholder="Describe the app you want to build..."
               className="w-full pl-9 pr-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder:text-muted-foreground/50" />
+          </div>
+          {/* Category selector */}
+          <div className="flex items-center gap-1">
+            {([
+              { id: 'frontend' as const, label: '🎨', title: 'Frontend', active: 'bg-blue-500/20 text-blue-400 border-blue-500/50', inactive: 'border-border/40 text-muted-foreground hover:border-border' },
+              { id: 'backend' as const, label: '⚙️', title: 'Backend', active: 'bg-orange-500/20 text-orange-400 border-orange-500/50', inactive: 'border-border/40 text-muted-foreground hover:border-border' },
+              { id: 'server' as const, label: '🖥️', title: 'Server', active: 'bg-green-500/20 text-green-400 border-green-500/50', inactive: 'border-border/40 text-muted-foreground hover:border-border' },
+            ]).map(cat => (
+              <button key={cat.id} onClick={() => setCodeCategory(prev => prev === cat.id ? null : cat.id)} title={cat.title}
+                className={`px-2 py-1 rounded-lg text-sm border transition-colors ${codeCategory === cat.id ? cat.active : cat.inactive}`}>
+                {cat.label}
+              </button>
+            ))}
           </div>
           <Button onClick={handleBuild} disabled={isBuilding || !prompt.trim()} className="gap-1.5 shrink-0 h-9 shadow-md shadow-primary/20">
             {isBuilding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
