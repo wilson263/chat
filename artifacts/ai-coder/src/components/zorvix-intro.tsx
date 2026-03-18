@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 interface Particle {
   x: number;
@@ -121,6 +121,7 @@ export function ZorvixIntro({ onComplete }: { onComplete: () => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const audioRef = useRef<AudioContext | null>(null);
   const animRef = useRef<number>(0);
+  const soundPlayedRef = useRef(false);
 
   const [bgVisible, setBgVisible] = useState(false);
   const [logoVisible, setLogoVisible] = useState(false);
@@ -129,10 +130,39 @@ export function ZorvixIntro({ onComplete }: { onComplete: () => void }) {
   const [exiting, setExiting] = useState(false);
   const [flash, setFlash] = useState(false);
 
+  const triggerSound = useCallback(() => {
+    if (soundPlayedRef.current) return;
+    soundPlayedRef.current = true;
+    const ctx = playIntroSound();
+    audioRef.current = ctx;
+    if (ctx && ctx.state === 'suspended') {
+      ctx.resume();
+    }
+  }, []);
+
   useEffect(() => {
-    // Choreographed reveal
+    const tryAutoplay = () => {
+      const testCtx = new AudioContext();
+      if (testCtx.state === 'running') {
+        testCtx.close();
+        triggerSound();
+      } else {
+        testCtx.close();
+      }
+    };
+    tryAutoplay();
+
+    const handleInteraction = () => {
+      triggerSound();
+      document.removeEventListener('click', handleInteraction);
+      document.removeEventListener('touchstart', handleInteraction);
+      document.removeEventListener('keydown', handleInteraction);
+    };
+    document.addEventListener('click', handleInteraction);
+    document.addEventListener('touchstart', handleInteraction);
+    document.addEventListener('keydown', handleInteraction);
+
     const t0 = setTimeout(() => setBgVisible(true), 100);
-    const t1 = setTimeout(() => { audioRef.current = playIntroSound(); }, 400);
     const t2 = setTimeout(() => setLogoVisible(true), 1000);
     const t3 = setTimeout(() => setTagVisible(true), 1700);
     const t4 = setTimeout(() => setBarVisible(true), 2100);
@@ -141,11 +171,14 @@ export function ZorvixIntro({ onComplete }: { onComplete: () => void }) {
     const t7 = setTimeout(() => onComplete(), 4700);
 
     return () => {
-      [t0, t1, t2, t3, t4, t5, t6, t7].forEach(clearTimeout);
+      document.removeEventListener('click', handleInteraction);
+      document.removeEventListener('touchstart', handleInteraction);
+      document.removeEventListener('keydown', handleInteraction);
+      [t0, t2, t3, t4, t5, t6, t7].forEach(clearTimeout);
       cancelAnimationFrame(animRef.current);
       audioRef.current?.close();
     };
-  }, [onComplete]);
+  }, [onComplete, triggerSound]);
 
   // Canvas particle network
   useEffect(() => {
