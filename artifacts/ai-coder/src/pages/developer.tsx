@@ -183,6 +183,7 @@ export default function DeveloperPage() {
   const [isRewriting, setIsRewriting] = useState(false);
   const [rewriteResult, setRewriteResult] = useState('');
   const [rewriteDone, setRewriteDone] = useState(false);
+  const [rewriteCleanCode, setRewriteCleanCode] = useState('');
   const [rewriteMode, setRewriteMode] = useState<'build' | 'rewrite'>('build');
   const [builderPrompt, setBuilderPrompt] = useState('');
   const [buildPhase, setBuildPhase] = useState<'frontend' | 'backend' | 'api' | null>(null);
@@ -484,17 +485,20 @@ export default function DeveloperPage() {
     if (aiCategory === 'frontend') {
       systemPrompt = `You are a senior frontend developer helping with code in an IDE.
 Focus ONLY on Frontend (HTML/CSS/JS/React/UI). Do not include backend or server code.
-When generating multi-page HTML sites, create a SEPARATE .html file for each page — never put multiple pages in one index.html.
+RULE: When generating multi-page HTML sites, you MUST create a SEPARATE .html file for EACH page. NEVER put multiple pages inside one index.html. NEVER say "I cannot create separate HTML files" — always create them.
 When generating files, use this exact format so they are auto-created in the editor:
 ===FILE: index.html===
-[complete home page html]
+[complete home page html only]
 ===FILE: about.html===
 [complete about page html]
+===FILE: contact.html===
+[complete contact page html]
 ===FILE: styles.css===
 [complete shared css]
 ===FILE: script.js===
 [complete shared js]
-Navigation links must use real hrefs: <a href="about.html">About</a>
+Navigation links MUST use real hrefs pointing to the correct file: <a href="about.html">About</a> — NEVER use href="#"
+Every HTML page must include the full shared header/navbar and footer (duplicate them per file).
 Write complete, working code. No placeholders. No TODO comments.`;
     } else if (aiCategory === 'backend') {
       systemPrompt = `You are a senior backend developer helping with code in an IDE.
@@ -517,7 +521,8 @@ Write complete, working configurations. No placeholders.`;
     } else {
       systemPrompt = `You are ZorvixAI, an expert developer code assistant embedded in a code editor IDE.
 You help with code questions, debugging, refactoring, and building features.
-When generating multi-file code, use this exact format so files are auto-created in the editor:
+For general questions, greetings, or explanations — respond in plain conversational text. Do NOT output file blocks.
+Only use the FILE format below when the user explicitly asks you to BUILD, CREATE, or WRITE files:
 ===FILE: path/filename.ext===
 [complete file content here]
 ===FILE: path/filename2.ext===
@@ -561,8 +566,9 @@ Write complete, working code. No placeholders. No TODO comments. No truncation.`
           }
         }
       }
-      // Auto-create any ===FILE:=== blocks found in the response
-      const fileCount = applyChatFiles(assistantContent);
+      // Only auto-apply files if the user explicitly asked to build/create/write code
+      const isCodeRequest = /\b(build|create|make|generate|write|code|implement|fix|refactor|add|develop|update the file|rewrite|change the file)\b/i.test(userMsg);
+      const fileCount = isCodeRequest ? applyChatFiles(assistantContent) : 0;
       if (fileCount > 0) {
         toast({ title: `${fileCount} file${fileCount !== 1 ? 's' : ''} created in editor` });
         setAiMessages(prev => {
@@ -625,10 +631,9 @@ Rewrite the ENTIRE file based on the instructions. Return ONLY the complete rewr
         }
       }
       const cleanCode = extractCodeFromMarkdown(fullCode);
-      setOpenTabs(prev => prev.map(t => t.path === activeTab ? { ...t, content: cleanCode, isDirty: false } : t));
-      setFlatFiles(prev => prev.map(f => f.path === activeTab ? { ...f, content: cleanCode } : f));
+      setRewriteCleanCode(cleanCode);
       setRewriteDone(true);
-      toast({ title: `"${activeTabData.name}" rewritten and saved` });
+      toast({ title: `Rewrite ready — click "Apply to File" to save` });
     } catch (err: any) {
       toast({ title: 'Rewrite failed', description: err.message, variant: 'destructive' });
     } finally {
@@ -800,6 +805,10 @@ Format EXACTLY like this:
   useEffect(() => {
     if (rewriteScrollRef.current) rewriteScrollRef.current.scrollTop = rewriteScrollRef.current.scrollHeight;
   }, [rewriteResult]);
+
+  useEffect(() => {
+    if (rewriteScrollRef.current) rewriteScrollRef.current.scrollTop = rewriteScrollRef.current.scrollHeight;
+  }, [phaseStatuses]);
 
   const activeTabData = openTabs.find(t => t.path === activeTab);
   const filteredFiles = searchQuery
@@ -1223,20 +1232,30 @@ Format EXACTLY like this:
                       <Textarea
                         placeholder="Examples: Add dark mode, Refactor to async/await, Add error handling"
                         value={rewriteInstruction}
-                        onChange={e => { setRewriteInstruction(e.target.value); setRewriteDone(false); }}
+                        onChange={e => { setRewriteInstruction(e.target.value); setRewriteDone(false); setRewriteCleanCode(''); setRewriteResult(''); }}
                         className="text-xs bg-[#0d1117] border-[#30363d] text-white resize-none min-h-[90px]"
                       />
                     </div>
                     <Button className="w-full bg-primary hover:bg-primary/90 text-xs h-8" onClick={rewriteCurrentFile} disabled={isRewriting || !activeTabData || !rewriteInstruction.trim()}>
                       {isRewriting
                         ? <><Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />Rewriting...</>
-                        : <><Wand2 className="h-3.5 w-3.5 mr-1.5" />Rewrite and Auto-Save</>}
+                        : <><Wand2 className="h-3.5 w-3.5 mr-1.5" />Preview Rewrite</>}
                     </Button>
-                    {rewriteDone && !isRewriting && (
-                      <div className="flex items-center gap-2 text-green-400 bg-green-400/10 rounded-md px-2.5 py-2">
-                        <Check className="h-3.5 w-3.5 shrink-0" />
-                        <p className="text-[11px] font-medium">File rewritten and saved to editor!</p>
-                      </div>
+                    {rewriteDone && !isRewriting && rewriteCleanCode && (
+                      <Button
+                        className="w-full bg-green-600 hover:bg-green-700 text-xs h-8"
+                        onClick={() => {
+                          if (!activeTab) return;
+                          setOpenTabs(prev => prev.map(t => t.path === activeTab ? { ...t, content: rewriteCleanCode, isDirty: false } : t));
+                          setFlatFiles(prev => prev.map(f => f.path === activeTab ? { ...f, content: rewriteCleanCode } : f));
+                          setRewriteDone(false);
+                          setRewriteCleanCode('');
+                          setRewriteResult('');
+                          toast({ title: `File updated successfully` });
+                        }}
+                      >
+                        <Check className="h-3.5 w-3.5 mr-1.5" />Apply to File
+                      </Button>
                     )}
                   </div>
                   <div className="flex-1 overflow-y-auto p-3">
