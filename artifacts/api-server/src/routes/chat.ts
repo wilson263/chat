@@ -1,16 +1,5 @@
 import { Router, type IRouter } from "express";
-import OpenAI from "openai";
-
-  function getAIClient(): OpenAI {
-    const apiKey = process.env.OPENROUTER_API_KEY;
-    if (!apiKey) throw new Error("OPENROUTER_API_KEY environment variable is not set.");
-    return new OpenAI({
-      apiKey,
-      baseURL: "https://openrouter.ai/api/v1",
-    });
-  }
-
-  const openai = getAIClient();
+import { createChatCompletion, createChatCompletionStream } from "../lib/ai";
 
 const router: IRouter = Router();
 
