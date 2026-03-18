@@ -1,6 +1,7 @@
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { PageLayout } from '@/components/page-layout';
 import {
   ArrowLeft, Sparkles, Code2, Zap, Shield, Globe, GitBranch,
   MessageSquare, FolderKanban, BarChart3, GitCompare, Download,
@@ -149,15 +150,13 @@ export default function AboutPage() {
   const totalFeatures = playgroundFeatures.length + workspaceFeatures.length + chatFeatures.length + powerFeatures.length + promptGeneratorFeatures.length + exploreFeatures.length;
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="max-w-5xl mx-auto px-4 py-10">
-        {/* Header */}
-        <div className="flex items-center gap-3 mb-12">
-          <Button variant="ghost" size="icon" onClick={() => setLocation('/')} className="h-8 w-8"><ArrowLeft className="w-4 h-4" /></Button>
-          <div>
-            <h1 className="text-3xl font-bold flex items-center gap-2"><Code2 className="w-7 h-7 text-primary" />ZorvixAI</h1>
-            <p className="text-muted-foreground text-sm mt-0.5">The AI-powered coding platform — {totalFeatures}+ features</p>
-          </div>
+    <PageLayout crumbs={[{ label: 'About' }]} backHref="/" withMeshBg>
+      <div>
+        <div className="mb-10">
+          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+            <Code2 className="w-7 h-7 text-primary" />ZorvixAI
+          </h1>
+          <p className="text-muted-foreground text-sm mt-1">The AI-powered coding platform — {totalFeatures}+ features</p>
         </div>
 
         {/* Hero Stats */}
@@ -579,6 +578,6 @@ export default function AboutPage() {
           <p className="text-muted-foreground text-sm mt-4">Free to use · No credit card required · {totalFeatures}+ features</p>
         </div>
       </div>
-    </div>
+    </PageLayout>
   );
 }
