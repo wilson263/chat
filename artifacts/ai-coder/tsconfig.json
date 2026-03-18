@@ -19,7 +19,7 @@
       "path": "../../lib/api-client-react"
     },
     {
-      "path": "../../lib/integrations-openai-ai-react"
+      "path": "../../lib/integrations/integrations-openai-ai-react"
     }
   ]
 }
