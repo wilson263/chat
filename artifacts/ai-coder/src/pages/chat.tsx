@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useLocation } from 'wouter';
 import { AgentBuilder, isAgentBuildRequest } from '@/components/agent-builder';
-import { ModelSelector, MODELS, getModelProvider } from '@/components/model-selector';
+import { ModelSelector, ModelPill, MODELS, getModelProvider, getModelLabel, AUTO_MODEL_ID } from '@/components/model-selector';
+import type { ModelInfo as StreamModelInfo } from '@/hooks/use-ai-stream';
 import { useAiStream } from '@/hooks/use-ai-stream';
 import { MarkdownRenderer } from '@/components/markdown-renderer';
 import { NotificationBell } from '@/components/notification-bell';
@@ -132,7 +133,13 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [attachments, setAttachments] = useState<Attachment[]>([]);
-  const [model, setModel] = useState(() => localStorage.getItem('last_model') || 'llama-3.3-70b-versatile');
+  const [model, setModel] = useState(() => {
+    const saved = localStorage.getItem('last_model');
+    // migrate old Groq IDs that no longer exist
+    if (!saved || saved === 'llama-3.3-70b-versatile' || saved === 'mixtral-8x7b-32768' || saved === 'gemma2-9b-it') return AUTO_MODEL_ID;
+    return saved;
+  });
+  const [activeModelInfo, setActiveModelInfo] = useState<StreamModelInfo | null>(null);
   const [temperature, setTemperature] = useState<number>(() => parseFloat(localStorage.getItem('chat_temperature') || '0.7'));
   const [persona, setPersona] = useState<string>('general');
   const [language, setLanguage] = useState('English');
@@ -414,9 +421,15 @@ export default function ChatPage() {
     const personaContext = persona === 'coder' ? '\nYou are in Coder mode — prioritize code solutions.' : persona === 'teacher' ? '\nYou are in Teacher mode — explain concepts clearly with examples.' : persona === 'writer' ? '\nYou are in Writer mode — focus on writing quality and creativity.' : '';
     const finalSystemPrompt = (customSystemPrompt || '') + memoryContext + langInstruction + personaContext;
 
+    // When model is 'auto', don't pass it — let the backend smart-route
+    const modelToSend = model === AUTO_MODEL_ID ? undefined : model;
+
     stream(
-      { userMessage: webSearchMode ? enhancedText : trimmed, history: hist.slice(0, -1), attachments: atts, model, temperature, systemPrompt: finalSystemPrompt || undefined, ...(openaiApiKey ? { openaiApiKey } : {}) },
+      { userMessage: webSearchMode ? enhancedText : trimmed, history: hist.slice(0, -1), attachments: atts, model: modelToSend, temperature, systemPrompt: finalSystemPrompt || undefined, ...(openaiApiKey ? { openaiApiKey } : {}) },
       {
+        onModelInfo: (info) => {
+          setActiveModelInfo(info);
+        },
         onChunk: (chunk) => {
           setMessages(prev => {
             const updated = [...prev];
@@ -478,7 +491,9 @@ export default function ChatPage() {
       const hist = updatedMessages.slice(-10).map(m => ({ role: m.role as 'user'|'assistant', content: m.content }));
       const provider = getModelProvider(model);
       const openaiApiKey = provider === 'openai' ? (localStorage.getItem('openai_api_key') ?? undefined) : undefined;
-      stream({ userMessage: editingText.trim(), history: hist.slice(0,-1), attachments: [], model, temperature, systemPrompt: customSystemPrompt||undefined, ...(openaiApiKey?{openaiApiKey}:{}) }, {
+      const editModelToSend = model === AUTO_MODEL_ID ? undefined : model;
+      stream({ userMessage: editingText.trim(), history: hist.slice(0,-1), attachments: [], model: editModelToSend, temperature, systemPrompt: customSystemPrompt||undefined, ...(openaiApiKey?{openaiApiKey}:{}) }, {
+        onModelInfo: (info) => setActiveModelInfo(info),
         onChunk: (chunk) => setMessages(prev => { const u=[...prev]; const l=u[u.length-1]; if(l?.role==='assistant') u[u.length-1]={...l,content:l.content+chunk}; return u; }),
         onFinish: (fullText) => {
           const fm = [...updatedMessages, {role:'assistant' as const, content:fullText}];
@@ -924,7 +939,7 @@ export default function ChatPage() {
           {!sidebarOpen && (
             <button onClick={()=>setSidebarOpen(true)} className="text-muted-foreground hover:text-foreground transition-colors"><Menu className="w-4 h-4"/></button>
           )}
-          <ModelSelector value={model} onChange={setModel} />
+          <ModelSelector value={model} onChange={(m) => { setModel(m); localStorage.setItem('last_model', m); }} />
           <div className="flex items-center gap-1 ml-auto">
             {/* Personas */}
             <div className="flex items-center gap-1 mr-2">
@@ -1123,6 +1138,9 @@ export default function ChatPage() {
                   onInput={e => { const el = e.currentTarget; el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,180)+'px'; }}
                 />
                 <div className="flex items-center gap-1 px-3 pb-2">
+                  {/* Model Pill — quick model switcher right in the input bar */}
+                  <ModelPill value={model} onChange={(m) => { setModel(m); localStorage.setItem('last_model', m); }} />
+                  <div className="w-px h-4 bg-border/40 mx-0.5" />
                   <button onClick={()=>fileInputRef.current?.click()} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted-foreground/10 transition-colors" title="Upload image"><Camera className="w-3.5 h-3.5"/></button>
                   <button onClick={()=>documentInputRef.current?.click()} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted-foreground/10 transition-colors" title="Upload document"><FileText className="w-3.5 h-3.5"/></button>
                   <button onClick={startVoiceInput} className={`p-1.5 rounded-lg transition-colors ${isListening?'text-red-400 bg-red-400/10':'text-muted-foreground hover:text-foreground hover:bg-muted-foreground/10'}`} title="Voice input">{isListening?<MicOff className="w-3.5 h-3.5"/>:<Mic className="w-3.5 h-3.5"/>}</button>
@@ -1137,9 +1155,23 @@ export default function ChatPage() {
                 {aiLoading?<Loader2 className="w-4 h-4 animate-spin"/>:<Send className="w-4 h-4"/>}
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground/50 text-center mt-2">
-              Enter to send · Shift+Enter for new line · Ctrl+P prompts · Ctrl+M memory · ? shortcuts
-            </p>
+            {/* Active model info bar */}
+            <div className="flex items-center justify-between mt-1.5 px-0.5">
+              {activeModelInfo && model === AUTO_MODEL_ID ? (
+                <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground/70">
+                  <Wand2 className="w-3 h-3 text-primary/60" />
+                  <span>
+                    Auto routed to <span className="text-primary/80 font-medium">{getModelLabel(activeModelInfo.model)}</span>
+                    {' '}for <span className="text-foreground/60">{activeModelInfo.intent === 'build_app' ? 'app building' : activeModelInfo.intent === 'fix_code' ? 'debugging' : activeModelInfo.intent === 'explain_code' ? 'explanation' : activeModelInfo.intent === 'reasoning' ? 'reasoning' : 'chat'}</span>
+                  </span>
+                </div>
+              ) : (
+                <div className="text-[11px] text-muted-foreground/40">
+                  {model === AUTO_MODEL_ID ? '✦ Auto mode — smart model routing enabled' : `Using ${getModelLabel(model)}`}
+                </div>
+              )}
+              <p className="text-[11px] text-muted-foreground/40">Enter · Shift+Enter newline · ? shortcuts</p>
+            </div>
           </div>
         </div>
       </main>
