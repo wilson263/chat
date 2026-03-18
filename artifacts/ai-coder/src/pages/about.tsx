@@ -11,6 +11,7 @@ import {
   GitCommit, GitPullRequest, Eye, Rocket, Globe as GlobeIcon,
   Gamepad2, Camera, Music, BarChart, CheckSquare, FileText,
   Monitor, Columns2, GitCompare as GitCompare2, LayoutPanelLeft, AlignLeft,
+  Command, ArrowUp, ArrowDown, Folder, Image, Keyboard,
 } from 'lucide-react';
 import { OPENROUTER_MODELS } from '@/components/model-selector';
 
@@ -60,7 +61,74 @@ export default function AboutPage() {
     { icon: GitCompare, title: 'Model Comparison', desc: 'Send the same prompt to two models simultaneously and compare their responses side-by-side.' },
   ];
 
-  const totalFeatures = playgroundFeatures.length + workspaceFeatures.length + chatFeatures.length;
+  // ── NEW POWER FEATURES ────────────────────────────────────────────────────
+  const powerFeatures = [
+    {
+      icon: Command,
+      title: 'Slash Commands',
+      desc: 'Type /fix, /explain, /test, /refactor, /optimize, /document, /review, or /summarize to trigger instant AI actions. An autocomplete menu appears as you type with descriptions.',
+      color: 'bg-primary/10 text-primary',
+      badge: 'NEW',
+    },
+    {
+      icon: Image,
+      title: 'Vision / Image Input',
+      desc: 'Paste a screenshot directly into chat or upload an image — the AI analyzes it and responds based on what it sees. Supports all common image formats.',
+      color: 'bg-pink-500/10 text-pink-400',
+      badge: 'NEW',
+    },
+    {
+      icon: Search,
+      title: 'Search Within Conversation',
+      desc: 'Press Ctrl+F (or click the search icon) to search through all messages in the current conversation. Navigate matches with arrow buttons, matched messages are highlighted.',
+      color: 'bg-blue-500/10 text-blue-400',
+      badge: 'NEW',
+    },
+    {
+      icon: Download,
+      title: 'Drag & Drop Files',
+      desc: 'Drag any file from your desktop and drop it directly onto the chat window. Images and text files are instantly attached and sent as context to the AI.',
+      color: 'bg-orange-500/10 text-orange-400',
+      badge: 'NEW',
+    },
+    {
+      icon: Cpu,
+      title: 'Context Window Bar',
+      desc: 'A visual progress bar shows what percentage of the AI\'s context window is currently used across all messages and project files. Turns yellow at 50% and red at 80%.',
+      color: 'bg-yellow-500/10 text-yellow-400',
+      badge: 'NEW',
+    },
+    {
+      icon: Code2,
+      title: 'Inline Code Annotation',
+      desc: 'Hover over any line of code in an AI response to get a one-sentence AI explanation tooltip — instantly. No need to ask a follow-up question.',
+      color: 'bg-emerald-500/10 text-emerald-400',
+      badge: 'NEW',
+    },
+    {
+      icon: Folder,
+      title: 'Multi-File Project Context',
+      desc: 'Upload your entire project folder as context. All uploaded files (JS, TS, Python, CSS, JSON, etc.) are automatically injected into every message so the AI understands your full codebase.',
+      color: 'bg-violet-500/10 text-violet-400',
+      badge: 'NEW',
+    },
+    {
+      icon: Zap,
+      title: 'Agent Autonomous Mode',
+      desc: 'Enable Autonomous Mode and give the AI a goal — it automatically plans the steps, executes them one by one, and delivers the complete result without needing you to guide each step.',
+      color: 'bg-rose-500/10 text-rose-400',
+      badge: 'NEW',
+    },
+    {
+      icon: Keyboard,
+      title: 'Keyboard-First Navigation',
+      desc: 'Navigate through chat messages using j/k or arrow keys. Press c to copy the focused message. Ctrl+F to search, Ctrl+K for new chat, Ctrl+P for prompt library — fully keyboard navigable.',
+      color: 'bg-cyan-500/10 text-cyan-400',
+      badge: 'NEW',
+    },
+  ];
+
+  const totalFeatures = playgroundFeatures.length + workspaceFeatures.length + chatFeatures.length + powerFeatures.length;
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -89,6 +157,90 @@ export default function AboutPage() {
             </div>
           ))}
         </div>
+
+        {/* ── NEW: Power Features (9 new) ── */}
+        <section className="mb-14">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-9 h-9 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center">
+              <Zap className="w-4 h-4 text-rose-400" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold">Power Chat Features</h2>
+              <p className="text-sm text-muted-foreground">Slash commands, vision input, in-chat search, drag & drop, context bar, inline annotations, project context, autonomous mode, and keyboard nav</p>
+            </div>
+            <Badge className="ml-auto bg-rose-500/20 text-rose-400 border-rose-500/30">9 NEW</Badge>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {powerFeatures.map(f => (
+              <div key={f.title} className="bg-card border border-border/50 rounded-xl p-5 hover:border-rose-500/20 transition-colors">
+                <div className="flex items-start gap-3 mb-3">
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${f.color}`}><f.icon className="w-4 h-4" /></div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <h3 className="font-semibold text-sm">{f.title}</h3>
+                      <Badge variant="outline" className="text-xs py-0 h-4 border-rose-500/40 text-rose-400">{f.badge}</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">{f.desc}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Slash commands quick reference */}
+          <div className="mt-6 bg-muted/30 border border-border/50 rounded-xl p-5">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">Slash Commands Quick Reference</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              {[
+                { cmd: '/fix', icon: '🐛', desc: 'Fix bugs' },
+                { cmd: '/explain', icon: '📖', desc: 'Explain code' },
+                { cmd: '/test', icon: '✅', desc: 'Write tests' },
+                { cmd: '/refactor', icon: '♻️', desc: 'Refactor' },
+                { cmd: '/optimize', icon: '⚡', desc: 'Optimize' },
+                { cmd: '/document', icon: '📝', desc: 'Add docs' },
+                { cmd: '/review', icon: '🔍', desc: 'Code review' },
+                { cmd: '/summarize', icon: '📋', desc: 'Summarize' },
+              ].map(sc => (
+                <div key={sc.cmd} className="flex items-center gap-2 px-3 py-2 bg-card border border-border/50 rounded-lg">
+                  <span>{sc.icon}</span>
+                  <div>
+                    <code className="text-xs font-mono text-primary">{sc.cmd}</code>
+                    <p className="text-[10px] text-muted-foreground">{sc.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Keyboard shortcuts quick reference */}
+          <div className="mt-4 bg-muted/30 border border-border/50 rounded-xl p-5">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">Keyboard Shortcuts</p>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+              {[
+                { keys: 'j / ↓', desc: 'Next message' },
+                { keys: 'k / ↑', desc: 'Previous message' },
+                { keys: 'c', desc: 'Copy focused message' },
+                { keys: 'Ctrl+F', desc: 'Search in chat' },
+                { keys: 'Ctrl+K', desc: 'New chat' },
+                { keys: 'Ctrl+P', desc: 'Prompt library' },
+                { keys: 'Ctrl+M', desc: 'AI Memory' },
+                { keys: 'Ctrl+/', desc: 'All shortcuts' },
+                { keys: 'Esc', desc: 'Close panels' },
+              ].map(s => (
+                <div key={s.keys} className="flex items-center gap-2 px-3 py-2 bg-card border border-border/50 rounded-lg">
+                  <kbd className="text-[10px] font-mono bg-muted border border-border rounded px-1.5 py-0.5 whitespace-nowrap">{s.keys}</kbd>
+                  <p className="text-xs text-muted-foreground">{s.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-4 flex justify-center">
+            <Button onClick={() => setLocation('/')} className="gap-2 shadow-lg shadow-rose-500/20 bg-rose-600 hover:bg-rose-700">
+              <Zap className="w-4 h-4" />Try Power Features
+            </Button>
+          </div>
+        </section>
 
         {/* NEW: AI Playground Features */}
         <section className="mb-14">

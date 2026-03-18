@@ -21,7 +21,7 @@ import {
   Star, Share2, Brain, GitBranch, Flame, Palette, Minimize2, Maximize2,
   Code, MessageSquare, Link2, GitCompare, Clock, MessageCircle, Webhook, Play,
   FolderOpen, FolderPlus, ChevronDown, ChevronRight, Trophy, LayoutTemplate,
-  Monitor, ExternalLink,
+  Monitor, ExternalLink, Cpu, ArrowUp, ArrowDown, Bot as BotIcon,
 } from 'lucide-react';
 
 interface Attachment {
@@ -39,6 +39,21 @@ interface HistoryItem {
 interface SavedPrompt { id: string; title: string; prompt: string; category: string; }
 interface MemoryItem { id: string; fact: string; }
 interface ScheduledPrompt { id: string; prompt: string; time: string; model: string; enabled: boolean; }
+
+// ── SLASH COMMANDS ─────────────────────────────────────────────────────────
+const SLASH_COMMANDS = [
+  { cmd: '/fix', label: '/fix', desc: 'Fix bugs in selected code', icon: '🐛', expand: (input: string) => `Fix the following code — find and fix all bugs, errors, and issues:\n\n${input.replace('/fix', '').trim()}` },
+  { cmd: '/explain', label: '/explain', desc: 'Explain code in plain English', icon: '📖', expand: (input: string) => `Explain the following code in plain English, step by step:\n\n${input.replace('/explain', '').trim()}` },
+  { cmd: '/test', label: '/test', desc: 'Generate unit tests', icon: '✅', expand: (input: string) => `Write comprehensive unit tests (with edge cases) for the following code:\n\n${input.replace('/test', '').trim()}` },
+  { cmd: '/refactor', label: '/refactor', desc: 'Refactor and improve code', icon: '♻️', expand: (input: string) => `Refactor the following code to improve readability, performance, and maintainability:\n\n${input.replace('/refactor', '').trim()}` },
+  { cmd: '/optimize', label: '/optimize', desc: 'Optimize for performance', icon: '⚡', expand: (input: string) => `Optimize the following code for maximum performance. Identify bottlenecks and rewrite:\n\n${input.replace('/optimize', '').trim()}` },
+  { cmd: '/document', label: '/document', desc: 'Add JSDoc / docstrings', icon: '📝', expand: (input: string) => `Add comprehensive documentation (JSDoc comments / docstrings) to the following code:\n\n${input.replace('/document', '').trim()}` },
+  { cmd: '/review', label: '/review', desc: 'Code review with feedback', icon: '🔍', expand: (input: string) => `Do a thorough code review of the following. Give actionable feedback on security, performance, style, and correctness:\n\n${input.replace('/review', '').trim()}` },
+  { cmd: '/summarize', label: '/summarize', desc: 'Summarize a long text', icon: '📋', expand: (input: string) => `Summarize the following text concisely, keeping all key points:\n\n${input.replace('/summarize', '').trim()}` },
+];
+
+// Max context window tokens (~128k chars ≈ 32k tokens for most models)
+const MAX_CONTEXT_CHARS = 128_000;
 
 const SUGGESTIONS = [
   { icon: Code2, label: 'Write code', prompt: 'Write me a Python script that reads a CSV file and plots a bar chart using matplotlib.' },
@@ -124,6 +139,61 @@ function applyTheme(themeId: string) {
   localStorage.setItem('chat_theme', themeId);
 }
 
+// ── INLINE CODE ANNOTATION TOOLTIP ─────────────────────────────────────────
+function CodeAnnotationTooltip({ code, language }: { code: string; language: string }) {
+  const [tooltip, setTooltip] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [hoveredLine, setHoveredLine] = useState<number | null>(null);
+  const lines = code.split('\n');
+
+  const explainLine = async (line: string, lineNum: number) => {
+    if (!line.trim() || line.trim().startsWith('//') || line.trim().startsWith('#')) return;
+    setHoveredLine(lineNum);
+    setLoading(true);
+    setTooltip(null);
+    try {
+      const res = await fetch('/api/chat/message', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({
+          userMessage: `In one short sentence (max 15 words), explain what this single line of ${language || 'code'} does: \`${line.trim()}\``,
+          history: [], model: undefined,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setTooltip(data.content || data.message || 'No explanation available.');
+      } else {
+        setTooltip('Hover again to get an AI explanation for this line.');
+      }
+    } catch {
+      setTooltip('AI explanation unavailable.');
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div className="font-mono text-xs leading-relaxed">
+      {lines.map((line, i) => (
+        <div
+          key={i}
+          className="group relative flex items-start hover:bg-primary/5 rounded px-1 cursor-default transition-colors"
+          onMouseEnter={() => explainLine(line, i)}
+          onMouseLeave={() => { setHoveredLine(null); setTooltip(null); }}
+        >
+          <span className="select-none text-muted-foreground/40 w-6 shrink-0 text-right mr-3">{i + 1}</span>
+          <span className="flex-1 whitespace-pre">{line || ' '}</span>
+          {hoveredLine === i && line.trim() && !line.trim().startsWith('//') && !line.trim().startsWith('#') && (
+            <div className="absolute left-8 -top-8 z-50 max-w-xs bg-popover border border-border rounded-lg px-3 py-1.5 shadow-xl text-xs text-foreground pointer-events-none">
+              {loading ? <span className="text-muted-foreground animate-pulse">AI explaining…</span> : tooltip}
+              <div className="absolute bottom-[-4px] left-4 w-2 h-2 bg-popover border-b border-r border-border rotate-45" />
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function ChatPage() {
   const [, setLocation] = useLocation();
   const { user } = useAuth();
@@ -136,7 +206,6 @@ export default function ChatPage() {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [model, setModel] = useState(() => {
     const saved = localStorage.getItem('last_model');
-    // migrate old Groq IDs that no longer exist
     if (!saved || saved === 'llama-3.3-70b-versatile' || saved === 'mixtral-8x7b-32768' || saved === 'gemma2-9b-it') return AUTO_MODEL_ID;
     return saved;
   });
@@ -224,12 +293,41 @@ export default function ChatPage() {
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [editingText, setEditingText] = useState('');
 
+  // ── SLASH COMMANDS STATE ─────────────────────────────────────────────────
+  const [slashMenuOpen, setSlashMenuOpen] = useState(false);
+  const [slashFilter, setSlashFilter] = useState('');
+  const [slashMenuIdx, setSlashMenuIdx] = useState(0);
+
+  // ── IN-CHAT SEARCH ───────────────────────────────────────────────────────
+  const [showChatSearch, setShowChatSearch] = useState(false);
+  const [chatSearchQuery, setChatSearchQuery] = useState('');
+  const [chatSearchIdx, setChatSearchIdx] = useState(0);
+
+  // ── DRAG & DROP ──────────────────────────────────────────────────────────
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+
+  // ── MULTI-FILE PROJECT CONTEXT ───────────────────────────────────────────
+  const [projectFiles, setProjectFiles] = useState<Attachment[]>([]);
+  const [showProjectContext, setShowProjectContext] = useState(false);
+
+  // ── AGENT AUTONOMOUS MODE ────────────────────────────────────────────────
+  const [autonomousMode, setAutonomousMode] = useState(false);
+  const [autonomousSteps, setAutonomousSteps] = useState<string[]>([]);
+  const [autonomousRunning, setAutonomousRunning] = useState(false);
+
+  // ── KEYBOARD NAVIGATION ──────────────────────────────────────────────────
+  const [focusedMsgIdx, setFocusedMsgIdx] = useState<number | null>(null);
+
   // ── REFS ────────────────────────────────────────────────────────────────
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const documentInputRef = useRef<HTMLInputElement>(null);
+  const projectFilesInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const chatSearchRef = useRef<HTMLInputElement>(null);
+  const mainAreaRef = useRef<HTMLDivElement>(null);
+  const messageRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   // ── EFFECTS ─────────────────────────────────────────────────────────────
   useEffect(() => { localStorage.setItem('ichat_history', JSON.stringify(history)); }, [history]);
@@ -256,17 +354,81 @@ export default function ChatPage() {
   // keyboard shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      // Ctrl+F — in-chat search
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        if (messages.length > 0) { e.preventDefault(); setShowChatSearch(v => !v); setTimeout(() => chatSearchRef.current?.focus(), 100); }
+        return;
+      }
       if (e.ctrlKey || e.metaKey) {
         if (e.key === 'p') { e.preventDefault(); setPromptLibOpen(v => !v); }
         if (e.key === 'k') { e.preventDefault(); startNewChat(); }
         if (e.key === '/') { e.preventDefault(); setShowShortcuts(v => !v); }
         if (e.key === 'm') { e.preventDefault(); setShowMemory(v => !v); }
       }
-      if (e.key === '?' && !['INPUT','TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) setShowShortcuts(v => !v);
+      if (e.key === 'Escape') {
+        if (showChatSearch) { setShowChatSearch(false); setChatSearchQuery(''); }
+        if (slashMenuOpen) setSlashMenuOpen(false);
+      }
+      if (e.key === '?' && !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) setShowShortcuts(v => !v);
+
+      // j/k keyboard navigation through messages
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (['INPUT', 'TEXTAREA'].includes(tag)) return;
+      if (e.key === 'j' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        setFocusedMsgIdx(prev => {
+          const next = prev === null ? 0 : Math.min(prev + 1, messages.length - 1);
+          messageRefs.current[next]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return next;
+        });
+      }
+      if (e.key === 'k' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        setFocusedMsgIdx(prev => {
+          const next = prev === null ? messages.length - 1 : Math.max(prev - 1, 0);
+          messageRefs.current[next]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return next;
+        });
+      }
+      if (e.key === 'c' && focusedMsgIdx !== null) {
+        const msg = messages[focusedMsgIdx];
+        if (msg) { navigator.clipboard.writeText(msg.content); toast({ title: 'Copied!' }); }
+      }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
+  }, [messages, showChatSearch, slashMenuOpen, focusedMsgIdx]);
+
+  // drag & drop on the main area
+  useEffect(() => {
+    const area = mainAreaRef.current;
+    if (!area) return;
+    const onDragOver = (e: DragEvent) => { e.preventDefault(); setIsDraggingOver(true); };
+    const onDragLeave = () => setIsDraggingOver(false);
+    const onDrop = async (e: DragEvent) => {
+      e.preventDefault(); setIsDraggingOver(false);
+      const files = e.dataTransfer?.files;
+      if (files) await handleFiles(files);
+    };
+    area.addEventListener('dragover', onDragOver);
+    area.addEventListener('dragleave', onDragLeave);
+    area.addEventListener('drop', onDrop);
+    return () => { area.removeEventListener('dragover', onDragOver); area.removeEventListener('dragleave', onDragLeave); area.removeEventListener('drop', onDrop); };
   }, []);
+
+  // ── CONTEXT WINDOW CALCULATION ───────────────────────────────────────────
+  const totalContextChars = messages.reduce((acc, m) => acc + m.content.length, 0)
+    + projectFiles.reduce((acc, f) => acc + f.data.length, 0);
+  const contextPercent = Math.min(100, Math.round((totalContextChars / MAX_CONTEXT_CHARS) * 100));
+  const contextColor = contextPercent < 50 ? 'bg-green-500' : contextPercent < 80 ? 'bg-yellow-500' : 'bg-red-500';
+
+  // ── CHAT SEARCH MATCHES ──────────────────────────────────────────────────
+  const chatSearchMatches = chatSearchQuery.trim()
+    ? messages.reduce<number[]>((acc, m, i) => {
+        if (m.content.toLowerCase().includes(chatSearchQuery.toLowerCase())) acc.push(i);
+        return acc;
+      }, [])
+    : [];
 
   // ── AUTO TITLE ───────────────────────────────────────────────────────────
   const autoTitle = async (firstMsg: string): Promise<string> => {
@@ -372,11 +534,93 @@ export default function ChatPage() {
   }'`;
   };
 
+  // ── AUTONOMOUS MODE ──────────────────────────────────────────────────────
+  const runAutonomous = async (goal: string) => {
+    setAutonomousRunning(true);
+    setAutonomousSteps([]);
+    const steps: string[] = [];
+
+    const addStep = (step: string) => {
+      steps.push(step);
+      setAutonomousSteps([...steps]);
+    };
+
+    try {
+      addStep(`🎯 Goal: ${goal}`);
+      addStep('🔍 Analyzing task and planning steps...');
+
+      // Step 1: Plan
+      const planRes = await fetch('/api/chat/message', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({
+          userMessage: `You are an autonomous AI agent. Break down this task into 3-5 numbered steps, then immediately execute step 1:\n\nTask: ${goal}`,
+          history: [],
+        }),
+      });
+      const planData = await planRes.json();
+      const plan = planData.content || planData.message || '';
+      addStep(`📋 Plan ready — executing...`);
+
+      const planMsg: ChatMessage = { role: 'assistant', content: `**🤖 Autonomous Mode — Starting task**\n\n${plan}` };
+      setMessages(prev => [...prev, { role: 'user', content: goal }, planMsg]);
+
+      // Step 2: Execute
+      addStep('⚙️ Executing task autonomously...');
+      await new Promise(r => setTimeout(r, 800));
+
+      const execRes = await fetch('/api/chat/message', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({
+          userMessage: `Continue and complete all remaining steps for this task. Provide the complete solution:\n\nTask: ${goal}\n\nPrevious planning:\n${plan}`,
+          history: [{ role: 'user', content: goal }, { role: 'assistant', content: plan }],
+        }),
+      });
+      const execData = await execRes.json();
+      const result = execData.content || execData.message || '';
+
+      addStep('✅ Task complete!');
+      const resultMsg: ChatMessage = { role: 'assistant', content: result };
+      setMessages(prev => [...prev, resultMsg]);
+
+      if (activeChatId) {
+        setHistory(prev => prev.map(h => h.id === activeChatId
+          ? { ...h, messages: [...h.messages, { role: 'user', content: goal }, planMsg, resultMsg] }
+          : h
+        ));
+      } else {
+        const id = Date.now().toString();
+        const title = await autoTitle(goal);
+        setHistory(prev => [{ id, title, messages: [{ role: 'user', content: goal }, planMsg, resultMsg], createdAt: Date.now() }, ...prev]);
+        setActiveChatId(id);
+      }
+    } catch (err) {
+      addStep('❌ Error during autonomous execution');
+      toast({ title: 'Autonomous mode failed', variant: 'destructive' });
+    }
+    setAutonomousRunning(false);
+  };
+
   // ── SEND MESSAGE ─────────────────────────────────────────────────────────
   const sendMessage = useCallback(async (text: string, atts: Attachment[] = attachments) => {
-    const trimmed = text.trim();
+    // Expand slash commands
+    let processedText = text.trim();
+    for (const sc of SLASH_COMMANDS) {
+      if (processedText.startsWith(sc.cmd)) {
+        processedText = sc.expand(processedText);
+        break;
+      }
+    }
+
+    const trimmed = processedText;
     if (!trimmed && atts.length === 0) return;
     if (aiLoading) return;
+
+    // Autonomous mode
+    if (autonomousMode && trimmed) {
+      setInput(''); setAttachments([]);
+      await runAutonomous(trimmed);
+      return;
+    }
 
     setLastUserMessage(trimmed);
     setLastAttachments(atts);
@@ -425,8 +669,11 @@ export default function ChatPage() {
     const provider = getModelProvider(model);
     const openaiApiKey = provider === 'openai' ? (localStorage.getItem('openai_api_key') ?? undefined) : undefined;
 
-    // Build system prompt with memory
+    // Build system prompt with memory + multi-file project context
     const memoryContext = memory.length > 0 ? `\n\nUser Memory Facts:\n${memory.map(m => `- ${m.fact}`).join('\n')}` : '';
+    const projectContext = projectFiles.length > 0
+      ? `\n\nProject Files Context:\n${projectFiles.map(f => `\`\`\`${f.name}\n${f.data}\n\`\`\``).join('\n\n')}`
+      : '';
     const langInstruction = language !== 'English' ? `\nRespond in ${language}.` : '';
     const personaContext = persona === 'coder' ? '\nYou are in Coder mode — prioritize code solutions.' : persona === 'teacher' ? '\nYou are in Teacher mode — explain concepts clearly with examples.' : persona === 'writer' ? '\nYou are in Writer mode — focus on writing quality and creativity.' : '';
     const categoryContext = codeCategory === 'frontend'
@@ -436,9 +683,8 @@ export default function ChatPage() {
       : codeCategory === 'server'
       ? '\nYou are answering a SERVER question. Focus ONLY on Server/DevOps topics (server config, deployment, hosting, nginx, docker, environment setup). Give a complete, self-contained answer.'
       : '';
-    const finalSystemPrompt = (customSystemPrompt || '') + memoryContext + langInstruction + personaContext + categoryContext;
+    const finalSystemPrompt = (customSystemPrompt || '') + memoryContext + projectContext + langInstruction + personaContext + categoryContext;
 
-    // When model is 'auto', don't pass it — let the backend smart-route
     const modelToSend = model === AUTO_MODEL_ID ? undefined : model;
 
     stream(
@@ -477,7 +723,7 @@ export default function ChatPage() {
         },
       }
     );
-  }, [messages, input, attachments, model, aiLoading, temperature, customSystemPrompt, activeChatId, imageGenMode, webSearchMode, memory, persona, language, activeFolder, stream, toast]);
+  }, [messages, input, attachments, model, aiLoading, temperature, customSystemPrompt, activeChatId, imageGenMode, webSearchMode, memory, persona, language, activeFolder, stream, toast, projectFiles, autonomousMode]);
 
   // ── REGENERATE ──────────────────────────────────────────────────────────
   const regenerate = () => {
@@ -672,7 +918,38 @@ export default function ChatPage() {
     toast({ title: 'Prompt saved!' });
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  // ── SLASH COMMAND INPUT HANDLER ──────────────────────────────────────────
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value;
+    setInput(val);
+    if (val === '') { setSmartPasteChip(null); setSlashMenuOpen(false); return; }
+    // Slash command detection
+    if (val.startsWith('/')) {
+      const query = val.slice(1).toLowerCase();
+      setSlashFilter(query);
+      setSlashMenuOpen(true);
+      setSlashMenuIdx(0);
+    } else {
+      setSlashMenuOpen(false);
+    }
+  };
+
+  const filteredSlashCommands = slashMenuOpen
+    ? SLASH_COMMANDS.filter(c => c.cmd.toLowerCase().includes('/' + slashFilter) || c.label.toLowerCase().includes(slashFilter) || c.desc.toLowerCase().includes(slashFilter))
+    : [];
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (slashMenuOpen && filteredSlashCommands.length > 0) {
+      if (e.key === 'ArrowDown') { e.preventDefault(); setSlashMenuIdx(i => Math.min(i + 1, filteredSlashCommands.length - 1)); return; }
+      if (e.key === 'ArrowUp') { e.preventDefault(); setSlashMenuIdx(i => Math.max(i - 1, 0)); return; }
+      if (e.key === 'Tab' || e.key === 'Enter') {
+        e.preventDefault();
+        const chosen = filteredSlashCommands[slashMenuIdx];
+        if (chosen) { setInput(chosen.cmd + ' '); setSlashMenuOpen(false); textareaRef.current?.focus(); }
+        return;
+      }
+      if (e.key === 'Escape') { setSlashMenuOpen(false); return; }
+    }
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(input); }
   };
 
@@ -684,7 +961,20 @@ export default function ChatPage() {
     }
   };
 
-  const startNewChat = () => { setMessages([]); setActiveChatId(null); setInput(''); setAttachments([]); setLastUserMessage(''); setLastAttachments([]); setEditingIdx(null); };
+  const handleProjectFiles = async (files: FileList | null) => {
+    if (!files) return;
+    const newFiles: Attachment[] = [];
+    for (const file of Array.from(files)) {
+      try {
+        const att = await fileToAttachment(file);
+        newFiles.push(att);
+      } catch (err: any) { toast({ title: err.message, variant: 'destructive' }); }
+    }
+    setProjectFiles(prev => [...prev, ...newFiles]);
+    toast({ title: `Added ${newFiles.length} file(s) to project context` });
+  };
+
+  const startNewChat = () => { setMessages([]); setActiveChatId(null); setInput(''); setAttachments([]); setLastUserMessage(''); setLastAttachments([]); setEditingIdx(null); setFocusedMsgIdx(null); };
 
   const loadChat = (chat: HistoryItem) => { setMessages(chat.messages); setActiveChatId(chat.id); };
   const deleteChat = (id: string, e: React.MouseEvent) => {
@@ -740,6 +1030,18 @@ export default function ChatPage() {
     );
   }
 
+  // ── CHAT HISTORY ITEM ───────────────────────────────────────────────────
+  const ChatHistoryItem = ({ chat, active, onLoad, onDelete, onPin, onFolder }: { chat: HistoryItem; active: boolean; onLoad: (c: HistoryItem)=>void; onDelete: (id: string, e: React.MouseEvent)=>void; onPin: (id: string, e: React.MouseEvent)=>void; onFolder: (id: string)=>void; }) => (
+    <div onClick={() => onLoad(chat)} className={`group flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer transition-colors ${active ? 'bg-primary/10 text-primary' : 'hover:bg-muted/60 text-muted-foreground hover:text-foreground'}`}>
+      {chat.pinned && <Pin className="w-2.5 h-2.5 shrink-0 text-primary/70" />}
+      <span className="flex-1 text-xs truncate">{chat.title}</span>
+      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button onClick={(e) => onPin(chat.id, e)} className="p-0.5 rounded hover:text-primary" title="Pin"><Pin className="w-2.5 h-2.5"/></button>
+        <button onClick={(e) => onDelete(chat.id, e)} className="p-0.5 rounded hover:text-destructive" title="Delete"><Trash2 className="w-2.5 h-2.5"/></button>
+      </div>
+    </div>
+  );
+
   return (
     <div className="flex h-screen bg-background text-foreground overflow-hidden">
       <ShortcutsModal open={showShortcuts} onClose={() => setShowShortcuts(false)} />
@@ -787,20 +1089,20 @@ export default function ChatPage() {
         </div>
       )}
 
-      {/* ── TEMPLATES MODAL ───────────────────────────────────────────────── */}
+      {/* ── TEMPLATES MODAL ─────────────────────────────────────────────── */}
       {showTemplates && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowTemplates(false)}>
-          <div className="bg-card border border-border rounded-xl w-full max-w-lg shadow-2xl" onClick={e=>e.stopPropagation()}>
+          <div className="bg-card border border-border rounded-xl w-full max-w-lg shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="p-4 border-b border-border flex items-center justify-between">
-              <div className="flex items-center gap-2"><LayoutTemplate className="w-5 h-5 text-primary"/><h2 className="font-semibold">Chat Templates</h2></div>
-              <button onClick={()=>setShowTemplates(false)} className="text-muted-foreground hover:text-foreground"><X className="w-4 h-4"/></button>
+              <div className="flex items-center gap-2"><LayoutTemplate className="w-5 h-5 text-primary" /><h2 className="font-semibold">Chat Templates</h2></div>
+              <button onClick={() => setShowTemplates(false)} className="text-muted-foreground hover:text-foreground"><X className="w-4 h-4" /></button>
             </div>
             <div className="p-4 grid grid-cols-2 gap-3">
               {CHAT_TEMPLATES.map(t => (
-                <button key={t.id} onClick={() => { startNewChat(); setInput(t.messages[0].content); setShowTemplates(false); setTimeout(()=>textareaRef.current?.focus(),100); }} className="p-4 rounded-xl border border-border/50 hover:border-primary/40 hover:bg-primary/5 text-left transition-all group">
-                  <div className="text-2xl mb-2">{t.icon}</div>
-                  <p className="text-sm font-semibold">{t.name}</p>
-                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{t.messages[0].content.slice(0,60)}…</p>
+                <button key={t.id} onClick={() => { setInput(t.messages[0].content); setShowTemplates(false); setTimeout(() => textareaRef.current?.focus(), 100); }} className="p-4 rounded-xl border border-border/50 hover:border-primary/40 hover:bg-primary/5 transition-all text-left">
+                  <span className="text-xl mb-2 block">{t.icon}</span>
+                  <span className="text-sm font-medium block">{t.name}</span>
+                  <span className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{t.messages[0].content.slice(0, 60)}…</span>
                 </button>
               ))}
             </div>
@@ -808,195 +1110,158 @@ export default function ChatPage() {
         </div>
       )}
 
-      {/* ── MEMORY MODAL ─────────────────────────────────────────────────── */}
+      {/* ── MEMORY MODAL ────────────────────────────────────────────────── */}
       {showMemory && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={()=>setShowMemory(false)}>
-          <div className="bg-card border border-border rounded-xl w-full max-w-md shadow-2xl" onClick={e=>e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowMemory(false)}>
+          <div className="bg-card border border-border rounded-xl w-full max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="p-4 border-b border-border flex items-center justify-between">
-              <div className="flex items-center gap-2"><Brain className="w-5 h-5 text-primary"/><h2 className="font-semibold">AI Memory</h2></div>
-              <button onClick={()=>setShowMemory(false)} className="text-muted-foreground hover:text-foreground"><X className="w-4 h-4"/></button>
+              <div className="flex items-center gap-2"><Brain className="w-5 h-5 text-primary" /><h2 className="font-semibold">AI Memory</h2></div>
+              <button onClick={() => setShowMemory(false)} className="text-muted-foreground hover:text-foreground"><X className="w-4 h-4" /></button>
             </div>
             <div className="p-4 space-y-3">
-              <p className="text-xs text-muted-foreground">Facts saved here are automatically included in every conversation.</p>
+              <p className="text-xs text-muted-foreground">Facts you save here are automatically added to every conversation as context.</p>
               <div className="flex gap-2">
-                <input value={newMemoryFact} onChange={e=>setNewMemoryFact(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')addMemory();}} placeholder="e.g. I prefer TypeScript over JavaScript" className="flex-1 bg-muted border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
-                <Button size="sm" onClick={addMemory}><Plus className="w-3.5 h-3.5"/></Button>
+                <input value={newMemoryFact} onChange={e=>setNewMemoryFact(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')addMemory();}} placeholder="Add a fact about you or your project..." className="flex-1 bg-muted border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
+                <Button size="sm" onClick={addMemory}><Plus className="w-3.5 h-3.5" /></Button>
               </div>
               <div className="space-y-2 max-h-64 overflow-y-auto">
-                {memory.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">No memories saved yet</p>}
                 {memory.map(m => (
-                  <div key={m.id} className="flex items-center gap-2 p-2 rounded-lg bg-muted/50 border border-border/30">
-                    <Brain className="w-3.5 h-3.5 text-primary shrink-0"/>
-                    <span className="flex-1 text-xs">{m.fact}</span>
-                    <button onClick={()=>deleteMemory(m.id)} className="text-muted-foreground hover:text-destructive transition-colors"><X className="w-3 h-3"/></button>
+                  <div key={m.id} className="flex items-start gap-2 p-2 rounded-lg bg-muted/50 border border-border/50">
+                    <p className="flex-1 text-sm">{m.fact}</p>
+                    <button onClick={() => deleteMemory(m.id)} className="text-muted-foreground hover:text-destructive shrink-0"><X className="w-3 h-3" /></button>
                   </div>
                 ))}
+                {memory.length === 0 && <p className="text-center text-sm text-muted-foreground py-4">No memories yet</p>}
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── SCHEDULED PROMPTS MODAL ───────────────────────────────────────── */}
-      {showScheduled && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={()=>setShowScheduled(false)}>
-          <div className="bg-card border border-border rounded-xl w-full max-w-md shadow-2xl" onClick={e=>e.stopPropagation()}>
+      {/* ── PROJECT CONTEXT MODAL ────────────────────────────────────────── */}
+      {showProjectContext && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowProjectContext(false)}>
+          <div className="bg-card border border-border rounded-xl w-full max-w-lg shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="p-4 border-b border-border flex items-center justify-between">
-              <div className="flex items-center gap-2"><Clock className="w-5 h-5 text-primary"/><h2 className="font-semibold">Scheduled Prompts</h2></div>
-              <button onClick={()=>setShowScheduled(false)} className="text-muted-foreground hover:text-foreground"><X className="w-4 h-4"/></button>
+              <div className="flex items-center gap-2"><FolderOpen className="w-5 h-5 text-primary" /><h2 className="font-semibold">Multi-File Project Context</h2></div>
+              <button onClick={() => setShowProjectContext(false)} className="text-muted-foreground hover:text-foreground"><X className="w-4 h-4" /></button>
             </div>
-            <div className="p-4 space-y-3">
-              <p className="text-xs text-muted-foreground">Schedule a prompt to run automatically at a set time each day.</p>
-              <div className="space-y-2">
-                <textarea value={newScheduledPrompt} onChange={e=>setNewScheduledPrompt(e.target.value)} placeholder="Enter prompt to schedule..." rows={2} className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary resize-none"/>
-                <div className="flex gap-2">
-                  <input type="time" value={newScheduledTime} onChange={e=>setNewScheduledTime(e.target.value)} className="flex-1 bg-muted border border-border rounded-lg px-3 py-2 text-sm focus:outline-none"/>
-                  <Button size="sm" onClick={addScheduledPrompt}><Plus className="w-3.5 h-3.5 mr-1"/>Add</Button>
-                </div>
+            <div className="p-4 space-y-4">
+              <p className="text-xs text-muted-foreground">Upload your entire project folder. All files will be sent as context to the AI, so it understands your full codebase.</p>
+              <div
+                onClick={() => projectFilesInputRef.current?.click()}
+                className="border-2 border-dashed border-border/60 rounded-xl p-8 text-center cursor-pointer hover:border-primary/40 hover:bg-primary/5 transition-all"
+              >
+                <FolderOpen className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
+                <p className="text-sm font-medium mb-1">Click to upload project files</p>
+                <p className="text-xs text-muted-foreground">Select multiple files (JS, TS, Python, CSS, JSON, etc.)</p>
+                <input ref={projectFilesInputRef} type="file" multiple accept=".js,.ts,.jsx,.tsx,.py,.css,.html,.json,.md,.txt,.yaml,.yml,.env.example" className="hidden" onChange={e => { handleProjectFiles(e.target.files); e.target.value = ''; }} />
               </div>
-              <div className="space-y-2 max-h-48 overflow-y-auto">
-                {scheduledPrompts.length===0 && <p className="text-xs text-muted-foreground text-center py-4">No scheduled prompts</p>}
-                {scheduledPrompts.map(sp => (
-                  <div key={sp.id} className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 border border-border/30">
-                    <Clock className="w-3.5 h-3.5 text-primary shrink-0"/>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs line-clamp-1">{sp.prompt}</p>
-                      <p className="text-xs text-muted-foreground">{sp.time} · {sp.model}</p>
+              {projectFiles.length > 0 && (
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{projectFiles.length} file(s) in context</p>
+                  {projectFiles.map(f => (
+                    <div key={f.id} className="flex items-center gap-2 p-2 rounded-lg bg-muted/50 border border-border/50">
+                      <FileText className="w-3.5 h-3.5 text-primary shrink-0" />
+                      <span className="flex-1 text-xs truncate">{f.name}</span>
+                      <span className="text-xs text-muted-foreground">{(f.size / 1024).toFixed(1)}KB</span>
+                      <button onClick={() => setProjectFiles(prev => prev.filter(p => p.id !== f.id))} className="text-muted-foreground hover:text-destructive"><X className="w-3 h-3" /></button>
                     </div>
-                    <button onClick={()=>setScheduledPrompts(prev=>prev.filter(s=>s.id!==sp.id))} className="text-muted-foreground hover:text-destructive"><X className="w-3 h-3"/></button>
-                  </div>
-                ))}
+                  ))}
+                  <button onClick={() => setProjectFiles([])} className="text-xs text-destructive/70 hover:text-destructive">Clear all files</button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── AUTONOMOUS MODE PANEL ────────────────────────────────────────── */}
+      {autonomousMode && autonomousSteps.length > 0 && (
+        <div className="fixed bottom-24 right-4 z-40 w-72 bg-card border border-primary/30 rounded-xl shadow-xl overflow-hidden">
+          <div className="px-3 py-2 bg-primary/10 border-b border-primary/20 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Cpu className={`w-3.5 h-3.5 text-primary ${autonomousRunning ? 'animate-spin' : ''}`} />
+              <span className="text-xs font-semibold text-primary">Autonomous Mode</span>
+            </div>
+            {!autonomousRunning && <button onClick={() => setAutonomousSteps([])} className="text-muted-foreground hover:text-foreground"><X className="w-3 h-3" /></button>}
+          </div>
+          <div className="p-3 space-y-1.5 max-h-48 overflow-y-auto">
+            {autonomousSteps.map((step, i) => (
+              <div key={i} className="flex items-start gap-2">
+                <span className="text-xs text-muted-foreground font-mono w-4 shrink-0">{i + 1}.</span>
+                <span className="text-xs">{step}</span>
               </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── EMBED CODE MODAL ─────────────────────────────────────────────── */}
-      {showEmbed && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={()=>setShowEmbed(false)}>
-          <div className="bg-card border border-border rounded-xl w-full max-w-lg shadow-2xl" onClick={e=>e.stopPropagation()}>
-            <div className="p-4 border-b border-border flex items-center justify-between">
-              <div className="flex items-center gap-2"><Code className="w-5 h-5 text-primary"/><h2 className="font-semibold">Chat Embed Widget</h2></div>
-              <button onClick={()=>setShowEmbed(false)} className="text-muted-foreground hover:text-foreground"><X className="w-4 h-4"/></button>
-            </div>
-            <div className="p-4 space-y-4">
-              <p className="text-sm text-muted-foreground">Embed ZorvixAI on any website by copying this snippet:</p>
-              <pre className="bg-muted rounded-lg p-4 text-xs overflow-x-auto font-mono border border-border/50">{getEmbedCode()}</pre>
-              <Button className="w-full" onClick={()=>{ navigator.clipboard.writeText(getEmbedCode()); toast({title:'Embed code copied!'}); }}>
-                <Copy className="w-4 h-4 mr-2"/>Copy Embed Code
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── CURL HELPER MODAL ────────────────────────────────────────────── */}
-      {showCurlHelper && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={()=>setShowCurlHelper(false)}>
-          <div className="bg-card border border-border rounded-xl w-full max-w-lg shadow-2xl" onClick={e=>e.stopPropagation()}>
-            <div className="p-4 border-b border-border flex items-center justify-between">
-              <div className="flex items-center gap-2"><Terminal className="w-5 h-5 text-primary"/><h2 className="font-semibold">CLI Companion</h2></div>
-              <button onClick={()=>setShowCurlHelper(false)} className="text-muted-foreground hover:text-foreground"><X className="w-4 h-4"/></button>
-            </div>
-            <div className="p-4 space-y-4">
-              <p className="text-sm text-muted-foreground">Use the ZorvixAI API from your terminal:</p>
-              <pre className="bg-muted rounded-lg p-4 text-xs overflow-x-auto font-mono border border-border/50">{getCurlCommand()}</pre>
-              <Button className="w-full" onClick={()=>{ navigator.clipboard.writeText(getCurlCommand()); toast({title:'cURL command copied!'}); }}>
-                <Copy className="w-4 h-4 mr-2"/>Copy Command
-              </Button>
-            </div>
+            ))}
           </div>
         </div>
       )}
 
       {/* ── SHARE MODAL ──────────────────────────────────────────────────── */}
       {showShareModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={()=>setShowShareModal(false)}>
-          <div className="bg-card border border-border rounded-xl w-full max-w-md shadow-2xl" onClick={e=>e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowShareModal(false)}>
+          <div className="bg-card border border-border rounded-xl w-full max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="p-4 border-b border-border flex items-center justify-between">
-              <div className="flex items-center gap-2"><Share2 className="w-5 h-5 text-primary"/><h2 className="font-semibold">Share Chat</h2></div>
-              <button onClick={()=>setShowShareModal(false)} className="text-muted-foreground hover:text-foreground"><X className="w-4 h-4"/></button>
+              <div className="flex items-center gap-2"><Share2 className="w-5 h-5 text-primary" /><h2 className="font-semibold">Share Chat</h2></div>
+              <button onClick={() => setShowShareModal(false)} className="text-muted-foreground hover:text-foreground"><X className="w-4 h-4" /></button>
             </div>
-            <div className="p-4 space-y-4">
+            <div className="p-4 space-y-3">
               <p className="text-sm text-muted-foreground">Anyone with this link can view this conversation:</p>
               <div className="flex gap-2">
-                <input readOnly value={shareLink} className="flex-1 bg-muted border border-border rounded-lg px-3 py-2 text-sm font-mono"/>
-                <Button size="sm" onClick={()=>{ navigator.clipboard.writeText(shareLink); toast({title:'Link copied!'}); }}><Copy className="w-3.5 h-3.5"/></Button>
+                <input readOnly value={shareLink} className="flex-1 bg-muted border border-border rounded-lg px-3 py-2 text-sm" />
+                <Button size="sm" onClick={() => { navigator.clipboard.writeText(shareLink); toast({ title: 'Link copied!' }); }}>Copy</Button>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── THEME PICKER ─────────────────────────────────────────────────── */}
+      {/* ── PREVIEW PANEL ────────────────────────────────────────────────── */}
+      {showPreviewPanel && previewContent && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowPreviewPanel(false)}>
+          <div className="bg-card border border-border rounded-xl w-full max-w-3xl h-[80vh] flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="p-3 border-b border-border flex items-center justify-between">
+              <div className="flex items-center gap-2"><Monitor className="w-4 h-4 text-primary" /><span className="font-semibold text-sm">Live Preview</span></div>
+              <button onClick={() => setShowPreviewPanel(false)} className="text-muted-foreground hover:text-foreground"><X className="w-4 h-4" /></button>
+            </div>
+            <iframe srcDoc={previewContent} className="flex-1 rounded-b-xl" sandbox="allow-scripts" title="Preview" />
+          </div>
+        </div>
+      )}
+
+      {/* ── AGENT BUILDER ────────────────────────────────────────────────── */}
+      {agentPrompt && <AgentBuilder prompt={agentPrompt} onClose={() => setAgentPrompt(null)} />}
 
       {/* ── SIDEBAR ──────────────────────────────────────────────────────── */}
       {sidebarOpen && (
-        <aside className="w-64 shrink-0 border-r border-border/50 bg-card flex flex-col h-full overflow-hidden">
-          {/* Logo */}
-          <div className="p-4 border-b border-border/50">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center"><Bot className="w-4 h-4 text-white"/></div>
-                <span className="font-bold text-sm">ZorvixAI</span>
-              </div>
-              <div className="flex items-center gap-1">
-                {streak > 0 && (
-                  <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-400">
-                    <Flame className="w-3 h-3"/><span className="text-xs font-bold">{streak}</span>
-                  </div>
-                )}
-                <button onClick={()=>setSidebarOpen(false)} className="text-muted-foreground hover:text-foreground"><ChevronLeft className="w-4 h-4"/></button>
-              </div>
-            </div>
-            <Button onClick={startNewChat} className="w-full bg-primary/90 hover:bg-primary text-sm h-8 shadow-md shadow-primary/20" size="sm">
-              <Plus className="w-3.5 h-3.5 mr-1.5"/>New Chat
-            </Button>
+        <aside className="w-60 shrink-0 border-r border-border/50 bg-card/80 flex flex-col overflow-hidden">
+          {/* Sidebar header */}
+          <div className="p-3 border-b border-border/30 flex items-center gap-2">
+            <button onClick={() => setSidebarOpen(false)} className="text-muted-foreground hover:text-foreground transition-colors"><ChevronLeft className="w-4 h-4"/></button>
+            <span className="text-sm font-semibold flex-1">Chats</span>
+            <button onClick={startNewChat} className="text-muted-foreground hover:text-primary transition-colors" title="New chat"><Plus className="w-4 h-4"/></button>
           </div>
 
           {/* Search */}
           <div className="px-3 py-2 border-b border-border/30">
             <div className="relative">
-              <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground"/>
-              <input value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} placeholder="Search chats..." className="w-full pl-8 pr-3 py-1.5 text-xs bg-muted border border-border/50 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary"/>
+              <Search className="w-3 h-3 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search chats…" className="w-full pl-7 pr-3 py-1.5 text-xs bg-muted border border-border/40 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary" />
             </div>
           </div>
 
-          {/* Folder filter chips */}
-          {allFolders.length > 0 && (
-            <div className="px-3 py-2 border-b border-border/30 flex gap-1.5 flex-wrap">
-              <button onClick={()=>setActiveFolder(null)} className={`px-2 py-0.5 rounded-full text-xs transition-colors ${activeFolder===null?'bg-primary text-white':'bg-muted text-muted-foreground hover:bg-muted/80'}`}>All</button>
-              {allFolders.map(f=>(
-                <button key={f} onClick={()=>setActiveFolder(activeFolder===f?null:f)} className={`px-2 py-0.5 rounded-full text-xs transition-colors flex items-center gap-1 ${activeFolder===f?'bg-primary text-white':'bg-muted text-muted-foreground hover:bg-muted/80'}`}>
-                  <FolderOpen className="w-3 h-3"/>{f}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Nav */}
-          <div className="px-3 py-2 border-b border-border/30 space-y-0.5">
-            <NavItem icon={FolderKanban} label="Projects" onClick={()=>setLocation('/projects')} />
-            <NavItem icon={BarChart3} label="Analytics" onClick={()=>setLocation('/analytics')} />
-            <NavItem icon={GitCompare} label="Compare Models" onClick={()=>setLocation('/compare')} />
-            <NavItem icon={Code2} label="Code Playground" onClick={()=>setLocation('/playground')} />
-            <NavItem icon={LayoutTemplate} label="Templates" onClick={()=>setShowTemplates(true)} />
-            <NavItem icon={Brain} label="AI Memory" onClick={()=>setShowMemory(true)} />
-            <NavItem icon={Clock} label="Scheduled Prompts" onClick={()=>setShowScheduled(true)} />
-            <NavItem icon={BookMarked} label="Prompt Library" onClick={()=>setPromptLibOpen(true)} />
-            <NavItem icon={Code} label="Embed Widget" onClick={()=>setShowEmbed(true)} />
-            <NavItem icon={Terminal} label="CLI Companion" onClick={()=>setShowCurlHelper(true)} />
-            <NavItem icon={Wand2} label="Prompt Generator" onClick={()=>setLocation('/prompt-generator')} highlight />
-          </div>
-          <div className="px-3 py-2 border-b border-border/30 space-y-0.5">
-            <NavItem icon={Grid3X3} label="Our Apps" onClick={()=>setLocation('/our-apps')} />
-            <NavItem icon={Zap} label="Usage" onClick={()=>setLocation('/usage')} />
-            <NavItem icon={Settings} label="Settings" onClick={()=>setLocation('/settings')} />
-            <NavItem icon={Shield} label="Admin" onClick={()=>setLocation('/admin')} />
-            <NavItem icon={Info} label="About" onClick={()=>setLocation('/about')} />
-            <NavItem icon={Terminal} label="Developer" onClick={()=>setLocation('/developer')} />
-            <NavItem icon={Mail} label="Contact Us" onClick={()=>setLocation('/contact')} />
+          {/* Sidebar quick actions */}
+          <div className="px-3 py-1.5 border-b border-border/30 flex flex-wrap gap-1">
+            {[
+              { icon: BookMarked, label: 'Prompts', action: () => setPromptLibOpen(true) },
+              { icon: LayoutTemplate, label: 'Templates', action: () => setShowTemplates(true) },
+              { icon: Brain, label: 'Memory', action: () => setShowMemory(true) },
+              { icon: FolderOpen, label: 'Project', action: () => setShowProjectContext(true) },
+            ].map(a => (
+              <button key={a.label} onClick={a.action} title={a.label} className="flex items-center gap-1 px-2 py-1 rounded text-xs text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors">
+                <a.icon className="w-3 h-3" />
+              </button>
+            ))}
           </div>
 
           {/* Folder management */}
@@ -1049,7 +1314,18 @@ export default function ChatPage() {
       )}
 
       {/* ── MAIN AREA ────────────────────────────────────────────────────── */}
-      <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <main ref={mainAreaRef} className={`flex-1 flex flex-col min-w-0 overflow-hidden relative ${isDraggingOver ? 'ring-2 ring-primary ring-inset' : ''}`}>
+        {/* Drag & Drop overlay */}
+        {isDraggingOver && (
+          <div className="absolute inset-0 z-30 bg-primary/10 backdrop-blur-sm flex items-center justify-center pointer-events-none">
+            <div className="bg-card border-2 border-dashed border-primary rounded-2xl px-12 py-8 text-center">
+              <Paperclip className="w-10 h-10 text-primary mx-auto mb-3" />
+              <p className="text-lg font-semibold text-primary">Drop files here</p>
+              <p className="text-sm text-muted-foreground mt-1">Images and text files supported</p>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm px-4 py-2.5 flex items-center gap-3 shrink-0">
           {!sidebarOpen && (
@@ -1063,6 +1339,19 @@ export default function ChatPage() {
                 <button key={p.id} onClick={()=>setPersona(p.id)} title={p.label} className={`px-1.5 py-0.5 rounded text-xs transition-colors ${persona===p.id?'bg-primary/20 text-primary':'text-muted-foreground hover:text-foreground'}`}>{p.emoji}</button>
               ))}
             </div>
+            {/* In-chat search */}
+            <button onClick={() => { setShowChatSearch(v => !v); setTimeout(() => chatSearchRef.current?.focus(), 100); }} title="Search in chat (Ctrl+F)" className={`p-1.5 rounded-lg transition-colors ${showChatSearch?'bg-primary/20 text-primary':'text-muted-foreground hover:text-foreground'}`}>
+              <Search className="w-4 h-4"/>
+            </button>
+            {/* Project context */}
+            <button onClick={() => setShowProjectContext(true)} title={`Multi-file project context${projectFiles.length > 0 ? ` (${projectFiles.length} files)` : ''}`} className={`p-1.5 rounded-lg transition-colors ${projectFiles.length>0?'bg-green-500/20 text-green-400':'text-muted-foreground hover:text-foreground'}`}>
+              <FolderOpen className="w-4 h-4"/>
+              {projectFiles.length > 0 && <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 text-[9px] bg-green-500 text-white rounded-full flex items-center justify-center">{projectFiles.length}</span>}
+            </button>
+            {/* Autonomous mode toggle */}
+            <button onClick={() => { setAutonomousMode(v => !v); if (!autonomousMode) toast({ title: '🤖 Autonomous Mode ON — AI will plan and execute tasks automatically' }); }} title="Agent autonomous mode" className={`p-1.5 rounded-lg transition-colors ${autonomousMode?'bg-violet-500/20 text-violet-400':'text-muted-foreground hover:text-foreground'}`}>
+              <Cpu className="w-4 h-4"/>
+            </button>
             {/* Web search toggle */}
             <button onClick={()=>setWebSearchMode(v=>!v)} title={webSearchMode?'Disable web search':'Enable web search'} className={`p-1.5 rounded-lg transition-colors ${webSearchMode?'bg-blue-500/20 text-blue-400':'text-muted-foreground hover:text-foreground'}`}>
               <Globe className="w-4 h-4"/>
@@ -1092,28 +1381,74 @@ export default function ChatPage() {
           </div>
         </header>
 
-        {/* Settings bar */}
-        <div className="border-b border-border/30 bg-muted/20 px-4 py-1.5 flex items-center gap-4 text-xs text-muted-foreground shrink-0">
-          <div className="flex items-center gap-2">
-            <Sliders className="w-3 h-3"/>
-            <span>Creativity:</span>
-            <input type="range" min="0" max="1" step="0.1" value={temperature} onChange={e=>setTemperature(parseFloat(e.target.value))} className="w-20 h-1 accent-primary cursor-pointer"/>
-            <span>{temperature.toFixed(1)}</span>
+        {/* ── IN-CHAT SEARCH BAR ─────────────────────────────────────────── */}
+        {showChatSearch && (
+          <div className="border-b border-border/30 bg-muted/30 px-4 py-2 flex items-center gap-3 shrink-0">
+            <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+            <input
+              ref={chatSearchRef}
+              value={chatSearchQuery}
+              onChange={e => { setChatSearchQuery(e.target.value); setChatSearchIdx(0); }}
+              placeholder="Search messages… (Ctrl+F to close)"
+              className="flex-1 bg-transparent text-sm focus:outline-none"
+            />
+            {chatSearchMatches.length > 0 && (
+              <span className="text-xs text-muted-foreground shrink-0">
+                {chatSearchIdx + 1} / {chatSearchMatches.length}
+              </span>
+            )}
+            <div className="flex items-center gap-1">
+              <button disabled={chatSearchMatches.length === 0} onClick={() => { const ni = Math.max(0, chatSearchIdx - 1); setChatSearchIdx(ni); messageRefs.current[chatSearchMatches[ni]]?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }} className="p-1 rounded hover:bg-muted text-muted-foreground disabled:opacity-30"><ArrowUp className="w-3 h-3" /></button>
+              <button disabled={chatSearchMatches.length === 0} onClick={() => { const ni = Math.min(chatSearchMatches.length - 1, chatSearchIdx + 1); setChatSearchIdx(ni); messageRefs.current[chatSearchMatches[ni]]?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }} className="p-1 rounded hover:bg-muted text-muted-foreground disabled:opacity-30"><ArrowDown className="w-3 h-3" /></button>
+              <button onClick={() => { setShowChatSearch(false); setChatSearchQuery(''); }} className="p-1 rounded hover:bg-muted text-muted-foreground"><X className="w-3 h-3" /></button>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Globe className="w-3 h-3"/>
-            <select value={language} onChange={e=>setLanguage(e.target.value)} className="bg-transparent text-xs focus:outline-none cursor-pointer">
-              {LANGUAGES.map(l=><option key={l} value={l}>{l}</option>)}
-            </select>
+        )}
+
+        {/* Settings bar + Context Window Progress Bar */}
+        <div className="border-b border-border/30 bg-muted/20 px-4 py-1.5 flex flex-col gap-1 shrink-0">
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <Sliders className="w-3 h-3"/>
+              <span>Creativity:</span>
+              <input type="range" min="0" max="1" step="0.1" value={temperature} onChange={e=>setTemperature(parseFloat(e.target.value))} className="w-20 h-1 accent-primary cursor-pointer"/>
+              <span>{temperature.toFixed(1)}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Globe className="w-3 h-3"/>
+              <select value={language} onChange={e=>setLanguage(e.target.value)} className="bg-transparent text-xs focus:outline-none cursor-pointer">
+                {LANGUAGES.map(l=><option key={l} value={l}>{l}</option>)}
+              </select>
+            </div>
+            {/* Context window bar */}
+            {(messages.length > 0 || projectFiles.length > 0) && (
+              <div className="flex items-center gap-2 ml-auto">
+                <Cpu className="w-3 h-3" />
+                <span>Context:</span>
+                <div className="w-24 h-1.5 bg-muted-foreground/20 rounded-full overflow-hidden">
+                  <div className={`h-full rounded-full transition-all ${contextColor}`} style={{ width: `${contextPercent}%` }} />
+                </div>
+                <span className={contextPercent > 80 ? 'text-red-400' : contextPercent > 50 ? 'text-yellow-400' : 'text-green-400'}>{contextPercent}%</span>
+              </div>
+            )}
+            {messages.length > 0 && !(messages.length > 0 || projectFiles.length > 0) && (
+              <div className="flex items-center gap-1 ml-auto">
+                <Hash className="w-3 h-3"/>
+                <span>~{estimateTokens(messages.map(m=>m.content).join(' '))} tokens</span>
+              </div>
+            )}
+            {webSearchMode && <span className={`${!(messages.length > 0 || projectFiles.length > 0) ? '' : ''} flex items-center gap-1 text-blue-400`}><Globe className="w-3 h-3"/>Web Search ON</span>}
+            {imageGenMode && <span className="flex items-center gap-1 text-pink-400"><Wand2 className="w-3 h-3"/>Image Gen ON</span>}
+            {autonomousMode && <span className="flex items-center gap-1 text-violet-400"><Cpu className="w-3 h-3"/>Autonomous ON</span>}
           </div>
-          {messages.length > 0 && (
-            <div className="flex items-center gap-1 ml-auto">
-              <Hash className="w-3 h-3"/>
-              <span>~{estimateTokens(messages.map(m=>m.content).join(' '))} tokens</span>
+          {/* Keyboard nav hint */}
+          {messages.length > 1 && !showChatSearch && (
+            <div className="flex items-center gap-3 text-[10px] text-muted-foreground/50">
+              <span>j/k or ↑↓ — navigate messages</span>
+              <span>c — copy focused message</span>
+              <span>Ctrl+F — search</span>
             </div>
           )}
-          {webSearchMode && <span className="ml-auto flex items-center gap-1 text-blue-400"><Globe className="w-3 h-3"/>Web Search ON</span>}
-          {imageGenMode && <span className="flex items-center gap-1 text-pink-400"><Wand2 className="w-3 h-3"/>Image Gen ON</span>}
         </div>
 
         {/* Messages */}
@@ -1125,7 +1460,7 @@ export default function ChatPage() {
               </div>
               <h2 className="text-2xl font-bold mb-2">What can I help you build?</h2>
               <p className="text-muted-foreground mb-8">Your AI coding companion. Ask me to write code, debug issues, explain concepts, or build entire applications.</p>
-              <div className="grid grid-cols-2 gap-3 text-left">
+              <div className="grid grid-cols-2 gap-3 text-left mb-6">
                 {SUGGESTIONS.map(s => (
                   <button key={s.label} onClick={()=>sendMessage(s.prompt)} className="p-4 rounded-xl border border-border/50 hover:border-primary/40 hover:bg-primary/5 transition-all text-left group">
                     <s.icon className="w-5 h-5 text-primary mb-2 group-hover:scale-110 transition-transform"/>
@@ -1134,116 +1469,144 @@ export default function ChatPage() {
                   </button>
                 ))}
               </div>
-              <div className="mt-6 flex gap-2 justify-center flex-wrap">
+              {/* Slash commands preview */}
+              <div className="bg-muted/30 border border-border/40 rounded-xl p-4 mb-6 text-left">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Slash Commands</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {SLASH_COMMANDS.slice(0, 6).map(sc => (
+                    <button key={sc.cmd} onClick={() => { setInput(sc.cmd + ' '); textareaRef.current?.focus(); }} className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-primary/10 transition-colors text-left">
+                      <span className="text-sm">{sc.icon}</span>
+                      <span className="text-xs font-mono text-primary">{sc.cmd}</span>
+                      <span className="text-xs text-muted-foreground hidden sm:block">— {sc.desc}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex gap-2 justify-center flex-wrap">
                 <button onClick={()=>setShowTemplates(true)} className="px-3 py-1.5 rounded-full border border-border/50 text-xs text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all flex items-center gap-1.5"><LayoutTemplate className="w-3 h-3"/>Templates</button>
                 <button onClick={()=>setPromptLibOpen(true)} className="px-3 py-1.5 rounded-full border border-border/50 text-xs text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all flex items-center gap-1.5"><BookMarked className="w-3 h-3"/>Prompts</button>
                 <button onClick={()=>setLocation('/compare')} className="px-3 py-1.5 rounded-full border border-border/50 text-xs text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all flex items-center gap-1.5"><GitCompare className="w-3 h-3"/>Compare Models</button>
                 <button onClick={()=>setLocation('/playground')} className="px-3 py-1.5 rounded-full border border-border/50 text-xs text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all flex items-center gap-1.5"><Code2 className="w-3 h-3"/>Playground</button>
+                <button onClick={()=>setShowProjectContext(true)} className="px-3 py-1.5 rounded-full border border-border/50 text-xs text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all flex items-center gap-1.5"><FolderOpen className="w-3 h-3"/>Project Files</button>
               </div>
             </div>
           ) : (
             <div className="max-w-3xl mx-auto space-y-6">
-              {messages.map((msg, idx) => (
-                <div key={idx} className={`flex gap-3 ${msg.role==='user'?'flex-row-reverse':''}`}>
-                  <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${msg.role==='user'?'bg-primary/20':'bg-muted'}`}>
-                    {msg.role==='user'?<User className="w-3.5 h-3.5 text-primary"/>:<Bot className="w-3.5 h-3.5 text-muted-foreground"/>}
-                  </div>
-                  <div className={`flex-1 max-w-[85%] ${msg.role==='user'?'items-end':''} flex flex-col gap-1`}>
-                    {editingIdx === idx ? (
-                      <div className="space-y-2">
-                        <textarea value={editingText} onChange={e=>setEditingText(e.target.value)} rows={3} autoFocus className="w-full bg-muted border border-primary rounded-xl px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary"/>
-                        <div className="flex gap-2">
-                          <Button size="sm" onClick={saveEdit} className="bg-primary"><Check className="w-3.5 h-3.5 mr-1"/>Save & Regenerate</Button>
-                          <Button size="sm" variant="ghost" onClick={cancelEditing}>Cancel</Button>
+              {messages.map((msg, idx) => {
+                const isSearchMatch = chatSearchQuery && msg.content.toLowerCase().includes(chatSearchQuery.toLowerCase());
+                const isFocused = focusedMsgIdx === idx;
+                return (
+                  <div
+                    key={idx}
+                    ref={el => { messageRefs.current[idx] = el; }}
+                    className={`flex gap-3 ${msg.role==='user'?'flex-row-reverse':''} ${isFocused ? 'ring-1 ring-primary/30 rounded-2xl' : ''} ${isSearchMatch ? 'bg-yellow-500/5 rounded-2xl' : ''}`}
+                  >
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${msg.role==='user'?'bg-primary/20':'bg-muted'}`}>
+                      {msg.role==='user'?<User className="w-3.5 h-3.5 text-primary"/>:<Bot className="w-3.5 h-3.5 text-muted-foreground"/>}
+                    </div>
+                    <div className={`flex-1 max-w-[85%] ${msg.role==='user'?'items-end':''} flex flex-col gap-1`}>
+                      {editingIdx === idx ? (
+                        <div className="space-y-2">
+                          <textarea value={editingText} onChange={e=>setEditingText(e.target.value)} rows={3} autoFocus className="w-full bg-muted border border-primary rounded-xl px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary"/>
+                          <div className="flex gap-2">
+                            <Button size="sm" onClick={saveEdit} className="bg-primary"><Check className="w-3.5 h-3.5 mr-1"/>Save & Regenerate</Button>
+                            <Button size="sm" variant="ghost" onClick={cancelEditing}>Cancel</Button>
+                          </div>
                         </div>
-                      </div>
-                    ) : (
-                      <div className={`rounded-2xl px-4 py-3 ${msg.role==='user'?'bg-primary text-primary-foreground':'bg-muted/50 border border-border/30'}`}>
-                        {msg.isImage ? (
-                          <img src={msg.content.match(/!\[.*?\]\((.*?)\)/)?.[1] || ''} alt="Generated" className="max-w-sm rounded-lg"/>
-                        ) : msg.role === 'assistant' && !msg.content ? (
-                          <div className="flex gap-1 py-1"><span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce"/><span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce [animation-delay:0.15s]"/><span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce [animation-delay:0.3s]"/></div>
-                        ) : msg.role === 'assistant' ? (
-                          <MarkdownRenderer content={msg.content} onPreview={openPreview}/>
-                        ) : (
-                          <div>
-                            <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                            {msg.attachments?.map((a,i)=>(
-                              <div key={i} className="mt-2">
-                                {a.type==='image'&&a.preview?<img src={a.preview} alt={a.name} className="max-h-32 rounded-lg object-contain"/>:<span className="inline-flex items-center gap-1 text-xs bg-white/10 rounded px-2 py-1"><FileText className="w-3 h-3"/>{a.name}</span>}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
+                      ) : (
+                        <div className={`rounded-2xl px-4 py-3 ${msg.role==='user'?'bg-primary text-primary-foreground':'bg-muted/50 border border-border/30'}`}>
+                          {msg.isImage ? (
+                            <img src={msg.content.match(/!\[.*?\]\((.*?)\)/)?.[1] || ''} alt="Generated" className="max-w-sm rounded-lg"/>
+                          ) : msg.role === 'assistant' && !msg.content ? (
+                            <div className="flex gap-1 py-1"><span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce"/><span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce [animation-delay:0.15s]"/><span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce [animation-delay:0.3s]"/></div>
+                          ) : msg.role === 'assistant' ? (
+                            <MarkdownRenderer content={msg.content} onPreview={openPreview}/>
+                          ) : (
+                            <div>
+                              <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                              {msg.attachments?.map((a,i)=>(
+                                <div key={i} className="mt-2">
+                                  {a.type==='image'&&a.preview?<img src={a.preview} alt={a.name} className="max-h-32 rounded-lg object-contain"/>:<span className="inline-flex items-center gap-1 text-xs bg-white/10 rounded px-2 py-1"><FileText className="w-3 h-3"/>{a.name}</span>}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
 
-                    {/* Token count badge */}
-                    {msg.content && msg.role === 'assistant' && (
-                      <div className="flex items-center gap-1 px-1">
-                        <span className="text-[10px] text-muted-foreground/35 tabular-nums">
-                          ~{Math.ceil(msg.content.length / 4).toLocaleString()} tokens
-                        </span>
-                      </div>
-                    )}
+                      {/* Search match highlight label */}
+                      {isSearchMatch && (
+                        <div className="flex items-center gap-1 px-1">
+                          <span className="text-[10px] bg-yellow-400/20 text-yellow-500 px-1.5 py-0.5 rounded">match</span>
+                        </div>
+                      )}
 
-                    {/* Message comment */}
-                    {msg.comment && (
-                      <div className="flex items-center gap-1.5 px-1">
-                        <MessageCircle className="w-3 h-3 text-yellow-400"/>
-                        <span className="text-xs text-yellow-400/80 italic">{msg.comment}</span>
-                      </div>
-                    )}
-                    {commentingIdx === idx && (
-                      <div className="flex gap-2 px-1">
-                        <input value={commentText} onChange={e=>setCommentText(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')saveComment(idx);}} placeholder="Add annotation..." autoFocus className="flex-1 bg-muted border border-border rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary"/>
-                        <Button size="sm" onClick={()=>saveComment(idx)} className="h-7 text-xs">Save</Button>
-                        <Button size="sm" variant="ghost" onClick={()=>setCommentingIdx(null)} className="h-7 text-xs">Cancel</Button>
-                      </div>
-                    )}
+                      {/* Token count badge */}
+                      {msg.content && msg.role === 'assistant' && (
+                        <div className="flex items-center gap-1 px-1">
+                          <span className="text-[10px] text-muted-foreground/35 tabular-nums">
+                            ~{Math.ceil(msg.content.length / 4).toLocaleString()} tokens
+                          </span>
+                        </div>
+                      )}
 
-                    {/* Star rating for AI messages */}
-                    {msg.role === 'assistant' && msg.content && editingIdx !== idx && (
-                      <div className="flex flex-col gap-2 px-1">
-                        {/* AI Write — always visible save button when code is present */}
-                        {(msg.content.includes('```') || msg.content.includes('===FILE:')) && (
-                          <div>
-                            <button
-                              onClick={()=>saveCodeFromMessage(msg.content)}
-                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-green-500/15 text-green-400 border border-green-500/30 hover:bg-green-500/25 hover:border-green-500/50 transition-colors"
-                            >
-                              <Download className="w-3.5 h-3.5"/>
-                              AI Write — Save to File
-                            </button>
-                          </div>
-                        )}
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-0.5">
-                            {[1,2,3,4,5].map(star=>(
-                              <button key={star} onClick={()=>rateMessage(idx,star)} className={`transition-colors ${(msg.rating||0)>=star?'text-yellow-400':'text-muted-foreground/30 hover:text-yellow-400/60'}`}>
-                                <Star className="w-3.5 h-3.5" fill={(msg.rating||0)>=star?'currentColor':'none'}/>
+                      {/* Message comment */}
+                      {msg.comment && (
+                        <div className="flex items-center gap-1.5 px-1">
+                          <MessageCircle className="w-3 h-3 text-yellow-400"/>
+                          <span className="text-xs text-yellow-400/80 italic">{msg.comment}</span>
+                        </div>
+                      )}
+                      {commentingIdx === idx && (
+                        <div className="flex gap-2 px-1">
+                          <input value={commentText} onChange={e=>setCommentText(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')saveComment(idx);}} placeholder="Add annotation..." autoFocus className="flex-1 bg-muted border border-border rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary"/>
+                          <Button size="sm" onClick={()=>saveComment(idx)} className="h-7 text-xs">Save</Button>
+                          <Button size="sm" variant="ghost" onClick={()=>setCommentingIdx(null)} className="h-7 text-xs">Cancel</Button>
+                        </div>
+                      )}
+
+                      {/* Star rating for AI messages */}
+                      {msg.role === 'assistant' && msg.content && editingIdx !== idx && (
+                        <div className="flex flex-col gap-2 px-1">
+                          {(msg.content.includes('```') || msg.content.includes('===FILE:')) && (
+                            <div>
+                              <button
+                                onClick={()=>saveCodeFromMessage(msg.content)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-green-500/15 text-green-400 border border-green-500/30 hover:bg-green-500/25 hover:border-green-500/50 transition-colors"
+                              >
+                                <Download className="w-3.5 h-3.5"/>
+                                AI Write — Save to File
                               </button>
-                            ))}
-                          </div>
-                          <div className="flex items-center gap-1 opacity-0 hover:opacity-100 transition-opacity [.group:hover_&]:opacity-100">
-                            <button onClick={()=>copyToClipboard(msg.content)} className="p-1 rounded text-muted-foreground hover:text-foreground transition-colors" title="Copy"><Copy className="w-3 h-3"/></button>
-                            <button onClick={()=>readAloud(msg.content)} className={`p-1 rounded transition-colors ${isSpeaking?'text-primary':'text-muted-foreground hover:text-foreground'}`} title="Read aloud">{isSpeaking?<VolumeX className="w-3 h-3"/>:<Volume2 className="w-3 h-3"/>}</button>
-                            <button onClick={regenerate} className="p-1 rounded text-muted-foreground hover:text-foreground transition-colors" title="Regenerate"><RefreshCw className="w-3 h-3"/></button>
-                            <button onClick={()=>branchChat(idx)} className="p-1 rounded text-muted-foreground hover:text-primary transition-colors" title="Branch from here"><GitBranch className="w-3 h-3"/></button>
-                            <button onClick={()=>{setCommentingIdx(idx);setCommentText(msg.comment||'');}} className="p-1 rounded text-muted-foreground hover:text-yellow-400 transition-colors" title="Add comment"><MessageCircle className="w-3 h-3"/></button>
+                            </div>
+                          )}
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-0.5">
+                              {[1,2,3,4,5].map(star=>(
+                                <button key={star} onClick={()=>rateMessage(idx,star)} className={`transition-colors ${(msg.rating||0)>=star?'text-yellow-400':'text-muted-foreground/30 hover:text-yellow-400/60'}`}>
+                                  <Star className="w-3.5 h-3.5" fill={(msg.rating||0)>=star?'currentColor':'none'}/>
+                                </button>
+                              ))}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <button onClick={()=>copyToClipboard(msg.content)} className="p-1 rounded text-muted-foreground hover:text-foreground transition-colors" title="Copy"><Copy className="w-3 h-3"/></button>
+                              <button onClick={()=>readAloud(msg.content)} className={`p-1 rounded transition-colors ${isSpeaking?'text-primary':'text-muted-foreground hover:text-foreground'}`} title="Read aloud">{isSpeaking?<VolumeX className="w-3 h-3"/>:<Volume2 className="w-3 h-3"/>}</button>
+                              <button onClick={regenerate} className="p-1 rounded text-muted-foreground hover:text-foreground transition-colors" title="Regenerate"><RefreshCw className="w-3 h-3"/></button>
+                              <button onClick={()=>branchChat(idx)} className="p-1 rounded text-muted-foreground hover:text-primary transition-colors" title="Branch from here"><GitBranch className="w-3 h-3"/></button>
+                              <button onClick={()=>{setCommentingIdx(idx);setCommentText(msg.comment||'');}} className="p-1 rounded text-muted-foreground hover:text-yellow-400 transition-colors" title="Add comment"><MessageCircle className="w-3 h-3"/></button>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    )}
-                    {msg.role === 'user' && editingIdx !== idx && (
-                      <div className="flex items-center gap-1 px-1">
-                        <button onClick={()=>startEditing(idx, msg.content)} className="p-1 rounded text-muted-foreground hover:text-foreground transition-colors" title="Edit"><Edit3 className="w-3 h-3"/></button>
-                        <button onClick={()=>branchChat(idx)} className="p-1 rounded text-muted-foreground hover:text-primary transition-colors" title="Branch from here"><GitBranch className="w-3 h-3"/></button>
-                      </div>
-                    )}
+                      )}
+                      {msg.role === 'user' && editingIdx !== idx && (
+                        <div className="flex items-center gap-1 px-1">
+                          <button onClick={()=>startEditing(idx, msg.content)} className="p-1 rounded text-muted-foreground hover:text-foreground transition-colors" title="Edit"><Edit3 className="w-3 h-3"/></button>
+                          <button onClick={()=>branchChat(idx)} className="p-1 rounded text-muted-foreground hover:text-primary transition-colors" title="Branch from here"><GitBranch className="w-3 h-3"/></button>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
               {/* ── FOLLOW-UP SUGGESTION CHIPS ────────────────────────── */}
               {!aiLoading && followUpSuggestions.length > 0 && messages.length > 0 && messages[messages.length - 1]?.role === 'assistant' && (
                 <div className="flex flex-wrap gap-2 px-1 pb-2">
@@ -1267,6 +1630,16 @@ export default function ChatPage() {
         {/* Input */}
         <div className="border-t border-border/50 bg-card/50 backdrop-blur-sm p-4 shrink-0">
           <div className="max-w-3xl mx-auto">
+            {/* Smart paste chip */}
+            {smartPasteChip && (
+              <div className="mb-2">
+                <button onClick={() => { setInput(smartPasteChip.prompt); setSmartPasteChip(null); setTimeout(() => textareaRef.current?.focus(), 50); }} className="px-3 py-1.5 rounded-full text-xs bg-primary/10 border border-primary/30 text-primary hover:bg-primary/20 transition-colors flex items-center gap-1.5">
+                  <Wand2 className="w-3 h-3" />{smartPasteChip.label}
+                </button>
+              </div>
+            )}
+
+            {/* Attachments */}
             {attachments.length > 0 && (
               <div className="flex gap-2 mb-3 flex-wrap">
                 {attachments.map(a=>(
@@ -1278,8 +1651,31 @@ export default function ChatPage() {
                 ))}
               </div>
             )}
+
             <div className="flex gap-3 items-end">
-              <div className="flex-1 bg-muted border border-border/50 rounded-2xl flex flex-col shadow-sm focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/20 transition-all">
+              <div className="flex-1 bg-muted border border-border/50 rounded-2xl flex flex-col shadow-sm focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/20 transition-all relative">
+                {/* Slash command menu */}
+                {slashMenuOpen && filteredSlashCommands.length > 0 && (
+                  <div className="absolute bottom-full left-0 mb-2 w-72 bg-popover border border-border rounded-xl shadow-xl overflow-hidden z-50">
+                    <div className="px-3 py-1.5 border-b border-border/50 bg-muted/50">
+                      <p className="text-xs text-muted-foreground font-medium">Slash Commands — Tab or Enter to select</p>
+                    </div>
+                    {filteredSlashCommands.map((sc, i) => (
+                      <button
+                        key={sc.cmd}
+                        onClick={() => { setInput(sc.cmd + ' '); setSlashMenuOpen(false); textareaRef.current?.focus(); }}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-muted transition-colors ${i === slashMenuIdx ? 'bg-muted' : ''}`}
+                      >
+                        <span className="text-base">{sc.icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <span className="text-sm font-mono text-primary block">{sc.label}</span>
+                          <span className="text-xs text-muted-foreground">{sc.desc}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
                 {/* Category selector */}
                 <div className="flex items-center gap-1.5 px-3 pt-2 pb-0 flex-wrap">
                   {([
@@ -1297,163 +1693,47 @@ export default function ChatPage() {
                 <textarea
                   ref={textareaRef}
                   value={input}
-                  onChange={e => { setInput(e.target.value); if (e.target.value === '') setSmartPasteChip(null); }}
+                  onChange={handleInputChange}
                   onKeyDown={handleKeyDown}
                   onPaste={handleSmartPaste}
-                  placeholder={imageGenMode?'Describe an image to generate…':webSearchMode?'Ask anything — web search enabled…':'Ask anything or describe what you want to build…'}
+                  placeholder={autonomousMode ? '🤖 Describe a task — AI will plan and execute it autonomously…' : imageGenMode?'Describe an image to generate…':webSearchMode?'Ask anything — web search enabled…':'Ask anything or /command…'}
                   rows={1}
                   style={{ resize: 'none' }}
                   className="w-full bg-transparent px-4 pt-3 pb-2 text-sm focus:outline-none min-h-[44px] max-h-[180px] overflow-y-auto"
                   onInput={e => { const el = e.currentTarget; el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,180)+'px'; }}
                 />
                 <div className="flex items-center gap-1 px-3 pb-2">
-                  {/* Model Pill — quick model switcher right in the input bar */}
+                  {/* Model Pill */}
                   <ModelPill value={model} onChange={(m) => { setModel(m); localStorage.setItem('last_model', m); }} />
                   <div className="w-px h-4 bg-border/40 mx-0.5" />
                   <button onClick={()=>fileInputRef.current?.click()} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted-foreground/10 transition-colors" title="Upload image"><Camera className="w-3.5 h-3.5"/></button>
                   <button onClick={()=>documentInputRef.current?.click()} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted-foreground/10 transition-colors" title="Upload document"><FileText className="w-3.5 h-3.5"/></button>
+                  <button onClick={()=>setShowProjectContext(true)} className={`p-1.5 rounded-lg transition-colors ${projectFiles.length>0?'text-green-400':'text-muted-foreground hover:text-foreground hover:bg-muted-foreground/10'}`} title="Project context files"><FolderOpen className="w-3.5 h-3.5"/></button>
                   <button onClick={startVoiceInput} className={`p-1.5 rounded-lg transition-colors ${isListening?'text-red-400 bg-red-400/10':'text-muted-foreground hover:text-foreground hover:bg-muted-foreground/10'}`} title="Voice input">{isListening?<MicOff className="w-3.5 h-3.5"/>:<Mic className="w-3.5 h-3.5"/>}</button>
-                  <button onClick={()=>setPromptLibOpen(true)} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted-foreground/10 transition-colors" title="Prompt library (Ctrl+P)"><BookMarked className="w-3.5 h-3.5"/></button>
-                  <button onClick={()=>setShowTemplates(true)} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted-foreground/10 transition-colors" title="Templates"><LayoutTemplate className="w-3.5 h-3.5"/></button>
                   <button onClick={saveInputAsPrompt} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted-foreground/10 transition-colors" title="Save as prompt"><Save className="w-3.5 h-3.5"/></button>
-                  <button onClick={exportMarkdown} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted-foreground/10 transition-colors" title="Export chat"><FileDown className="w-3.5 h-3.5"/></button>
-                  <button onClick={()=>setLocation('/compare')} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted-foreground/10 transition-colors" title="Compare models"><GitCompare className="w-3.5 h-3.5"/></button>
+                  {messages.length > 0 && <button onClick={exportMarkdown} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted-foreground/10 transition-colors" title="Export chat"><FileDown className="w-3.5 h-3.5"/></button>}
+                  <div className="ml-auto text-[10px] text-muted-foreground/40 tabular-nums">{input.length}</div>
                 </div>
               </div>
-              <Button onClick={()=>sendMessage(input)} disabled={aiLoading||(!input.trim()&&attachments.length===0)} className="h-11 px-5 bg-primary shadow-lg shadow-primary/20 rounded-xl shrink-0">
-                {aiLoading?<Loader2 className="w-4 h-4 animate-spin"/>:<Send className="w-4 h-4"/>}
+
+              {/* Send button */}
+              <Button
+                onClick={() => sendMessage(input)}
+                disabled={(aiLoading || autonomousRunning) || (!input.trim() && attachments.length === 0)}
+                className={`h-12 w-12 rounded-xl shrink-0 shadow-lg ${autonomousMode ? 'bg-violet-600 hover:bg-violet-700 shadow-violet-500/25' : 'bg-primary hover:bg-primary/90 shadow-primary/25'}`}
+                size="icon"
+              >
+                {(aiLoading || autonomousRunning) ? <Loader2 className="w-4 h-4 animate-spin"/> : <Send className="w-4 h-4"/>}
               </Button>
             </div>
-            {/* Smart paste chip */}
-            {smartPasteChip && (
-              <div className="flex items-center gap-2 mt-2">
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/30 text-xs text-primary flex-shrink-0">
-                  <Sparkles className="w-3 h-3" />
-                  <span>Code detected</span>
-                </div>
-                <button
-                  onClick={() => { sendMessage(smartPasteChip.prompt); setSmartPasteChip(null); setInput(''); }}
-                  className="px-3 py-1.5 rounded-full text-xs border border-primary/40 text-primary hover:bg-primary/15 hover:border-primary/60 transition-all flex items-center gap-1.5 bg-primary/5"
-                >
-                  {smartPasteChip.label}
-                </button>
-                <button onClick={() => setSmartPasteChip(null)} className="p-1 text-muted-foreground hover:text-foreground transition-colors">
-                  <X className="w-3 h-3" />
-                </button>
-              </div>
-            )}
 
-            {/* Active model info bar */}
-            <div className="flex items-center justify-between mt-1.5 px-0.5">
-              {activeModelInfo && model === AUTO_MODEL_ID ? (
-                <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground/70">
-                  <Wand2 className="w-3 h-3 text-primary/60" />
-                  <span>
-                    Auto routed to <span className="text-primary/80 font-medium">{getModelLabel(activeModelInfo.model)}</span>
-                    {' '}for <span className="text-foreground/60">{activeModelInfo.intent === 'build_app' ? 'app building' : activeModelInfo.intent === 'fix_code' ? 'debugging' : activeModelInfo.intent === 'explain_code' ? 'explanation' : activeModelInfo.intent === 'reasoning' ? 'reasoning' : 'chat'}</span>
-                  </span>
-                </div>
-              ) : (
-                <div className="text-[11px] text-muted-foreground/40">
-                  {model === AUTO_MODEL_ID ? '✦ Auto mode — smart model routing enabled' : `Using ${getModelLabel(model)}`}
-                </div>
-              )}
-              <div className="flex items-center gap-2">
-                {messages.length > 0 && (
-                  <span className="text-[11px] text-muted-foreground/35 tabular-nums">
-                    ~{Math.ceil(messages.reduce((s, m) => s + m.content.length, 0) / 4).toLocaleString()} total tokens
-                  </span>
-                )}
-                <span className="text-[11px] text-muted-foreground/40">Enter · Shift+Enter newline · ? shortcuts</span>
-              </div>
-            </div>
+            {/* Hidden file inputs */}
+            <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={e=>{handleFiles(e.target.files);e.target.value='';}} />
+            <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={e=>{handleFiles(e.target.files);e.target.value='';}} />
+            <input ref={documentInputRef} type="file" accept=".txt,.md,.pdf,.csv,.json,.js,.ts,.py,.html,.css,.xml" multiple className="hidden" onChange={e=>{handleFiles(e.target.files);e.target.value='';}} />
           </div>
         </div>
       </main>
-
-      {/* ── LIVE PREVIEW PANEL ──────────────────────────────────────── */}
-      {showPreviewPanel && previewContent && (
-        <div className="w-[480px] shrink-0 border-l border-border/50 bg-card flex flex-col h-full overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/50 bg-card/80 shrink-0">
-            <div className="flex items-center gap-2">
-              <Monitor className="w-4 h-4 text-primary" />
-              <span className="text-sm font-medium">Live Preview</span>
-              <span className="px-2 py-0.5 rounded-full text-xs bg-green-500/10 text-green-400 border border-green-500/20">Running</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => { const w = window.open(); if(w) { w.document.write(previewContent); w.document.close(); }}}
-                className="p-1.5 rounded text-muted-foreground hover:text-foreground transition-colors"
-                title="Open in new tab"
-              >
-                <ExternalLink className="w-3.5 h-3.5" />
-              </button>
-              <button onClick={() => setShowPreviewPanel(false)} className="p-1.5 rounded text-muted-foreground hover:text-foreground transition-colors">
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
-          <iframe
-            srcDoc={previewContent}
-            className="flex-1 w-full bg-white"
-            sandbox="allow-scripts allow-same-origin allow-forms allow-modals"
-            title="Live Preview"
-          />
-          <div className="px-4 py-2 border-t border-border/50 flex items-center gap-2 shrink-0">
-            <button
-              onClick={() => { navigator.clipboard.writeText(previewContent); toast({ title: 'HTML copied!' }); }}
-              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <Copy className="w-3 h-3" /> Copy HTML
-            </button>
-          </div>
-        </div>
-      )}
-
-      {agentPrompt && (
-        <div className="fixed inset-0 z-50 bg-background">
-          <AgentBuilder prompt={agentPrompt} onClose={() => setAgentPrompt(null)} />
-        </div>
-      )}
-
-      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => handleFiles(e.target.files)} />
-      <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={e => handleFiles(e.target.files)} />
-      <input ref={documentInputRef} type="file" accept=".txt,.md,.js,.ts,.py,.json,.html,.css,.csv,.pdf" className="hidden" onChange={e => handleFiles(e.target.files)} />
-    </div>
-  );
-}
-
-function NavItem({ icon: Icon, label, onClick, highlight }: { icon: any; label: string; onClick: () => void; highlight?: boolean }) {
-  if (highlight) {
-    return (
-      <button onClick={onClick} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs text-violet-300 hover:text-violet-200 hover:bg-violet-500/10 transition-colors text-left font-medium">
-        <Icon className="w-3.5 h-3.5 text-violet-400" />{label}
-        <span className="ml-auto text-[9px] font-semibold px-1 py-0.5 rounded bg-violet-500/20 text-violet-300">NEW</span>
-      </button>
-    );
-  }
-  return (
-    <button onClick={onClick} className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-colors text-left">
-      <Icon className="w-3.5 h-3.5" />{label}
-    </button>
-  );
-}
-
-function ChatHistoryItem({ chat, active, onLoad, onDelete, onPin, onFolder }: {
-  chat: HistoryItem; active: boolean;
-  onLoad: (c: HistoryItem) => void;
-  onDelete: (id: string, e: React.MouseEvent) => void;
-  onPin: (id: string, e: React.MouseEvent) => void;
-  onFolder: (id: string) => void;
-}) {
-  return (
-    <div onClick={() => onLoad(chat)} className={`group flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer text-xs transition-colors ${active?'bg-muted text-foreground':'text-muted-foreground hover:bg-muted/50 hover:text-foreground'}`}>
-      {chat.pinned && <Pin className="w-2.5 h-2.5 text-primary shrink-0" />}
-      {chat.folder && <FolderOpen className="w-2.5 h-2.5 text-blue-400 shrink-0" />}
-      <span className="flex-1 truncate">{chat.title}</span>
-      <button onClick={e=>{e.stopPropagation();onFolder(chat.id);}} className="opacity-0 group-hover:opacity-100 hover:text-blue-400 transition-opacity" title="Move to folder"><FolderOpen className="w-3 h-3"/></button>
-      <button onClick={e=>onPin(chat.id,e)} className="opacity-0 group-hover:opacity-100 hover:text-primary transition-opacity" title={chat.pinned?'Unpin':'Pin'}><Pin className="w-3 h-3"/></button>
-      <button onClick={e=>onDelete(chat.id,e)} className="opacity-0 group-hover:opacity-100 hover:text-destructive transition-opacity"><Trash2 className="w-3 h-3"/></button>
     </div>
   );
 }
