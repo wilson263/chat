@@ -57,7 +57,9 @@ RULES:
 - No placeholder comments like "add code here"
 - Include a README.md explaining how to run the project
 - For web apps: always include index.html, styles.css, and main JS/TS files
-- For React apps: include package.json, vite.config.js, index.html, src/App.jsx, src/main.jsx
+- IMPORTANT - For browser-based apps (HTML/JS/CSS): DO NOT use npm-style imports like "import { x } from 'package'". Instead load libraries via CDN <script> tags in the HTML (e.g. use unpkg.com, cdn.jsdelivr.net, or esm.sh). The code runs directly in a browser sandbox with no build step.
+- For React apps: use React via CDN script tags (e.g. <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.development.js"></script>) in a single index.html file, NOT npm/vite setup — it must preview in a browser directly.
+- If you need ES module imports, use full CDN URLs: import { something } from 'https://esm.sh/package-name'
 - Make the code visually impressive — dark theme, modern UI
 - Respond ONLY with the JSON object, nothing else`;
 
