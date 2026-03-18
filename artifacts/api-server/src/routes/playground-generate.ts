@@ -70,8 +70,7 @@ RULES:
     ? `Build this web app: ${prompt}`
     : `Build this web app: ${prompt}\n\nIMPORTANT: Previous attempt failed. Respond with ONLY raw JSON, no markdown, no code blocks.`;
 
-  const response = await openai.chat.completions.create({
-    model: "meta-llama/llama-3.3-70b-instruct:free",
+  const response = await createChatCompletion({
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: userMessage },
