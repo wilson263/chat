@@ -1,13 +1,13 @@
 import { Router, type IRouter } from "express";
-import OpenAI from "openai";
+import Groq from "groq-sdk";
 
-function getOpenAIClient(): OpenAI {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) throw new Error("OPENAI_API_KEY environment variable is not set.");
-  return new OpenAI({ apiKey });
-}
+  function getGroqClient(): Groq {
+    const apiKey = process.env.GROQ_API_KEY;
+    if (!apiKey) throw new Error("GROQ_API_KEY environment variable is not set.");
+    return new Groq({ apiKey });
+  }
 
-const openai = getOpenAIClient();
+  const openai = getGroqClient() as any;
 
 const router: IRouter = Router();
 
