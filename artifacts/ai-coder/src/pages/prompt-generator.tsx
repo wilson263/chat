@@ -162,68 +162,131 @@ const SCREEN_TYPES = [
 
 // ─── PROMPT BUILDERS ──────────────────────────────────────────────────────────
 
+const POWER_RULES = `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚡ NON-NEGOTIABLE BUILD STANDARDS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Write minimum 1500 lines of code total across all files
+✅ Every single function must be FULLY implemented — no stubs, no TODOs
+✅ Every file must be complete — never truncate with "..." or "// rest of code"
+✅ Use real database queries — never hardcode data
+✅ Include ALL screens, pages, routes, and endpoints mentioned
+✅ Connect frontend to backend with proper error handling
+✅ Add loading states, error states, and empty states everywhere
+✅ Make the UI beautiful with Tailwind CSS and shadcn/ui components
+✅ Output format: label each file clearly as === folder/filename.ext ===`;
+
 function buildFullStackPrompt(opts: any): string {
   const stackLabel = (TECH_STACKS.fullstack.find(s => s.id === opts.techStack) || TECH_STACKS.fullstack[0]).label;
   const featureLabels = opts.features.map((f: string) => FEATURES.find(feat => feat.id === f)?.label).filter(Boolean);
   const deployLabel = DEPLOY_TARGETS.fullstack.find(d => d.id === opts.deployTarget)?.label || 'Render';
+  const targetUsersLine = opts.targetUsers ? `\n**Target Users:** ${opts.targetUsers}` : '';
 
-  return `Build a complete, production-ready full stack web application called "${opts.appName || 'MyApp'}" — a ${opts.appType || 'web platform'}.
+  return `Build a complete, production-ready full-stack web application called "${opts.appName || 'MyApp'}" — a ${opts.appType || 'web platform'}.
+${POWER_RULES}
 
-## Requirements
-
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PROJECT OVERVIEW
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 **Tech Stack:** ${stackLabel}
-**Deployment Target:** ${deployLabel}
+**Deployment:** ${deployLabel}${targetUsersLine}
 
-## Features to Build (ALL must be fully implemented — no stubs):
-${featureLabels.map((f: string) => `• ${f}`).join('\n')}
-• Full CRUD operations for all core entities
-• Responsive design (mobile + tablet + desktop)
-• Form validation (client-side + server-side)
-• Error handling and loading states throughout
-• Environment configuration (.env.example)
-${opts.extraNotes ? `• ${opts.extraNotes}` : ''}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FRONTEND — ALL PAGES (fully implemented)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• Landing page with hero section, features, CTA
+• Authentication: Login, Register, Forgot Password pages
+• Dashboard / Home (after login) with real data from API
+• All core feature pages for a ${opts.appType}
+• Profile page with editable settings
+• 404 / Error page
+• Responsive navbar with mobile hamburger menu
+• Footer with links
 
-## Code Standards:
-- Minimum 1000 lines of code total
-- Every function fully implemented — no TODO comments, no placeholder code
-- Real database queries (not hardcoded data)
-- Proper HTTP status codes and error responses
-- Password hashing with bcrypt
-- JWT tokens with refresh logic
-- Rate limiting and security headers
-- Pagination for all list endpoints
+Every page must have:
+  ➜ Full UI components (no placeholder boxes)
+  ➜ API integration with React Query hooks
+  ➜ Loading skeletons while data loads
+  ➜ Error boundaries with retry buttons
+  ➜ Form validation with error messages
+  ➜ Mobile-first responsive design
 
-## File Structure Required:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BACKEND API — ALL ENDPOINTS (fully implemented)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+POST   /api/auth/register   — register with bcrypt password hashing
+POST   /api/auth/login      — JWT access + refresh tokens
+POST   /api/auth/refresh    — refresh token rotation
+POST   /api/auth/logout     — token blacklisting
+GET    /api/auth/me         — current user profile
+Full CRUD endpoints for all core resources of a ${opts.appType}
+GET    /api/health          — health check
+
+Middleware:
+  ➜ JWT auth middleware (protect routes)
+  ➜ Rate limiting (100 req/15min per IP)
+  ➜ Helmet security headers
+  ➜ CORS with allowed origins
+  ➜ Request validation (Zod schemas)
+  ➜ Global error handler
+  ➜ Request logger (Morgan)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DATABASE — COMPLETE SCHEMA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• Complete Prisma schema (or SQL) with all tables, relations, indexes
+• Migrations
+• Seed file with 10-20 realistic sample records per table
+• Connection pooling configured
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FEATURES (ALL FULLY BUILT)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${featureLabels.length > 0 ? featureLabels.map((f: string) => `✅ ${f}`).join('\n') : '✅ Core CRUD operations\n✅ Search and filtering\n✅ Pagination'}
+✅ Full CRUD operations with optimistic UI updates
+✅ Search, filter, and sort on all list views
+✅ Pagination (10 items per page with controls)
+✅ File/image upload with preview
+✅ Toast notifications for all actions
+✅ Dark mode toggle (Tailwind dark: classes)
+${opts.extraNotes ? `✅ ${opts.extraNotes}` : ''}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FILE STRUCTURE (create all these files)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 frontend/
-  src/pages/ — every page component fully built
-  src/components/ — reusable components
-  src/hooks/ — custom React hooks
-  src/api/ — API client functions
-  src/types/ — TypeScript types
+  src/pages/         (all pages)
+  src/components/    (reusable UI components)
+  src/hooks/         (useAuth, useToast, custom query hooks)
+  src/lib/           (api client, utils)
+  src/types/         (TypeScript interfaces)
+  vite.config.ts, tailwind.config.ts, package.json
 
 backend/
-  src/routes/ — all API route handlers
-  src/middleware/ — auth, rate-limit, error handlers
-  src/controllers/ — business logic
-  src/models/ — database models/schema
-  src/utils/ — helper functions
-  server.ts — entry point
+  src/routes/        (all API route files)
+  src/controllers/   (business logic)
+  src/middleware/     (auth, validation, errors)
+  src/services/      (database queries)
+  src/utils/         (helpers, validators)
+  server.ts, package.json
 
 database/
-  schema.sql or prisma/schema.prisma — complete schema
-  seed.ts — seed data
+  prisma/schema.prisma (or schema.sql)
+  prisma/seed.ts
 
 config/
-  .env.example
-  docker-compose.yml (optional)
+  .env.example       (ALL required variables with descriptions)
+  docker-compose.yml
 
-## Output Format:
-Show every file completely. No truncation. Label each file as:
-=== path/filename.ext ===
-
-End with:
-### Quick Start Guide (step-by-step commands)
-### Deploy to ${deployLabel} (complete deployment steps)`;
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+REQUIRED OUTPUT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. Write every file completely — start to finish, no truncation
+2. Label each file: === folder/filename.ext ===
+3. End with:
+   ### ⚡ Quick Start (step-by-step commands)
+   ### 🔧 Environment Variables (all .env values explained)
+   ### 🚀 Deploy to ${deployLabel} (complete deployment steps)`;
 }
 
 function buildMobilePrompt(opts: any): string {
@@ -231,57 +294,78 @@ function buildMobilePrompt(opts: any): string {
   const featureLabels = opts.features.map((f: string) => FEATURES.find(feat => feat.id === f)?.label).filter(Boolean);
   const deployTarget = opts.deployTarget || 'both';
   const storeInfo = deployTarget === 'playstore' ? 'Google Play Store' : deployTarget === 'appstore' ? 'Apple App Store' : 'Both Google Play Store and Apple App Store';
+  const bundleId = `com.${(opts.appName || 'myapp').toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9]/g, '')}`;
 
-  return `Build a complete, production-ready mobile application called "${opts.appName || 'MyApp'}" — a ${opts.appType || 'mobile app'} — ready for submission to ${storeInfo}.
+  return `Build a complete, production-ready mobile app called "${opts.appName || 'MyApp'}" — a ${opts.appType || 'mobile app'} — READY FOR SUBMISSION to ${storeInfo}.
+${POWER_RULES}
 
-## Tech Stack: ${stackLabel}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TECH STACK
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${stackLabel} — with TypeScript, Expo Router, NativeWind for styling
 
-## App Screens (ALL fully built — not skeleton, not placeholder):
-• Splash Screen with app logo and animation
-• Onboarding (3-slide walkthrough for new users)
-• Login Screen (email + password, show/hide password)
-• Register Screen (full form with validation)
-• Forgot Password Screen
-• Home / Main Screen (fully functional with real content)
-• Profile Screen (view and edit user info)
-• Settings Screen (notifications, theme, account options)
-• [All domain-specific screens for a ${opts.appType}]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ALL APP SCREENS (fully built — zero placeholders)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• app/_layout.tsx           — root layout with providers
+• app/(auth)/login.tsx      — email + password login, show/hide, validation
+• app/(auth)/register.tsx   — full signup form with all fields, validation
+• app/(auth)/forgot.tsx     — forgot password with email flow
+• app/(tabs)/_layout.tsx    — bottom tab bar with 4-5 tabs and icons
+• app/(tabs)/index.tsx      — home/main screen with real content from API
+• app/(tabs)/[feature].tsx  — all feature-specific screens for ${opts.appType}
+• app/profile.tsx           — view and edit profile, avatar upload
+• app/settings.tsx          — notifications, theme, account settings, logout
+• app/onboarding.tsx        — 3-slide onboarding for new users
 
-## Features to Implement:
-${featureLabels.map((f: string) => `• ${f}`).join('\n')}
-• Bottom tab navigation with icons
-• Stack navigation (React Navigation)
-• AsyncStorage for local data persistence
-• Loading spinners and error states on every screen
-• Pull-to-refresh on list screens
-• Proper keyboard handling (KeyboardAvoidingView)
-• Safe area handling (SafeAreaView)
-${opts.extraNotes ? `• ${opts.extraNotes}` : ''}
+Every screen must have:
+  ➜ Full React Native + NativeWind UI (not placeholder boxes)
+  ➜ API calls with loading/error/empty states
+  ➜ Keyboard handling (KeyboardAvoidingView + ScrollView)
+  ➜ SafeAreaView properly configured
+  ➜ Pull-to-refresh on list screens
+  ➜ Haptic feedback on button presses
 
-## Backend API (include this too):
-• Node.js + Express REST API
-• JWT authentication
-• PostgreSQL database with complete schema
-• All endpoints the app needs
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BACKEND API (Node.js + Express + PostgreSQL)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+POST /api/auth/register   — register
+POST /api/auth/login      — JWT login
+POST /api/auth/refresh    — refresh token
+All CRUD endpoints needed for ${opts.appType}
+File upload endpoint (for profile pictures)
 
-## App Configuration (app.json):
-• App name, slug, bundle identifier (com.${(opts.appName || 'myapp').toLowerCase().replace(/\s/g,'')}${opts.appType ? '.' + opts.appType.toLowerCase().replace(/\s/g,'') : ''})
-• Android: versionCode, permissions (camera, notifications, location if needed)
-• iOS: bundleIdentifier, permissions with usage descriptions
-• App icon and splash screen config
-• EAS build configuration (eas.json)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FEATURES (ALL IMPLEMENTED)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${featureLabels.length > 0 ? featureLabels.map((f: string) => `✅ ${f}`).join('\n') : '✅ JWT Authentication\n✅ Push notifications'}
+✅ Expo Router file-based navigation
+✅ Zustand state management
+✅ AsyncStorage for offline data
+✅ Expo Image for optimized images
+✅ Dark mode support
+${opts.extraNotes ? `✅ ${opts.extraNotes}` : ''}
 
-## Output Format:
-Show every file completely. No truncation. Label each file as:
-=== path/filename.ext ===
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+APP CONFIG (app.json + eas.json)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• App name: "${opts.appName || 'MyApp'}"
+• Bundle ID (Android): ${bundleId}
+• Bundle ID (iOS): ${bundleId}
+• Version: 1.0.0, versionCode: 1
+• Permissions: Camera, Notifications, MediaLibrary (if needed)
+• Splash screen and app icon config
+• EAS Build profiles: development, staging, production
 
-End with:
-### Quick Start (commands to run on local device/emulator)
-### 🚀 Publish to ${storeInfo}:
-  Step-by-step guide from build to store submission including:
-  - EAS Build commands
-  - Store listing requirements (screenshots, descriptions, ratings)
-  - Submission process and review timelines`;
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+REQUIRED OUTPUT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. Write every file completely — no truncation
+2. Label each file: === path/filename.ext ===
+3. End with:
+   ### ⚡ Quick Start (expo go + local dev commands)
+   ### 🔧 Environment Variables
+   ### 🚀 Publish to ${storeInfo} (step-by-step: EAS Build → store submission)`;
 }
 
 function buildBackendPrompt(opts: any): string {
@@ -289,128 +373,199 @@ function buildBackendPrompt(opts: any): string {
   const featureLabels = opts.features.map((f: string) => FEATURES.find(feat => feat.id === f)?.label).filter(Boolean);
 
   return `Build a complete, production-ready REST API server called "${opts.appName || 'MyAPI'}" — a ${opts.appType || 'backend service'}.
+${POWER_RULES}
 
-## Tech Stack: ${stackLabel}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TECH STACK
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${stackLabel}
 
-## API Requirements (ALL endpoints fully implemented):
-• Authentication routes: POST /auth/register, POST /auth/login, POST /auth/logout, POST /auth/refresh
-• Full CRUD for all core resources
-• Proper request validation (Joi/Zod)
-• OpenAPI/Swagger documentation
-• Health check endpoint: GET /health
-${featureLabels.map((f: string) => `• ${f}`).join('\n')}
-${opts.extraNotes ? `• ${opts.extraNotes}` : ''}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+API ENDPOINTS (ALL fully implemented with controllers)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Auth Routes:
+  POST   /api/auth/register   — register + send welcome email
+  POST   /api/auth/login      — login + return JWT pair
+  POST   /api/auth/logout     — blacklist refresh token
+  POST   /api/auth/refresh    — rotate refresh tokens
+  GET    /api/auth/me         — get current user
+  PATCH  /api/auth/me         — update profile
+  POST   /api/auth/forgot     — send reset email
+  POST   /api/auth/reset      — reset password
 
-## Security & Quality:
-• Helmet.js for security headers
-• CORS configuration
-• Rate limiting (express-rate-limit)
-• Input sanitization
-• SQL injection prevention (parameterized queries)
-• Proper error middleware (dev vs prod error messages)
-• Request logging (Morgan)
-• Graceful shutdown
+Core Resource Routes (full CRUD for ${opts.appType}):
+  GET    /api/[resource]              — list with filter, sort, pagination
+  POST   /api/[resource]             — create with validation
+  GET    /api/[resource]/:id         — get by ID
+  PUT    /api/[resource]/:id         — full update
+  PATCH  /api/[resource]/:id         — partial update
+  DELETE /api/[resource]/:id         — soft delete
+  GET    /api/[resource]/search?q=   — full-text search
 
-## Database:
-• Complete schema with all tables, relationships, indexes
-• Migration files
-• Seed data for testing
-• Connection pooling
+System:
+  GET    /api/health    — health check
+  GET    /api/docs      — Swagger UI
 
-## File Structure:
-src/
-  routes/ — all route files
-  controllers/ — business logic
-  middleware/ — auth, validation, error, rate-limit
-  models/ — DB models/queries
-  services/ — external service integrations
-  utils/ — helpers
-  config/ — database, app config
-  types/ — TypeScript types
-server.ts, .env.example, docker-compose.yml, README.md
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECURITY & MIDDLEWARE (all implemented)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Helmet.js (15+ security headers)
+✅ CORS with whitelist
+✅ Rate limiting: 100 req/15min general, 5 req/min for auth
+✅ JWT middleware with token blacklisting
+✅ Zod request validation on all endpoints
+✅ SQL injection prevention (parameterized queries)
+✅ XSS sanitization (express-validator)
+✅ Request logging (Morgan with custom format)
+✅ Global error handler (dev vs prod messages)
+✅ Graceful shutdown handler
 
-## Output Format:
-Show every file completely. Label each: === path/filename.ext ===
-End with API documentation table showing all endpoints.`;
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DATABASE — COMPLETE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• Full schema with all tables, foreign keys, indexes, constraints
+• Migration files numbered sequentially
+• Seed script with realistic sample data (20+ records per table)
+• Prisma (or raw SQL) with connection pooling
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FEATURES (ALL BUILT)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${featureLabels.length > 0 ? featureLabels.map((f: string) => `✅ ${f}`).join('\n') : '✅ JWT authentication\n✅ File upload\n✅ Email service'}
+✅ Swagger/OpenAPI docs auto-generated
+✅ Pagination with cursor + offset modes
+✅ Full-text search
+✅ File upload with S3/Cloudinary
+✅ Background job queue (Bull)
+✅ Caching layer (Redis)
+${opts.extraNotes ? `✅ ${opts.extraNotes}` : ''}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+REQUIRED OUTPUT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. Write every file completely — no truncation
+2. Label each file: === path/filename.ext ===
+3. End with: API endpoint reference table + Quick Start + Docker deployment guide`;
 }
 
 function buildEcommercePrompt(opts: any): string {
   const featureLabels = opts.features.map((f: string) => FEATURES.find(feat => feat.id === f)?.label).filter(Boolean);
 
-  return `Build a complete, production-ready e-commerce platform called "${opts.appName || 'MyShop'}" — ${opts.appType || 'an online store'} with real payment processing.
+  return `Build a complete, production-ready e-commerce platform called "${opts.appName || 'MyShop'}" — ${opts.appType || 'an online store'} with real Stripe payment processing.
+${POWER_RULES}
 
-## Tech Stack: React + Node.js + PostgreSQL + Stripe
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TECH STACK
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Frontend: React 18 + Vite + TypeScript + Tailwind CSS + shadcn/ui + React Query
+Backend: Node.js + Express + TypeScript + Prisma + PostgreSQL + Stripe + Nodemailer
 
-## Frontend Pages (ALL fully built):
-• Home page with hero, featured products, categories
-• Product listing with filters, search, sorting, pagination
-• Product detail with images, reviews, add-to-cart
-• Shopping cart with quantity controls
-• Checkout flow (shipping → payment → confirmation)
-• User account (orders history, profile, addresses)
-• Login / Register pages
-• Admin dashboard (products, orders, customers, analytics)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FRONTEND PAGES (all complete)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• / Home — hero banner, featured products, categories, promotions
+• /products — grid with search, category filter, price range, sort, pagination
+• /products/:slug — product detail, image gallery, variants, reviews, add to cart
+• /cart — cart items, quantity controls, remove, subtotal, promo code
+• /checkout — shipping address → payment (Stripe Elements) → order summary → confirm
+• /orders — order history list
+• /orders/:id — order detail with tracking timeline
+• /account — profile, addresses, payment methods, preferences
+• /auth/login + /auth/register — full auth forms
+• /admin — dashboard with revenue, orders, inventory overview
+• /admin/products — products CRUD with image upload
+• /admin/orders — order management with status updates
+• /admin/customers — customer list and details
 
-## Backend API (fully implemented):
-• Products CRUD (with images, variants, inventory)
-• Categories and tags
-• Cart management (server-side)
-• Orders management with status tracking
-• Stripe payment integration (checkout sessions, webhooks)
-• User authentication with JWT
-• Admin endpoints (protected)
-• Inventory tracking
-• Coupon/discount codes
-• Email order confirmations
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BACKEND API (all endpoints)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Auth: register, login, refresh, me
+Products: list (filter/sort/paginate), get, create, update, delete, search
+Categories: full CRUD
+Cart: get cart, add, update qty, remove, apply coupon
+Orders: create, list, get, update status (admin)
+Stripe: create-checkout-session, webhook (payment_intent.succeeded)
+Reviews: create, list by product, update, delete
+Users (admin): list, get, ban
+Analytics: revenue over time, top products, order stats
 
-## Features:
-${featureLabels.map((f: string) => `• ${f}`).join('\n')}
-• Product search with filters
-• Product reviews and ratings
-• Wishlist
-• Related products
-• Order tracking
-• Inventory management
-• Sales analytics
-${opts.extraNotes ? `• ${opts.extraNotes}` : ''}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FEATURES (ALL IMPLEMENTED)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${featureLabels.length > 0 ? featureLabels.map((f: string) => `✅ ${f}`).join('\n') : '✅ Stripe Payments\n✅ JWT Auth\n✅ Image Upload'}
+✅ Stripe Checkout Sessions with webhooks
+✅ Product variants (size, color) with inventory tracking
+✅ Shopping cart (persisted for logged-in users)
+✅ Coupon/discount codes with validation
+✅ Product reviews with star ratings and moderation
+✅ Order status emails (confirmation, shipped, delivered)
+✅ Admin role-based access control
+✅ Wishlist / Saved items
+✅ Recently viewed products
+✅ Related products recommendations
+✅ Inventory alerts (low stock notifications)
+${opts.extraNotes ? `✅ ${opts.extraNotes}` : ''}
 
-## Output Format:
-Show every file completely. Label each: === path/filename.ext ===
-End with: Quick Start + Stripe setup guide + Deployment steps.`;
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+REQUIRED OUTPUT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. Write every file completely — no truncation
+2. Label each file: === path/filename.ext ===
+3. End with: Stripe setup guide + .env variables + Quick Start + Vercel/Railway deployment`;
 }
 
 function buildGamePrompt(opts: any): string {
   const stackLabel = (TECH_STACKS.game.find(s => s.id === opts.techStack) || TECH_STACKS.game[0]).label;
 
   return `Build a complete, fully playable ${opts.appType || 'browser game'} called "${opts.appName || 'MyGame'}" using ${stackLabel}.
+${POWER_RULES}
 
-## Game Requirements:
-• Complete game loop (start → play → game over → restart)
-• Main menu screen with play button and instructions
-• Game over screen with score and high score
-• Smooth animations at 60fps
-• Sound effects (using Web Audio API or Howler.js)
-• Mobile-responsive controls (touch + keyboard)
-• Local high score storage (localStorage)
-• Pause/resume functionality
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+GAME REQUIREMENTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Complete game loop: start screen → gameplay → game over → leaderboard → restart
+✅ Main menu with animated background, high score display, play button, instructions
+✅ Pause menu (ESC key or pause button) with resume/restart/quit
+✅ Game over screen with final score, new high score animation, social share button
+✅ Smooth 60fps animation using requestAnimationFrame or game loop
+✅ Sound effects using Web Audio API (synthesized — no external files needed)
+✅ Background music (procedurally generated or toggle on/off)
+✅ Persistent high score with localStorage
+✅ Mobile controls: touch gestures + on-screen D-pad/buttons
+✅ Keyboard controls: arrow keys, WASD, space
 
-## Game Mechanics (ALL fully implemented for ${opts.appType}):
-• Complete game physics and collision detection
-• Scoring system with multipliers
-• Difficulty progression (increases over time)
-• Power-ups or special mechanics
-• Visual effects (particles, animations)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+GAME MECHANICS (fully implemented for ${opts.appType})
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Complete physics and collision detection system
+✅ Scoring system with combos and multipliers
+✅ Difficulty curve: speed/complexity increases over time
+✅ Power-ups with visual indicators and countdown timers
+✅ Enemy AI with multiple behavior patterns
+✅ Particle effects (explosions, collection, trails)
+✅ Screen shake for impact
+✅ Achievement system (first kill, 1000 points, etc.)
+✅ Multiple levels or endless mode with level indicators
 
-## UI/UX:
-• Beautiful start screen with animated background
-• HUD showing score, lives, level
-• Responsive design (plays on mobile and desktop)
-• Theme and visual identity for the game
-${opts.extraNotes ? `• ${opts.extraNotes}` : ''}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VISUAL DESIGN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Pixel-art or vector aesthetic that fits ${opts.appType}
+✅ Animated sprites or canvas-drawn entities
+✅ Color-coded elements (player, enemies, power-ups, obstacles)
+✅ HUD: score, lives/health, level, timer
+✅ Animated transitions between screens
+✅ Responsive canvas that scales to any screen size
+${opts.extraNotes ? `✅ ${opts.extraNotes}` : ''}
 
-## Output Format:
-Show every file completely. Label each: === filename.ext ===
-End with: How to play + controls guide + How to deploy/host.`;
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+REQUIRED OUTPUT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. Write every file completely — no truncation
+2. Files: index.html, styles.css, game.js (or split into modules)
+3. Label each: === filename.ext ===
+4. End with: Controls guide + Features list + How to host on GitHub Pages / Netlify`;
 }
 
 function buildAIPrompt(opts: any): string {
@@ -418,41 +573,67 @@ function buildAIPrompt(opts: any): string {
   const featureLabels = opts.features.map((f: string) => FEATURES.find(feat => feat.id === f)?.label).filter(Boolean);
 
   return `Build a complete, production-ready AI-powered application called "${opts.appName || 'MyAI'}" — ${opts.appType || 'an AI tool'} using ${stackLabel}.
+${POWER_RULES}
 
-## Frontend (fully built):
-• Clean, modern chat/input interface
-• Streaming AI responses (typewriter effect)
-• Conversation history
-• Loading states and error handling
-• Copy response button
-• Model/temperature selector (if applicable)
-• Dark mode
-• Responsive design
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FRONTEND — ALL SCREENS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• Landing page — value prop, demo GIF/animation, pricing, CTA, testimonials
+• Auth pages — login, register with Google OAuth option
+• Main AI interface:
+  - Clean input area (textarea or chat bubbles)
+  - Streaming AI responses with typewriter cursor effect
+  - Conversation history with timestamps
+  - Copy to clipboard button on each response
+  - Thumbs up/down feedback buttons
+  - Model selector dropdown (GPT-4, Gemini, Claude)
+  - Temperature/creativity slider
+  - System prompt customization panel
+  - Clear conversation button
+• History page — saved conversations list with search
+• Settings page — API keys, preferences, usage limits
+• Usage dashboard — tokens used, requests made, cost estimate
 
-## Backend API:
-• AI API integration (streaming responses)
-• Conversation management and history storage
-• Rate limiting per user
-• API key management
-• Usage tracking
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BACKEND API
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+POST   /api/chat/stream          — SSE streaming AI response
+POST   /api/chat/message         — single response (non-streaming)
+GET    /api/chat/history         — list saved conversations
+POST   /api/chat/save            — save conversation
+DELETE /api/chat/:id             — delete conversation
+GET    /api/usage                — token usage stats
+POST   /api/keys                 — save API key (encrypted)
 
-## Features:
-${featureLabels.map((f: string) => `• ${f}`).join('\n')}
-• Prompt templates/suggestions
-• Export conversation as PDF/text
-• Share conversation link
-${opts.extraNotes ? `• ${opts.extraNotes}` : ''}
+AI Integration:
+  ➜ Server-Sent Events (SSE) for real-time streaming
+  ➜ Context window management: auto-summarize old messages
+  ➜ Token counting before sending requests
+  ➜ Fallback chain: primary model → fallback model → error
+  ➜ API key rotation for load balancing
+  ➜ Response caching for identical queries (Redis)
 
-## AI Integration:
-• Streaming SSE responses
-• System prompt customization
-• Context window management (summarize old messages)
-• Fallback error handling for API failures
-• Token usage display
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FEATURES (ALL BUILT)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${featureLabels.length > 0 ? featureLabels.map((f: string) => `✅ ${f}`).join('\n') : '✅ Streaming responses\n✅ Conversation history'}
+✅ Prompt library with 20+ pre-built templates by category
+✅ Export conversation as PDF, Markdown, or plain text
+✅ Share conversation as public link
+✅ Image generation integration (DALL-E or Stable Diffusion)
+✅ Code syntax highlighting in responses
+✅ File upload for document analysis (PDF, TXT, CSV)
+✅ Voice input (Web Speech API)
+✅ Response feedback (thumbs up/down) stored to DB
+✅ Rate limiting per user per day
+${opts.extraNotes ? `✅ ${opts.extraNotes}` : ''}
 
-## Output Format:
-Show every file completely. Label each: === path/filename.ext ===
-End with: Setup (API key config) + Deployment guide.`;
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+REQUIRED OUTPUT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. Write every file completely — no truncation
+2. Label each file: === path/filename.ext ===
+3. End with: API key setup guide + .env variables + Deployment guide`;
 }
 
 function buildDashboardPrompt(opts: any): string {
@@ -460,77 +641,128 @@ function buildDashboardPrompt(opts: any): string {
   const featureLabels = opts.features.map((f: string) => FEATURES.find(feat => feat.id === f)?.label).filter(Boolean);
 
   return `Build a complete, production-ready ${opts.appType || 'admin dashboard'} called "${opts.appName || 'MyDashboard'}" using ${stackLabel}.
+${POWER_RULES}
 
-## Dashboard Pages (ALL fully built):
-• Login page with auth
-• Main Dashboard — KPI cards, charts, recent activity
-• Data table pages with sorting, filtering, pagination, export
-• Detail/edit pages for each data type
-• Settings page (account, notifications, integrations)
-• User management (if multi-user)
-• Reports / Analytics page with charts
-• Profile page
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FRONTEND PAGES (all complete)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• /login — auth with remember me, password visibility toggle
+• /dashboard — KPI cards (4), line chart (7-day trend), bar chart (by category), recent activity feed, quick actions
+• /[resource] — data table with: search, multi-column sort, filter panel, bulk select, CSV export, pagination
+• /[resource]/:id — detail view with edit form and related data
+• /[resource]/new — create form with all validations
+• /users — user management with role assignment, status toggle, invite by email
+• /analytics — time-series charts, heatmap, funnel analysis, date range picker
+• /reports — exportable reports (PDF, Excel) with templates
+• /settings — profile, notifications, security (2FA), appearance, integrations
+• /audit-log — timestamped activity log with filters
 
-## Charts & Visualizations:
-• Line charts (trends over time)
-• Bar charts (comparisons)
-• Pie/donut charts (distributions)
-• Area charts (cumulative data)
-• Data tables with bulk actions
-• Real numbers from the database (not fake)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CHARTS & VISUALIZATIONS (using Recharts)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Line chart — trends over time with tooltips and zoom
+✅ Bar chart — comparison by category
+✅ Pie/Donut chart — distribution percentages
+✅ Area chart — cumulative metrics
+✅ DataTable — sort, filter, inline edit, bulk delete, export
+✅ Stat cards with trend arrows and percentage change
 
-## Backend API:
-• Authentication with role-based access (admin, viewer, editor)
-• All data endpoints with filtering, sorting, pagination
-• CSV export endpoints
-• Dashboard metrics aggregation queries
-• Activity logging
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+BACKEND API
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Auth: login, logout, refresh, me, change password, 2FA
+Dashboard: GET /api/dashboard/stats — aggregated KPIs
+Full CRUD with filter, sort, pagination for all resources
+Users: list, get, create, update role, deactivate, invite
+Analytics: GET /api/analytics — time-series data with date range
+Export: GET /api/export/:resource — CSV/Excel generation
+Audit: GET /api/audit-log — paginated activity log
 
-## Features:
-${featureLabels.map((f: string) => `• ${f}`).join('\n')}
-• Date range picker for filtering
-• Real-time updates (WebSocket or polling)
-• Bulk operations on table data
-• Audit log
-• Email notifications for alerts
-${opts.extraNotes ? `• ${opts.extraNotes}` : ''}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FEATURES (ALL BUILT)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${featureLabels.length > 0 ? featureLabels.map((f: string) => `✅ ${f}`).join('\n') : '✅ Role-based auth\n✅ Data export'}
+✅ Role-based access: Admin, Manager, Viewer (different UI per role)
+✅ Date range picker with presets (Today, 7D, 30D, 90D, Custom)
+✅ Real-time data refresh (WebSocket or 30-sec polling)
+✅ Bulk operations (delete, update status, assign)
+✅ Column visibility toggle in data tables
+✅ Inline cell editing with auto-save
+✅ Full audit log with user, action, timestamp, changes
+✅ Email alerts for threshold breaches
+✅ Keyboard shortcuts (K for search, N for new)
+✅ Dark / light mode toggle
+${opts.extraNotes ? `✅ ${opts.extraNotes}` : ''}
 
-## Output Format:
-Show every file completely. Label each: === path/filename.ext ===
-End with: Setup guide + Deployment steps.`;
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+REQUIRED OUTPUT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. Write every file completely — no truncation
+2. Label each file: === path/filename.ext ===
+3. End with: .env variables + Quick Start + Deployment steps`;
 }
 
 function buildUIUXPrompt(opts: any): string {
   const toolLabel = UIUX_TOOLS.find(t => t.id === opts.uiuxTool)?.label || opts.uiuxTool;
   const screenList = opts.selectedScreens.length > 0 ? opts.selectedScreens.join(', ') : 'all key screens';
-  return `Design a complete, production-ready ${toolLabel} UI/UX design for a ${opts.appType || 'modern app'} called "${opts.appName || 'MyApp'}".
+  return `Design a complete, production-ready UI/UX design system for a ${opts.appType || 'modern app'} called "${opts.appName || 'MyApp'}" — optimized for ${toolLabel}.
 
 **Design Style:** ${opts.styleVibe || 'Modern & Clean'}
 ${opts.targetUsers ? `**Target Users:** ${opts.targetUsers}` : ''}
-${opts.colorPalette ? `**Color Palette:** ${opts.colorPalette}` : ''}
+${opts.colorPalette ? `**Brand Colors:** ${opts.colorPalette}` : ''}
 
-**Screens to Design:** ${screenList}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCREENS TO DESIGN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${screenList}
 
-**Design Requirements:**
-- Create a visually stunning, pixel-perfect design with exceptional attention to detail
-- Use a consistent design system with reusable components (buttons, cards, inputs, typography scale)
-- Apply proper spacing, padding, and visual hierarchy following the 8pt grid system
-- Include micro-interactions and hover/tap states for interactive elements
-- Ensure accessibility with sufficient color contrast (WCAG AA minimum)
-- Design for both light and dark mode variants
-- Include responsive breakpoints for mobile (375px), tablet (768px), and desktop (1440px)
-- Use modern design trends: subtle gradients, depth with shadows, smooth transitions
-- Include iconography that matches the design style
-- Add realistic placeholder content (no Lorem Ipsum — use real-sounding names/data)
-${opts.extraNotes ? `\n**Additional Notes:** ${opts.extraNotes}` : ''}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DESIGN SYSTEM REQUIREMENTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+**Visual Design:**
+• Pixel-perfect layout with consistent 8pt grid system
+• Stunning hero sections with gradients, illustrations, or abstract shapes
+• Micro-animations described in detail (hover states, transitions, loading)
+• Depth hierarchy using shadows (xs: 2px, sm: 4px, md: 8px, lg: 16px)
+• Modern design trends appropriate to "${opts.styleVibe || 'the selected style'}"
 
-**Deliverables:**
-- Complete design for all specified screens
-- Component library / design system
-- Color palette with hex values
-- Typography scale (font family, sizes, weights)
-- Spacing system
-- Icon set recommendations`;
+**Design System Components (describe all with exact specs):**
+• Color palette: primary, secondary, accent, neutral, semantic (error/success/warning)
+• Typography scale: headings (H1-H6), body, caption, label — with font, weight, size, line-height
+• Spacing scale: 4, 8, 12, 16, 20, 24, 32, 40, 48, 64px
+• Component library: Button (5 variants), Input, Select, Checkbox, Radio, Toggle, Badge, Card, Modal, Toast, Tooltip, Dropdown, Tabs, Table, Avatar, Breadcrumb
+• Icon system: which icon library and usage rules
+• Illustration style: when and how to use
+
+**Accessibility:**
+• Color contrast ratios (WCAG AA — 4.5:1 for text)
+• Focus states for keyboard navigation
+• Screen reader-friendly patterns
+• Reduced motion considerations
+
+**Responsive Breakpoints:**
+• Mobile: 375px — primary design focus
+• Tablet: 768px — adapted layout
+• Desktop: 1440px — wide layout with sidebar
+
+**Interaction Design:**
+• Loading states (skeletons, spinners, progress)
+• Error states (friendly error messages with recovery actions)
+• Empty states (illustration + CTA)
+• Success states (animations, confirmations)
+• Hover / Active / Disabled states for all interactive elements
+
+${opts.extraNotes ? `**Special Requirements:**\n${opts.extraNotes}` : ''}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DELIVERABLES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. Complete design descriptions for all screens with pixel-level detail
+2. Full design system specification (colors, typography, spacing, components)
+3. Interaction design patterns for each screen
+4. Developer handoff notes with exact CSS values
+5. Figma/code implementation notes
+6. User flow diagram description (onboarding through key action)`;
 }
 
 function buildPrompt(mode: string, opts: any): string {
@@ -919,18 +1151,20 @@ export default function PromptGenerator() {
             {/* Quick modes */}
             <div className="bg-card border border-border/50 rounded-2xl p-4">
               <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2 text-sm">
-                <Zap className="w-4 h-4 text-yellow-400" /> Quick Build
+                <Zap className="w-4 h-4 text-yellow-400" /> Quick Build Presets
               </h3>
               <div className="space-y-2">
                 {[
-                  { label: 'Play Store Android App', action: () => { handleModeChange('mobile'); setSelectedAppType('Social Networking App'); setSelectedTechStack('react-native-expo'); setSelectedDeploy('playstore'); setSelectedFeatures(['auth','push-notif','realtime']); }},
-                  { label: 'Full Stack SaaS', action: () => { handleModeChange('fullstack'); setSelectedAppType('SaaS Tool'); setSelectedTechStack('nextjs'); setSelectedDeploy('vercel'); setSelectedFeatures(['auth','payments','roles','analytics']); }},
-                  { label: 'E-Commerce Store', action: () => { handleModeChange('ecommerce'); setSelectedAppType('Fashion & Clothing Store'); setSelectedFeatures(['auth','payments','search','email']); setSelectedDeploy('vercel'); }},
-                  { label: 'AI Chatbot App', action: () => { handleModeChange('ai'); setSelectedAppType('AI Chatbot'); setSelectedTechStack('react-openai'); setSelectedFeatures(['auth','realtime','dark-mode']); }},
+                  { label: '🚀 Play Store Android App', action: () => { handleModeChange('mobile'); setSelectedAppType('Social Networking App'); setSelectedTechStack('react-native-expo'); setSelectedDeploy('playstore'); setSelectedFeatures(['auth','push-notif','realtime','chat']); }},
+                  { label: '💼 Full Stack SaaS Platform', action: () => { handleModeChange('fullstack'); setSelectedAppType('SaaS Tool'); setSelectedTechStack('nextjs'); setSelectedDeploy('vercel'); setSelectedFeatures(['auth','payments','roles','analytics','email','dark-mode']); }},
+                  { label: '🛒 E-Commerce Store', action: () => { handleModeChange('ecommerce'); setSelectedAppType('Fashion & Clothing Store'); setSelectedFeatures(['auth','payments','search','email','analytics','file-upload']); setSelectedDeploy('vercel'); }},
+                  { label: '🤖 AI Chatbot App', action: () => { handleModeChange('ai'); setSelectedAppType('AI Chatbot'); setSelectedTechStack('react-openai'); setSelectedFeatures(['auth','realtime','dark-mode','file-upload']); }},
+                  { label: '📊 Admin Dashboard', action: () => { handleModeChange('dashboard'); setSelectedAppType('Analytics Dashboard'); setSelectedTechStack('react-node'); setSelectedFeatures(['auth','analytics','roles','email','api','dark-mode']); }},
+                  { label: '🎮 Browser Game', action: () => { handleModeChange('game'); setSelectedAppType('Endless Runner'); setSelectedTechStack('js-canvas'); }},
                 ].map(item => (
                   <button key={item.label} onClick={item.action}
                     className="w-full text-left px-3 py-2 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-muted/30 border border-transparent hover:border-border/40 transition-all">
-                    <Rocket className="w-3 h-3 inline mr-2 text-violet-400" />{item.label}
+                    {item.label}
                   </button>
                 ))}
               </div>
