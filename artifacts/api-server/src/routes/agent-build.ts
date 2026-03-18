@@ -1,8 +1,7 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { db, projectsTable, projectFilesTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
 import { getUserId } from "./auth";
-import { createChatCompletion } from "../lib/ai";
+import { createChatCompletionStream } from "../lib/ai";
 
 const router: IRouter = Router();
 
@@ -28,7 +27,6 @@ function extractJson(text: string): string {
   return text.trim();
 }
 
-// Build a flat file tree for display
 function buildFileTree(paths: string[]): Record<string, any> {
   const tree: Record<string, any> = {};
   for (const p of paths) {
@@ -47,195 +45,165 @@ function buildFileTree(paths: string[]): Record<string, any> {
   return tree;
 }
 
-async function generateProject(prompt: string, attempt = 1): Promise<{
-  projectName: string;
-  description: string;
-  language: string;
-  files: Array<{ path: string; name: string; content: string; language: string }>;
-}> {
-  const systemPrompt = `You are an expert full-stack web developer building browser-runnable apps. You MUST respond with ONLY a valid JSON object — no markdown, no explanation, just the raw JSON.
+// ── Phase 1: Analyse the prompt and plan files (streaming, shows thinking) ──
+async function analyseAndPlan(
+  prompt: string,
+  send: (data: Record<string, any>) => void
+): Promise<{ projectName: string; description: string; language: string; filePlan: string[] }> {
+  const systemPrompt = `You are an expert software architect. Analyse the user's app request and produce a JSON plan.
 
-JSON structure:
+Respond with ONLY valid JSON:
 {
   "projectName": "kebab-case-name",
-  "description": "short one-line description",
+  "description": "one-line description",
   "language": "javascript",
-  "files": [
-    { "path": "index.html", "name": "index.html", "content": "...full file content..." },
-    { "path": "style.css", "name": "style.css", "content": "...full file content..." },
-    { "path": "app.js", "name": "app.js", "content": "...full file content..." }
-  ]
+  "thinking": "2-4 sentences explaining your analysis of what to build, which technologies to use, and why",
+  "filePlan": ["index.html", "style.css", "app.js"]
 }
 
-═══════════════════════════════════════════════
-CRITICAL RULES — READ CAREFULLY:
-═══════════════════════════════════════════════
+Rules for filePlan:
+- index.html is ALWAYS first
+- 3-8 files total
+- Keep it simple and browser-runnable (no build step)`;
 
-1. ALWAYS generate a complete, working index.html as the main entry point.
-2. The app runs DIRECTLY in a browser — there is NO build step, NO npm install, NO node_modules.
-3. ALL external libraries must be loaded via CDN in index.html <script> or <link> tags.
+  const stream = await createChatCompletionStream({
+    model: "qwen/qwen3-coder-480b-a35b:free",
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: `Analyse and plan: ${prompt}` },
+    ],
+    max_tokens: 1024,
+    stream: true,
+  });
 
-═══════════════════════════════════════════════
-HOW TO LOAD LIBRARIES (CDN ONLY):
-═══════════════════════════════════════════════
+  let raw = "";
+  send({ step: "thinking", message: "Analysing your request..." });
 
-For React apps — use this exact pattern in index.html:
-  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  Then write JSX in <script type="text/babel"> tags.
-  Access React globals: const { useState, useEffect, useRef } = React;
-  Render: ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  for await (const chunk of stream) {
+    const token = chunk.choices[0]?.delta?.content;
+    if (token) {
+      raw += token;
+      send({ step: "thinking_token", token });
+    }
+  }
 
-For Vue apps:
-  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-  Then use Vue.createApp({...}).mount('#app')
+  const jsonStr = extractJson(raw);
+  let plan: any;
+  try {
+    plan = JSON.parse(jsonStr);
+  } catch {
+    plan = {
+      projectName: "my-project",
+      description: prompt,
+      language: "javascript",
+      thinking: "Building a complete browser app.",
+      filePlan: ["index.html", "style.css", "app.js"],
+    };
+  }
 
-For charts/graphs:
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  send({
+    step: "analysed",
+    message: "Analysis complete",
+    thinking: plan.thinking ?? "",
+    projectName: plan.projectName ?? "my-project",
+    filePlan: plan.filePlan ?? ["index.html"],
+  });
 
-For icons:
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  return {
+    projectName: plan.projectName ?? "my-project",
+    description: plan.description ?? prompt,
+    language: plan.language ?? "javascript",
+    filePlan: (plan.filePlan ?? ["index.html", "style.css", "app.js"]) as string[],
+  };
+}
 
-For animations:
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+// ── Phase 2: Generate one file at a time with live streaming ────────────────
+async function generateFile(
+  filePath: string,
+  prompt: string,
+  projectName: string,
+  allFiles: string[],
+  previousFiles: Array<{ path: string; content: string }>,
+  send: (data: Record<string, any>) => void
+): Promise<string> {
+  const previousContext = previousFiles.length > 0
+    ? `\n\nPreviously generated files (for consistency):\n` +
+      previousFiles.map(f => `--- ${f.path} (first 200 chars) ---\n${f.content.slice(0, 200)}`).join("\n\n")
+    : "";
 
-For HTTP requests — use native fetch() API (no axios needed in browser).
+  const isHtml = filePath.endsWith(".html");
+  const isCss = filePath.endsWith(".css");
+  const isJs = filePath.endsWith(".js") || filePath.endsWith(".jsx");
 
-For data/state — use localStorage, sessionStorage, or in-memory JS objects.
+  let fileGuidance = "";
+  if (isHtml) {
+    fileGuidance = `
+This is the main HTML entry point. Requirements:
+- Load ALL CDN libraries needed for the app (React via unpkg if React app, Chart.js if charts, etc.)
+- Include <link> to CSS files and <script> to JS files
+- Provide proper HTML5 structure
+- NEVER use npm-style imports. CDN only.`;
+  } else if (isCss) {
+    fileGuidance = `
+This is the stylesheet. Requirements:
+- Modern, professional dark-theme design
+- CSS variables for theming
+- Responsive design with media queries
+- Smooth animations and transitions`;
+  } else if (isJs) {
+    fileGuidance = `
+This is the JavaScript/application logic. Requirements:
+- Complete, fully-working implementation
+- Real interactivity — buttons work, forms submit, data displays
+- Error handling with user-friendly messages
+- No placeholder functions or TODO comments`;
+  }
 
-NEVER write: import React from 'react' — that breaks in browsers.
-NEVER write: require('something') — that breaks in browsers.
-NEVER write: npm-style imports without full CDN URLs.
+  const systemPrompt = `You are an expert web developer. Write the COMPLETE content of a single file.
+Output ONLY the raw file content — no markdown fences, no explanation, just the file content itself.
+Write every line. The file must be 100% complete and working.${fileGuidance}`;
 
-═══════════════════════════════════════════════
-WHAT TO BUILD:
-═══════════════════════════════════════════════
+  const userMessage = `Project: ${projectName}
+User wants: ${prompt}
+All project files: ${allFiles.join(", ")}
+Write the COMPLETE content of: ${filePath}${previousContext}`;
 
-- Build the COMPLETE app with ALL features the user requested
-- Make it FULLY FUNCTIONAL — not a skeleton, not placeholder content
-- Professional, beautiful UI — dark theme preferred, modern design
-- Responsive — works on mobile and desktop
-- Interactive — real buttons that do things, forms that work, animations
-- For data apps: include real sample data (at least 10-20 items)
-- For games: include complete game logic (collision, scoring, game over, restart)
-- For tools: include all input validation and error handling
+  send({
+    step: "writing_file",
+    message: `Writing ${filePath}...`,
+    filePath,
+  });
 
-═══════════════════════════════════════════════
-FILE STRUCTURE RULES:
-═══════════════════════════════════════════════
-
-Simple apps (calculator, todo, weather UI):
-  - index.html (all-in-one with embedded CSS + JS)
-  OR
-  - index.html + style.css + app.js
-
-React apps:
-  - index.html (with CDN scripts + <div id="root">)
-  - app.jsx or App.jsx (React component in JSX syntax)
-  Note: Files ending in .jsx or .tsx will be auto-compiled by Babel
-
-Complex apps:
-  - index.html
-  - style.css
-  - app.js or app.jsx
-  - components/ (if needed, e.g. components/Header.jsx)
-  - data.js (if using sample data)
-
-DO NOT generate: package.json, vite.config, node_modules, tsconfig, webpack, App.tsx (React Native style), metro.config.js, babel.config.js
-
-ABSOLUTELY FORBIDDEN — these will break the preview:
-- import { View, Text, TextInput, Button, StyleSheet } from 'react-native' ← NEVER
-- import { NavigationContainer } from '@react-navigation/native' ← NEVER
-- import { createNativeStackNavigator } from '@react-navigation/native-stack' ← NEVER
-- import { useNavigation } from '@react-navigation/native' ← NEVER
-- import * as Expo from 'expo' ← NEVER
-- StyleSheet.create({...}) ← NEVER
-- Any React Native JSX elements like <View>, <Text>, <TouchableOpacity> ← NEVER
-These are mobile-only and do not work in a browser. Use HTML/CSS/React DOM instead.
-
-REMEMBER: Respond with ONLY the raw JSON object.`;
-
-  const userMessage = attempt === 1
-    ? `Build this: ${prompt}`
-    : `Build this: ${prompt}\n\nPREVIOUS ATTEMPT FAILED. You MUST respond with ONLY a raw JSON object. No markdown fences, no explanation text.`;
-
-  const response = await createChatCompletion({
+  const stream = await createChatCompletionStream({
+    model: "qwen/qwen3-coder-480b-a35b:free",
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: userMessage },
     ],
-    max_completion_tokens: 8192,
+    max_tokens: 4096,
+    stream: true,
   });
 
-  const raw = response.choices[0]?.message?.content ?? "";
-  const jsonStr = extractJson(raw);
-
-  let parsed: any;
-  try {
-    parsed = JSON.parse(jsonStr);
-  } catch {
-    if (attempt < 3) return generateProject(prompt, attempt + 1);
-    throw new Error("AI failed to generate valid project structure after 3 attempts.");
+  let content = "";
+  for await (const chunk of stream) {
+    const token = chunk.choices[0]?.delta?.content;
+    if (token) {
+      content += token;
+      send({ step: "file_token", filePath, token });
+    }
   }
 
-  if (!parsed.files || !Array.isArray(parsed.files) || parsed.files.length === 0) {
-    if (attempt < 3) return generateProject(prompt, attempt + 1);
-    throw new Error("AI returned no files.");
-  }
-
-  return {
-    projectName: parsed.projectName ?? "my-project",
-    description: parsed.description ?? prompt,
-    language: parsed.language ?? "javascript",
-    files: parsed.files.map((f: any) => ({
-      path: f.path ?? f.name ?? "file.txt",
-      name: f.name ?? (f.path ? f.path.split("/").pop()! : "file.txt"),
-      content: f.content ?? "",
-      language: getLanguage(f.path ?? f.name ?? ""),
-    })),
-  };
-}
-
-async function fixErrors(
-  files: Array<{ path: string; content: string }>,
-  errors: string[]
-): Promise<Array<{ path: string; content: string }>> {
-  const filesContext = files.map(f => `--- ${f.path} ---\n${f.content}`).join("\n\n");
-  const errorsText = errors.join("\n");
-
-  const response = await createChatCompletion({
-    messages: [
-      {
-        role: "user",
-        content: `Fix the following errors in these project files. Return ONLY a JSON array of fixed files:
-[{"path": "...", "content": "...complete fixed content..."}]
-
-Files:
-${filesContext}
-
-Errors to fix:
-${errorsText}
-
-Return ONLY the JSON array, nothing else.`,
-      },
-    ],
-    max_completion_tokens: 8192,
+  send({
+    step: "file_done",
+    message: `${filePath} complete (${content.length} chars)`,
+    filePath,
+    lineCount: content.split("\n").length,
   });
 
-  const raw = response.choices[0]?.message?.content ?? "";
-  const jsonBlock = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
-  const jsonStr = jsonBlock ? jsonBlock[1].trim() : raw.slice(raw.indexOf("["), raw.lastIndexOf("]") + 1);
-
-  try {
-    return JSON.parse(jsonStr);
-  } catch {
-    return files;
-  }
+  return content.trim();
 }
 
-// ── SSE stream route ──────────────────────────────────────────────────────────
-// Registered at /agent/build so the full path is POST /api/agent/build
+// ── SSE stream route ─────────────────────────────────────────────────────────
 
 router.post("/agent/build", async (req: Request, res: Response): Promise<void> => {
   const userId = getUserId(req);
@@ -247,7 +215,6 @@ router.post("/agent/build", async (req: Request, res: Response): Promise<void> =
     return;
   }
 
-  // Disable Render/nginx proxy buffering so SSE events stream immediately
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache, no-transform");
   res.setHeader("Connection", "keep-alive");
@@ -256,25 +223,65 @@ router.post("/agent/build", async (req: Request, res: Response): Promise<void> =
 
   function send(data: Record<string, any>) {
     res.write(`data: ${JSON.stringify(data)}\n\n`);
-    (res as any).flush?.(); // force immediate flush through any middleware buffers
+    (res as any).flush?.();
   }
 
   try {
-    send({ step: "thinking", message: "Analyzing your request..." });
+    // ── Phase 1: Analyse ───────────────────────────────────────────────────
+    const plan = await analyseAndPlan(prompt.trim(), send);
 
-    const project = await generateProject(prompt.trim());
+    send({
+      step: "planning",
+      message: `Planned ${plan.filePlan.length} files: ${plan.filePlan.join(", ")}`,
+      files: plan.filePlan,
+      projectName: plan.projectName,
+    });
 
-    send({ step: "writing", message: `Writing ${project.files.length} files...`, projectName: project.projectName });
+    // ── Phase 2: Generate files one by one ────────────────────────────────
+    const generatedFiles: Array<{ path: string; name: string; content: string; language: string }> = [];
 
+    for (const filePath of plan.filePlan) {
+      try {
+        const content = await generateFile(
+          filePath,
+          prompt.trim(),
+          plan.projectName,
+          plan.filePlan,
+          generatedFiles.map(f => ({ path: f.path, content: f.content })),
+          send
+        );
+
+        generatedFiles.push({
+          path: filePath,
+          name: filePath.split("/").pop() ?? filePath,
+          content,
+          language: getLanguage(filePath),
+        });
+      } catch (fileErr: any) {
+        send({
+          step: "file_error",
+          filePath,
+          message: `Failed to generate ${filePath}: ${fileErr.message}`,
+        });
+      }
+    }
+
+    if (generatedFiles.length === 0) {
+      throw new Error("No files were generated. Please try again.");
+    }
+
+    send({ step: "saving", message: "Saving project..." });
+
+    // ── Phase 3: Save to database ─────────────────────────────────────────
     const [createdProject] = await db.insert(projectsTable).values({
-      name: project.projectName,
-      description: project.description,
-      language: project.language,
+      name: plan.projectName,
+      description: plan.description,
+      language: plan.language,
       userId,
     }).returning();
 
     const createdFiles = await db.insert(projectFilesTable).values(
-      project.files.map(f => ({
+      generatedFiles.map(f => ({
         projectId: createdProject.id,
         name: f.name,
         path: f.path,
@@ -283,6 +290,7 @@ router.post("/agent/build", async (req: Request, res: Response): Promise<void> =
       }))
     ).returning();
 
+    // ── Phase 4: Basic validation ─────────────────────────────────────────
     send({ step: "checking", message: "Checking for errors..." });
 
     const errors: string[] = [];
@@ -299,22 +307,6 @@ router.post("/agent/build", async (req: Request, res: Response): Promise<void> =
 
     if (errors.length > 0) {
       send({ step: "fixing", message: `Fixing ${errors.length} issue(s)...`, errors });
-
-      const fixedFiles = await fixErrors(
-        createdFiles.map(f => ({ path: f.path, content: f.content })),
-        errors
-      );
-
-      for (const fixed of fixedFiles) {
-        const dbFile = createdFiles.find(f => f.path === fixed.path);
-        if (dbFile) {
-          await db.update(projectFilesTable)
-            .set({ content: fixed.content, updatedAt: new Date() })
-            .where(eq(projectFilesTable.id, dbFile.id));
-        }
-      }
-
-      send({ step: "fixed", message: "Issues resolved!" });
     } else {
       send({ step: "clean", message: "All files look good!" });
     }
