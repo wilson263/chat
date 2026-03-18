@@ -122,7 +122,7 @@ QUALITY RULES
       { role: "user", content: userMessage },
     ],
     model: "qwen/qwen3-coder-480b-a35b:free",
-    max_completion_tokens: 60000,
+    max_completion_tokens: 100000,
   });
 
   const raw = response.choices[0]?.message?.content ?? "";
