@@ -3,9 +3,9 @@ import OpenAI from "openai";
 const FREE_MODELS = [
   "meta-llama/llama-3.3-70b-instruct:free",
   "meta-llama/llama-3.1-8b-instruct:free",
-  "google/gemma-2-9b-it:free",
-  "deepseek/deepseek-chat:free",
-  "microsoft/phi-3-mini-128k-instruct:free",
+  "google/gemma-3-27b-it:free",
+  "deepseek/deepseek-r1:free",
+  "mistralai/mistral-small-3.2-24b-instruct:free",
 ];
 
 export function getAIClient(): OpenAI {
@@ -17,12 +17,17 @@ export function getAIClient(): OpenAI {
 export const FREE_MODEL = FREE_MODELS[0];
 export const FREE_MODEL_FAST = FREE_MODELS[1];
 
-function shouldRetry(err: any): boolean {
+function isRetryableError(err: any): boolean {
   const status = err?.status ?? err?.response?.status;
-  if (status === 429 || status === 404 || status === 400) return true;
-  const msg = err?.message ?? "";
-  if (msg.includes("429") || msg.includes("No endpoints found") || msg.includes("not a valid model")) return true;
-  return false;
+  if (status === 429 || status === 404 || status === 400 || status === 503) return true;
+  const msg = String(err?.message ?? "").toLowerCase();
+  return (
+    msg.includes("429") ||
+    msg.includes("no endpoints found") ||
+    msg.includes("not a valid model") ||
+    msg.includes("overloaded") ||
+    msg.includes("unavailable")
+  );
 }
 
 export async function createChatCompletion(
@@ -34,18 +39,21 @@ export async function createChatCompletion(
     ? [preferredModel, ...FREE_MODELS.filter((m) => m !== preferredModel)]
     : FREE_MODELS;
 
+  let lastError: any;
   for (let i = 0; i < modelsToTry.length; i++) {
     try {
       return await client.chat.completions.create({ ...params, model: modelsToTry[i] });
     } catch (err: any) {
-      if (shouldRetry(err) && i < modelsToTry.length - 1) {
+      lastError = err;
+      if (isRetryableError(err) && i < modelsToTry.length - 1) {
         console.warn(`Model ${modelsToTry[i]} unavailable (${err?.status ?? "error"}), trying ${modelsToTry[i + 1]}...`);
         continue;
       }
-      throw err;
+      break;
     }
   }
-  throw new Error("All free models are currently unavailable. Please try again later.");
+  console.error("All models failed. Last error:", lastError?.message);
+  throw new Error("The AI service is temporarily unavailable. Please try again in a moment.");
 }
 
 export async function createChatCompletionStream(
@@ -57,16 +65,19 @@ export async function createChatCompletionStream(
     ? [preferredModel, ...FREE_MODELS.filter((m) => m !== preferredModel)]
     : FREE_MODELS;
 
+  let lastError: any;
   for (let i = 0; i < modelsToTry.length; i++) {
     try {
       return await client.chat.completions.create({ ...params, model: modelsToTry[i], stream: true });
     } catch (err: any) {
-      if (shouldRetry(err) && i < modelsToTry.length - 1) {
+      lastError = err;
+      if (isRetryableError(err) && i < modelsToTry.length - 1) {
         console.warn(`Model ${modelsToTry[i]} unavailable (${err?.status ?? "error"}), trying ${modelsToTry[i + 1]}...`);
         continue;
       }
-      throw err;
+      break;
     }
   }
-  throw new Error("All free models are currently unavailable. Please try again later.");
+  console.error("All models failed. Last error:", lastError?.message);
+  throw new Error("The AI service is temporarily unavailable. Please try again in a moment.");
 }
