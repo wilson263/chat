@@ -213,6 +213,7 @@ export default function ChatPage() {
   const [previewContent, setPreviewContent] = useState<string | null>(null);
   const [showPreviewPanel, setShowPreviewPanel] = useState(false);
   const [followUpSuggestions, setFollowUpSuggestions] = useState<string[]>([]);
+  const [smartPasteChip, setSmartPasteChip] = useState<{ label: string; prompt: string } | null>(null);
 
   // ── VOICE / TTS ─────────────────────────────────────────────────────────
   const [isListening, setIsListening] = useState(false);
@@ -380,6 +381,7 @@ export default function ChatPage() {
     setLastUserMessage(trimmed);
     setLastAttachments(atts);
     setFollowUpSuggestions([]);
+    setSmartPasteChip(null);
 
     // Image generation mode
     if (imageGenMode && trimmed) {
@@ -532,6 +534,35 @@ export default function ChatPage() {
   const openPreview = (html: string) => {
     setPreviewContent(html);
     setShowPreviewPanel(true);
+  };
+
+  const handleSmartPaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const pasted = e.clipboardData.getData('text');
+    if (pasted.length < 80) { setSmartPasteChip(null); return; }
+    const codePatterns = [
+      /^\s*(function|const|let|var|class|import|export|def |if |for |while )/m,
+      /[{};]\s*$/m,
+      /^\s{2,}/m,
+      /<\/?[a-z][a-z0-9]*[\s>]/i,
+      /SELECT|INSERT|UPDATE|DELETE|CREATE TABLE/i,
+    ];
+    const looksLikeCode = codePatterns.some(p => p.test(pasted));
+    if (looksLikeCode) {
+      const isHTML = /<html|<body|<div|<script/i.test(pasted);
+      const isPython = /def |import |print\(/.test(pasted);
+      const isSQL = /SELECT|INSERT|CREATE TABLE/i.test(pasted);
+      const label = isHTML ? 'Preview this HTML →' : isPython ? 'Explain this Python →' : isSQL ? 'Explain this SQL →' : 'Analyze this code →';
+      const prompt = isHTML
+        ? `Explain and review this HTML:\n\`\`\`html\n${pasted}\n\`\`\``
+        : isPython
+        ? `Explain and review this Python code:\n\`\`\`python\n${pasted}\n\`\`\``
+        : isSQL
+        ? `Explain this SQL query:\n\`\`\`sql\n${pasted}\n\`\`\``
+        : `Explain and review this code:\n\`\`\`\n${pasted}\n\`\`\``;
+      setSmartPasteChip({ label, prompt });
+    } else {
+      setSmartPasteChip(null);
+    }
   };
 
   const generateFollowUps = (content: string): string[] => {
@@ -1147,6 +1178,15 @@ export default function ChatPage() {
                       </div>
                     )}
 
+                    {/* Token count badge */}
+                    {msg.content && msg.role === 'assistant' && (
+                      <div className="flex items-center gap-1 px-1">
+                        <span className="text-[10px] text-muted-foreground/35 tabular-nums">
+                          ~{Math.ceil(msg.content.length / 4).toLocaleString()} tokens
+                        </span>
+                      </div>
+                    )}
+
                     {/* Message comment */}
                     {msg.comment && (
                       <div className="flex items-center gap-1.5 px-1">
@@ -1257,8 +1297,9 @@ export default function ChatPage() {
                 <textarea
                   ref={textareaRef}
                   value={input}
-                  onChange={e => setInput(e.target.value)}
+                  onChange={e => { setInput(e.target.value); if (e.target.value === '') setSmartPasteChip(null); }}
                   onKeyDown={handleKeyDown}
+                  onPaste={handleSmartPaste}
                   placeholder={imageGenMode?'Describe an image to generate…':webSearchMode?'Ask anything — web search enabled…':'Ask anything or describe what you want to build…'}
                   rows={1}
                   style={{ resize: 'none' }}
@@ -1283,6 +1324,25 @@ export default function ChatPage() {
                 {aiLoading?<Loader2 className="w-4 h-4 animate-spin"/>:<Send className="w-4 h-4"/>}
               </Button>
             </div>
+            {/* Smart paste chip */}
+            {smartPasteChip && (
+              <div className="flex items-center gap-2 mt-2">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/30 text-xs text-primary flex-shrink-0">
+                  <Sparkles className="w-3 h-3" />
+                  <span>Code detected</span>
+                </div>
+                <button
+                  onClick={() => { sendMessage(smartPasteChip.prompt); setSmartPasteChip(null); setInput(''); }}
+                  className="px-3 py-1.5 rounded-full text-xs border border-primary/40 text-primary hover:bg-primary/15 hover:border-primary/60 transition-all flex items-center gap-1.5 bg-primary/5"
+                >
+                  {smartPasteChip.label}
+                </button>
+                <button onClick={() => setSmartPasteChip(null)} className="p-1 text-muted-foreground hover:text-foreground transition-colors">
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            )}
+
             {/* Active model info bar */}
             <div className="flex items-center justify-between mt-1.5 px-0.5">
               {activeModelInfo && model === AUTO_MODEL_ID ? (
@@ -1298,7 +1358,14 @@ export default function ChatPage() {
                   {model === AUTO_MODEL_ID ? '✦ Auto mode — smart model routing enabled' : `Using ${getModelLabel(model)}`}
                 </div>
               )}
-              <p className="text-[11px] text-muted-foreground/40">Enter · Shift+Enter newline · ? shortcuts</p>
+              <div className="flex items-center gap-2">
+                {messages.length > 0 && (
+                  <span className="text-[11px] text-muted-foreground/35 tabular-nums">
+                    ~{Math.ceil(messages.reduce((s, m) => s + m.content.length, 0) / 4).toLocaleString()} total tokens
+                  </span>
+                )}
+                <span className="text-[11px] text-muted-foreground/40">Enter · Shift+Enter newline · ? shortcuts</span>
+              </div>
             </div>
           </div>
         </div>

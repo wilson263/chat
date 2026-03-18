@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { Check, Copy, Download, Play, Monitor, X, Terminal, ChevronDown, ChevronUp } from 'lucide-react';
+import { Check, Copy, Download, Play, Monitor, X, Terminal, ChevronDown, ChevronUp, Brain } from 'lucide-react';
 import { Button } from './ui/button';
 
 interface MarkdownRendererProps {
@@ -11,43 +11,153 @@ interface MarkdownRendererProps {
   onPreview?: (html: string, css?: string, js?: string) => void;
 }
 
-export function MarkdownRenderer({ content, onPreview }: MarkdownRendererProps) {
-  return (
-    <ReactMarkdown
-      remarkPlugins={[remarkGfm]}
-      className="prose prose-invert max-w-none prose-p:leading-relaxed prose-pre:p-0"
-      components={{
-        code({ node, inline, className, children, ...props }: any) {
-          const match = /language-(\w+)/.exec(className || '');
-          const language = match ? match[1] : '';
-          const codeString = String(children).replace(/\n$/, '');
+export function extractThinking(raw: string): { thinking: string | null; mainContent: string } {
+  const thinkingMatch = raw.match(/<(?:antml:)?thinking>([\s\S]*?)<\/(?:antml:)?thinking>/i);
+  if (thinkingMatch) {
+    const thinking = thinkingMatch[1].trim();
+    const mainContent = raw.replace(/<(?:antml:)?thinking>[\s\S]*?<\/(?:antml:)?thinking>/gi, '').trim();
+    return { thinking, mainContent };
+  }
+  return { thinking: null, mainContent: raw };
+}
 
-          if (!inline && match) {
-            return <CodeBlock language={language} code={codeString} onPreview={onPreview} />;
+function ThinkingBlock({ content }: { content: string }) {
+  const [expanded, setExpanded] = React.useState(false);
+  const lines = content.split('\n').filter(Boolean);
+  const preview = lines.slice(0, 2).join(' ').slice(0, 120);
+
+  return (
+    <div className="mb-3 rounded-lg border border-violet-500/20 bg-violet-500/5 overflow-hidden">
+      <button
+        onClick={() => setExpanded(v => !v)}
+        className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-violet-500/10 transition-colors"
+      >
+        <Brain className="w-3.5 h-3.5 text-violet-400 shrink-0" />
+        <span className="text-xs text-violet-300 font-medium">Thinking</span>
+        <span className="flex-1 text-xs text-violet-400/60 truncate ml-1">{!expanded && preview}</span>
+        {expanded ? (
+          <ChevronUp className="w-3.5 h-3.5 text-violet-400/60 shrink-0" />
+        ) : (
+          <ChevronDown className="w-3.5 h-3.5 text-violet-400/60 shrink-0" />
+        )}
+      </button>
+      {expanded && (
+        <div className="px-4 pb-3 pt-1 border-t border-violet-500/10">
+          <p className="text-xs text-violet-300/70 font-mono leading-relaxed whitespace-pre-wrap">{content}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DiffBlock({ code }: { code: string }) {
+  const [copied, setCopied] = React.useState(false);
+  const lines = code.split('\n');
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="relative rounded-lg overflow-hidden border border-border/50 my-4 bg-[#1e1e1e]">
+      <div className="flex items-center justify-between px-4 py-2 bg-[#2d2d2d] border-b border-border/40">
+        <div className="flex items-center gap-2">
+          <div className="flex gap-1.5">
+            <span className="w-3 h-3 rounded-full bg-red-500/70" />
+            <span className="w-3 h-3 rounded-full bg-yellow-500/70" />
+            <span className="w-3 h-3 rounded-full bg-green-500/70" />
+          </div>
+          <span className="text-xs font-mono text-muted-foreground/70 uppercase tracking-wider ml-1">diff</span>
+        </div>
+        <Button
+          variant="ghost" size="icon"
+          className="h-6 w-6 text-muted-foreground hover:text-foreground"
+          onClick={handleCopy}
+        >
+          {copied ? <Check className="h-3 w-3 text-green-400" /> : <Copy className="h-3 w-3" />}
+        </Button>
+      </div>
+      <div className="font-mono text-xs overflow-x-auto p-2">
+        {lines.map((line, i) => {
+          let bg = 'transparent';
+          let color = '#d4d4d4';
+          let prefix = '  ';
+          if (line.startsWith('+') && !line.startsWith('+++')) {
+            bg = 'rgba(34,197,94,0.12)';
+            color = '#86efac';
+            prefix = '+ ';
+          } else if (line.startsWith('-') && !line.startsWith('---')) {
+            bg = 'rgba(239,68,68,0.12)';
+            color = '#fca5a5';
+            prefix = '- ';
+          } else if (line.startsWith('@@')) {
+            bg = 'rgba(99,102,241,0.12)';
+            color = '#a5b4fc';
+          } else if (line.startsWith('+++') || line.startsWith('---')) {
+            color = '#9ca3af';
           }
           return (
-            <code className={`bg-muted/60 px-1 py-0.5 rounded text-xs font-mono ${className || ''}`} {...props}>
-              {children}
-            </code>
-          );
-        },
-        table({ children }: any) {
-          return (
-            <div className="overflow-x-auto my-4">
-              <table className="w-full border-collapse text-sm">{children}</table>
+            <div key={i} style={{ background: bg, color, padding: '1px 12px', whiteSpace: 'pre' }}>
+              {line.startsWith('+') && !line.startsWith('+++') ? (
+                <><span style={{ opacity: 0.5 }}>+</span>{line.slice(1)}</>
+              ) : line.startsWith('-') && !line.startsWith('---') ? (
+                <><span style={{ opacity: 0.5 }}>-</span>{line.slice(1)}</>
+              ) : line}
             </div>
           );
-        },
-        th({ children }: any) {
-          return <th className="border border-border/50 px-3 py-2 bg-muted/50 text-left font-semibold text-xs uppercase tracking-wider">{children}</th>;
-        },
-        td({ children }: any) {
-          return <td className="border border-border/50 px-3 py-2 text-sm">{children}</td>;
-        },
-      }}
-    >
-      {content}
-    </ReactMarkdown>
+        })}
+      </div>
+    </div>
+  );
+}
+
+export function MarkdownRenderer({ content, onPreview }: MarkdownRendererProps) {
+  const { thinking, mainContent } = React.useMemo(() => extractThinking(content), [content]);
+
+  return (
+    <div>
+      {thinking && <ThinkingBlock content={thinking} />}
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        className="prose prose-invert max-w-none prose-p:leading-relaxed prose-pre:p-0"
+        components={{
+          code({ node, inline, className, children, ...props }: any) {
+            const match = /language-(\w+)/.exec(className || '');
+            const language = match ? match[1] : '';
+            const codeString = String(children).replace(/\n$/, '');
+
+            if (!inline && match) {
+              if (language === 'diff') {
+                return <DiffBlock code={codeString} />;
+              }
+              return <CodeBlock language={language} code={codeString} onPreview={onPreview} />;
+            }
+            return (
+              <code className={`bg-muted/60 px-1 py-0.5 rounded text-xs font-mono ${className || ''}`} {...props}>
+                {children}
+              </code>
+            );
+          },
+          table({ children }: any) {
+            return (
+              <div className="overflow-x-auto my-4">
+                <table className="w-full border-collapse text-sm">{children}</table>
+              </div>
+            );
+          },
+          th({ children }: any) {
+            return <th className="border border-border/50 px-3 py-2 bg-muted/50 text-left font-semibold text-xs uppercase tracking-wider">{children}</th>;
+          },
+          td({ children }: any) {
+            return <td className="border border-border/50 px-3 py-2 text-sm">{children}</td>;
+          },
+        }}
+      >
+        {mainContent}
+      </ReactMarkdown>
+    </div>
   );
 }
 
@@ -98,8 +208,6 @@ function CodeBlock({
 
   const isHTML = language === 'html';
   const isJS = language === 'javascript' || language === 'js' || language === 'typescript' || language === 'ts';
-  const isCSS = language === 'css';
-  const isRunnable = isJS || isHTML;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(code);
@@ -148,7 +256,6 @@ function CodeBlock({
 
   return (
     <div className="relative group rounded-lg overflow-hidden border border-border/50 my-4 bg-[#1e1e1e]">
-      {/* Header bar */}
       <div className="flex items-center justify-between px-4 py-2 bg-[#2d2d2d] border-b border-border/40">
         <div className="flex items-center gap-2">
           <div className="flex gap-1.5">
@@ -161,8 +268,7 @@ function CodeBlock({
         <div className="flex items-center gap-1">
           {isHTML && (
             <Button
-              variant="ghost"
-              size="sm"
+              variant="ghost" size="sm"
               className="h-6 px-2 text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 gap-1"
               onClick={handleOpenPreview}
               title="Open live preview"
@@ -173,8 +279,7 @@ function CodeBlock({
           )}
           {isJS && (
             <Button
-              variant="ghost"
-              size="sm"
+              variant="ghost" size="sm"
               className="h-6 px-2 text-xs text-green-400 hover:text-green-300 hover:bg-green-500/10 gap-1"
               onClick={handleRun}
               title="Run JavaScript"
@@ -184,8 +289,7 @@ function CodeBlock({
             </Button>
           )}
           <Button
-            variant="ghost"
-            size="icon"
+            variant="ghost" size="icon"
             className="h-6 w-6 text-muted-foreground hover:text-green-400"
             onClick={handleDownload}
             title="Download file"
@@ -193,8 +297,7 @@ function CodeBlock({
             <Download className="h-3 w-3" />
           </Button>
           <Button
-            variant="ghost"
-            size="icon"
+            variant="ghost" size="icon"
             className="h-6 w-6 text-muted-foreground hover:text-foreground"
             onClick={handleCopy}
             title="Copy code"
@@ -204,7 +307,6 @@ function CodeBlock({
         </div>
       </div>
 
-      {/* Syntax highlighted code */}
       <SyntaxHighlighter
         style={vscDarkPlus as any}
         language={language}
@@ -216,7 +318,6 @@ function CodeBlock({
         {code}
       </SyntaxHighlighter>
 
-      {/* Inline HTML preview */}
       {inlinePreview && isHTML && (
         <div className="border-t border-border/40">
           <div className="flex items-center justify-between px-3 py-1.5 bg-[#1a1a2e]">
@@ -233,16 +334,13 @@ function CodeBlock({
         </div>
       )}
 
-      {/* JS console output */}
       {showOutput && jsOutput && (
         <div className="border-t border-border/40">
           <div className="flex items-center justify-between px-3 py-1.5 bg-[#0d0d0d]">
             <span className="text-xs text-green-400 flex items-center gap-1.5">
               <Terminal className="h-3 w-3" />Console Output
             </span>
-            <div className="flex gap-1">
-              <button onClick={() => setShowOutput(false)} className="text-muted-foreground hover:text-foreground"><X className="h-3 w-3" /></button>
-            </div>
+            <button onClick={() => setShowOutput(false)} className="text-muted-foreground hover:text-foreground"><X className="h-3 w-3" /></button>
           </div>
           <div className="px-4 py-3 font-mono text-xs space-y-1 max-h-40 overflow-y-auto bg-[#0d0d0d]">
             {jsOutput.output.length === 0 && !jsOutput.error && (
@@ -254,9 +352,7 @@ function CodeBlock({
               </div>
             ))}
             {jsOutput.error && (
-              <div className="text-red-400 mt-1 border-t border-red-500/20 pt-1">
-                ✖ {jsOutput.error}
-              </div>
+              <div className="text-red-400 mt-1 border-t border-red-500/20 pt-1">✖ {jsOutput.error}</div>
             )}
           </div>
         </div>
