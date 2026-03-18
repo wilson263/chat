@@ -188,6 +188,299 @@ function extractCodeFromMarkdown(text: string): string {
   return text.trim();
 }
 
+const DEV_TEMPLATES = [
+  {
+    id: 'hello-world', name: 'Hello World', desc: 'Classic starting point with a beautiful gradient landing page.',
+    tags: ['HTML', 'CSS', 'JS'],
+    files: [
+      { name: 'index.html', path: 'index.html', language: 'html', content: `<!DOCTYPE html>
+<html>
+<head><title>Hello World</title><link rel="stylesheet" href="styles.css"></head>
+<body>
+  <div class="container">
+    <h1>Hello, World! 👋</h1>
+    <p>Welcome to your first web page.</p>
+    <button onclick="greet()">Click Me!</button>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>` },
+      { name: 'styles.css', path: 'styles.css', language: 'css', content: `* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+.container { text-align: center; color: white; }
+h1 { font-size: 3rem; margin-bottom: 1rem; }
+p { font-size: 1.2rem; margin-bottom: 2rem; opacity: 0.85; }
+button { padding: 12px 32px; background: white; color: #764ba2; border: none; border-radius: 50px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: transform .2s; }
+button:hover { transform: translateY(-2px); }` },
+      { name: 'script.js', path: 'script.js', language: 'javascript', content: `function greet() {
+  const msgs = ['Hello! 👋', 'How are you? 😊', 'Keep coding! 💻', 'You got this! 🚀'];
+  document.querySelector('h1').textContent = msgs[Math.floor(Math.random() * msgs.length)];
+}` },
+    ],
+  },
+  {
+    id: 'todo-app', name: 'Todo App', desc: 'Feature-rich todo app with filtering and local storage.',
+    tags: ['HTML', 'CSS', 'JS'],
+    files: [
+      { name: 'index.html', path: 'index.html', language: 'html', content: `<!DOCTYPE html>
+<html>
+<head><title>Todo App</title><link rel="stylesheet" href="styles.css"></head>
+<body>
+  <div class="app">
+    <h1>✅ My Todos</h1>
+    <div class="input-row">
+      <input type="text" id="todoInput" placeholder="Add a new task..." />
+      <button onclick="addTodo()">Add</button>
+    </div>
+    <ul id="todoList"></ul>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>` },
+      { name: 'styles.css', path: 'styles.css', language: 'css', content: `* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: sans-serif; background: #1a1a2e; color: white; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+.app { width: 400px; padding: 30px; background: rgba(255,255,255,0.05); border-radius: 16px; }
+h1 { font-size: 1.5rem; margin-bottom: 20px; }
+.input-row { display: flex; gap: 8px; margin-bottom: 16px; }
+input { flex: 1; padding: 10px 14px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: white; font-size: 0.9rem; outline: none; }
+button { padding: 10px 18px; background: #7c3aed; border: none; border-radius: 8px; color: white; cursor: pointer; font-weight: 600; }
+ul { list-style: none; }
+li { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 0.9rem; }
+li.done span { text-decoration: line-through; opacity: 0.5; }
+li input[type=checkbox] { cursor: pointer; }` },
+      { name: 'script.js', path: 'script.js', language: 'javascript', content: `let todos = JSON.parse(localStorage.getItem('todos') || '[]');
+function save() { localStorage.setItem('todos', JSON.stringify(todos)); }
+function render() {
+  document.getElementById('todoList').innerHTML = todos.map((t, i) =>
+    \`<li class="${t.done ? 'done' : ''}">
+      <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggle(${i})">
+      <span>${t.text}</span>
+      <button onclick="remove(${i})" style="margin-left:auto;background:#dc2626;padding:4px 8px;border:none;border-radius:4px;color:white;cursor:pointer">×</button>
+    </li>\`
+  ).join('');
+}
+function addTodo() {
+  const input = document.getElementById('todoInput');
+  if (!input.value.trim()) return;
+  todos.push({ text: input.value.trim(), done: false });
+  input.value = '';
+  save(); render();
+}
+function toggle(i) { todos[i].done = !todos[i].done; save(); render(); }
+function remove(i) { todos.splice(i, 1); save(); render(); }
+document.getElementById('todoInput').addEventListener('keydown', e => { if (e.key === 'Enter') addTodo(); });
+render();` },
+    ],
+  },
+  {
+    id: 'calculator', name: 'Calculator', desc: 'Stylish glass-morphism calculator with full arithmetic.',
+    tags: ['HTML', 'CSS', 'JS'],
+    files: [
+      { name: 'index.html', path: 'index.html', language: 'html', content: `<!DOCTYPE html>
+<html>
+<head><title>Calculator</title><link rel="stylesheet" href="styles.css"></head>
+<body>
+  <div class="calc">
+    <div class="display"><div class="expr" id="expr"></div><div class="result" id="result">0</div></div>
+    <div class="buttons">
+      <button class="btn func" onclick="clearAll()">AC</button>
+      <button class="btn func" onclick="negate()">+/-</button>
+      <button class="btn func" onclick="percent()">%</button>
+      <button class="btn op" onclick="op('/')">÷</button>
+      <button class="btn" onclick="num('7')">7</button><button class="btn" onclick="num('8')">8</button><button class="btn" onclick="num('9')">9</button>
+      <button class="btn op" onclick="op('*')">×</button>
+      <button class="btn" onclick="num('4')">4</button><button class="btn" onclick="num('5')">5</button><button class="btn" onclick="num('6')">6</button>
+      <button class="btn op" onclick="op('-')">−</button>
+      <button class="btn" onclick="num('1')">1</button><button class="btn" onclick="num('2')">2</button><button class="btn" onclick="num('3')">3</button>
+      <button class="btn op" onclick="op('+')">+</button>
+      <button class="btn span2" onclick="num('0')">0</button>
+      <button class="btn" onclick="dot()">.</button>
+      <button class="btn eq" onclick="calc()">=</button>
+    </div>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>` },
+      { name: 'styles.css', path: 'styles.css', language: 'css', content: `* { margin: 0; padding: 0; box-sizing: border-box; }
+body { min-height: 100vh; background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460); display: flex; align-items: center; justify-content: center; font-family: sans-serif; }
+.calc { background: rgba(255,255,255,.08); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,.15); border-radius: 24px; padding: 24px; width: 280px; }
+.display { background: rgba(0,0,0,.3); border-radius: 12px; padding: 16px; margin-bottom: 16px; text-align: right; }
+.expr { font-size: 0.85rem; color: rgba(255,255,255,.4); min-height: 20px; }
+.result { font-size: 2.5rem; color: white; font-weight: 300; }
+.buttons { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; }
+.btn { background: rgba(255,255,255,.1); border: none; border-radius: 12px; color: white; font-size: 1.1rem; padding: 16px; cursor: pointer; transition: background .15s; }
+.btn:hover { background: rgba(255,255,255,.18); }
+.span2 { grid-column: span 2; }
+.op { background: rgba(167,139,250,.2); color: #a78bfa; }
+.func { background: rgba(100,116,139,.2); color: #94a3b8; }
+.eq { background: #a78bfa; }` },
+      { name: 'script.js', path: 'script.js', language: 'javascript', content: `let cur = '0', prev = '', operator = '';
+const res = document.getElementById('result'), expr = document.getElementById('expr');
+function update() { res.textContent = cur; }
+function num(n) { cur = cur === '0' ? n : (cur + n); update(); }
+function dot() { if (!cur.includes('.')) { cur += '.'; update(); } }
+function op(o) { prev = cur; operator = o; cur = '0'; expr.textContent = prev + ' ' + o; }
+function calc() { if (!prev || !operator) return; const a = parseFloat(prev), b = parseFloat(cur); const ops = { '+': a+b, '-': a-b, '*': a*b, '/': a/b }; cur = String(ops[operator] ?? 0); prev = ''; operator = ''; expr.textContent = ''; update(); }
+function clearAll() { cur = '0'; prev = ''; operator = ''; expr.textContent = ''; update(); }
+function negate() { cur = String(-parseFloat(cur)); update(); }
+function percent() { cur = String(parseFloat(cur) / 100); update(); }` },
+    ],
+  },
+  {
+    id: 'weather', name: 'Weather App', desc: 'Beautiful weather dashboard with 5-day forecast display.',
+    tags: ['HTML', 'CSS', 'JS'],
+    files: [
+      { name: 'index.html', path: 'index.html', language: 'html', content: `<!DOCTYPE html>
+<html>
+<head><title>Weather App</title><link rel="stylesheet" href="styles.css"></head>
+<body>
+  <div class="app">
+    <header><h1>🌤 Weather</h1><select id="city" onchange="render()"><option value="New York">New York</option><option value="London">London</option><option value="Tokyo">Tokyo</option></select></header>
+    <div class="main-card">
+      <div class="temp-big" id="temp">--°F</div>
+      <div class="condition" id="cond">Loading...</div>
+      <div class="stats">
+        <div class="stat"><div class="stat-val" id="hum">--</div><div class="stat-label">Humidity</div></div>
+        <div class="stat"><div class="stat-val" id="wind">--</div><div class="stat-label">Wind</div></div>
+        <div class="stat"><div class="stat-val" id="vis">--</div><div class="stat-label">Visibility</div></div>
+      </div>
+    </div>
+    <div class="forecast" id="forecast"></div>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>` },
+      { name: 'styles.css', path: 'styles.css', language: 'css', content: `* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: sans-serif; background: #0b1120; color: white; min-height: 100vh; padding: 20px; }
+.app { max-width: 480px; margin: 0 auto; }
+header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+h1 { font-size: 1.5rem; }
+select { background: #1e2d40; color: white; border: 1px solid #334155; padding: 6px 12px; border-radius: 8px; }
+.main-card { background: linear-gradient(135deg, #1e3a5f, #0f2942); border-radius: 20px; padding: 32px; text-align: center; margin-bottom: 16px; }
+.temp-big { font-size: 5rem; font-weight: 200; }
+.condition { font-size: 1.2rem; color: #94a3b8; margin: 8px 0 24px; }
+.stats { display: flex; justify-content: space-around; background: rgba(0,0,0,.2); border-radius: 12px; padding: 12px; }
+.stat { text-align: center; }
+.stat-val { font-size: 1.1rem; font-weight: 600; color: #60a5fa; }
+.stat-label { font-size: 0.7rem; color: #64748b; margin-top: 2px; }
+.forecast { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+.day { background: #1e2d40; border-radius: 12px; padding: 12px; text-align: center; }
+.day-name { font-size: 0.75rem; color: #64748b; margin-bottom: 8px; }
+.day-icon { font-size: 1.5rem; margin-bottom: 6px; }
+.day-temp { font-size: 0.9rem; font-weight: 600; }` },
+      { name: 'script.js', path: 'script.js', language: 'javascript', content: `const DATA = {
+  'New York': { temp: 72, cond: 'Partly Cloudy ⛅', hum: '65%', wind: '12 mph', vis: '10 mi', forecast: [{d:'Mon',i:'🌤',t:'71°'},{d:'Tue',i:'🌧',t:'58°'},{d:'Wed',i:'☀️',t:'75°'},{d:'Thu',i:'🌥',t:'69°'},{d:'Fri',i:'🌦',t:'63°'}] },
+  'London': { temp: 55, cond: 'Overcast ☁️', hum: '78%', wind: '8 mph', vis: '6 mi', forecast: [{d:'Mon',i:'🌧',t:'54°'},{d:'Tue',i:'🌦',t:'57°'},{d:'Wed',i:'☁️',t:'52°'},{d:'Thu',i:'🌤',t:'60°'},{d:'Fri',i:'☀️',t:'63°'}] },
+  'Tokyo': { temp: 68, cond: 'Sunny ☀️', hum: '55%', wind: '5 mph', vis: '15 mi', forecast: [{d:'Mon',i:'☀️',t:'70°'},{d:'Tue',i:'🌤',t:'68°'},{d:'Wed',i:'🌧',t:'61°'},{d:'Thu',i:'🌦',t:'64°'},{d:'Fri',i:'🌤',t:'67°'}] },
+};
+function render() {
+  const city = document.getElementById('city').value;
+  const d = DATA[city];
+  document.getElementById('temp').textContent = d.temp + '°F';
+  document.getElementById('cond').textContent = d.cond;
+  document.getElementById('hum').textContent = d.hum;
+  document.getElementById('wind').textContent = d.wind;
+  document.getElementById('vis').textContent = d.vis;
+  document.getElementById('forecast').innerHTML = d.forecast.map(f => \`<div class="day"><div class="day-name">${f.d}</div><div class="day-icon">${f.i}</div><div class="day-temp">${f.t}</div></div>\`).join('');
+}
+render();` },
+    ],
+  },
+  {
+    id: 'markdown', name: 'Markdown Editor', desc: 'Live markdown editor with real-time preview rendering.',
+    tags: ['HTML', 'CSS', 'JS'],
+    files: [
+      { name: 'index.html', path: 'index.html', language: 'html', content: `<!DOCTYPE html>
+<html>
+<head><title>Markdown Editor</title><link rel="stylesheet" href="styles.css"></head>
+<body>
+  <header><span class="logo">📝 MarkdownLive</span><button onclick="clear()">Clear</button></header>
+  <div class="editor-area">
+    <div class="pane"><div class="pane-title">Markdown</div><textarea id="editor" oninput="update()" placeholder="# Hello World..."></textarea></div>
+    <div class="pane"><div class="pane-title">Preview</div><div class="preview" id="preview"></div></div>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>` },
+      { name: 'styles.css', path: 'styles.css', language: 'css', content: `* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; }
+body { font-family: sans-serif; background: #0f111a; color: #e2e8f0; }
+header { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; border-bottom: 1px solid #1e293b; }
+.logo { font-size: 1rem; font-weight: 600; }
+header button { padding: 6px 16px; background: #6366f1; border: none; border-radius: 8px; color: white; cursor: pointer; }
+.editor-area { display: grid; grid-template-columns: 1fr 1fr; height: calc(100vh - 49px); }
+.pane { display: flex; flex-direction: column; border-right: 1px solid #1e293b; }
+.pane-title { padding: 8px 16px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: #64748b; border-bottom: 1px solid #1e293b; }
+textarea { flex: 1; background: #0f111a; border: none; color: #e2e8f0; font-family: monospace; font-size: 0.9rem; padding: 16px; resize: none; outline: none; line-height: 1.7; }
+.preview { flex: 1; padding: 20px; overflow-y: auto; line-height: 1.7; }
+.preview h1, .preview h2 { color: #a5b4fc; margin: 1rem 0 0.5rem; }
+.preview p { margin-bottom: 0.75rem; }
+.preview code { background: #1e293b; padding: 2px 6px; border-radius: 4px; font-family: monospace; }` },
+      { name: 'script.js', path: 'script.js', language: 'javascript', content: `function md(text) {
+  return text
+    .replace(/^### (.+)/gm, '<h3>$1</h3>').replace(/^## (.+)/gm, '<h2>$1</h2>').replace(/^# (.+)/gm, '<h1>$1</h1>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/`(.+?)`/g, '<code>$1</code>')
+    .replace(/^> (.+)/gm, '<blockquote>$1</blockquote>')
+    .replace(/^- (.+)/gm, '<li>$1</li>').replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
+    .replace(/\n{2,}/g, '</p><p>').replace(/^(?!<[hbuolp])/gm, '<p>').replace(/$/gm, '</p>');
+}
+function update() { document.getElementById('preview').innerHTML = md(document.getElementById('editor').value); }
+function clear() { document.getElementById('editor').value = ''; update(); }
+document.getElementById('editor').value = '# Welcome to MarkdownLive\n\nType **markdown** here and see the *live preview*.\n\n## Features\n- Real-time preview\n- Simple interface\n- Clean design\n\n> Enjoy writing!';
+update();` },
+    ],
+  },
+  {
+    id: 'dashboard', name: 'Admin Dashboard', desc: 'Dark analytics dashboard with charts, stats, and sidebar navigation.',
+    tags: ['HTML', 'CSS', 'JS'],
+    files: [
+      { name: 'index.html', path: 'index.html', language: 'html', content: `<!DOCTYPE html>
+<html>
+<head><title>Dashboard</title><link rel="stylesheet" href="styles.css"></head>
+<body>
+  <div class="sidebar">
+    <div class="logo">ZorvixAI</div>
+    <a class="nav-item active" href="#">Dashboard</a>
+    <a class="nav-item" href="#">Analytics</a>
+    <a class="nav-item" href="#">Users</a>
+    <a class="nav-item" href="#">Settings</a>
+  </div>
+  <div class="main">
+    <div class="topbar"><h1>Dashboard</h1><span id="date"></span></div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-val">12,480</div><div class="stat-label">Total Users</div><div class="stat-change up">↑ 8.2%</div></div>
+      <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-val">$84,320</div><div class="stat-label">Revenue</div><div class="stat-change up">↑ 12.5%</div></div>
+      <div class="stat-card"><div class="stat-icon">📦</div><div class="stat-val">3,842</div><div class="stat-label">Orders</div><div class="stat-change down">↓ 2.1%</div></div>
+      <div class="stat-card"><div class="stat-icon">⭐</div><div class="stat-val">4.8</div><div class="stat-label">Avg Rating</div><div class="stat-change up">↑ 0.3</div></div>
+    </div>
+  </div>
+  <script>document.getElementById('date').textContent = new Date().toLocaleDateString('en-US', {weekday:'long',year:'numeric',month:'long',day:'numeric'});</script>
+</body>
+</html>` },
+      { name: 'styles.css', path: 'styles.css', language: 'css', content: `* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: sans-serif; background: #0b0f1a; color: #e2e8f0; display: flex; height: 100vh; }
+.sidebar { width: 200px; background: #111827; padding: 20px 0; display: flex; flex-direction: column; }
+.logo { padding: 0 20px 20px; font-size: 1.1rem; font-weight: 700; color: #60a5fa; border-bottom: 1px solid #1f2937; margin-bottom: 12px; }
+.nav-item { padding: 10px 20px; color: #6b7280; text-decoration: none; font-size: 0.875rem; transition: all .15s; display: block; }
+.nav-item:hover { color: #e2e8f0; background: #1f2937; }
+.nav-item.active { color: #60a5fa; background: #1e3a5f; }
+.main { flex: 1; overflow-y: auto; padding: 24px; }
+.topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+h1 { font-size: 1.5rem; }
+#date { font-size: 0.85rem; color: #6b7280; }
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.stat-card { background: #111827; border-radius: 12px; padding: 20px; border: 1px solid #1f2937; }
+.stat-icon { font-size: 1.5rem; margin-bottom: 8px; }
+.stat-val { font-size: 1.8rem; font-weight: 700; color: #60a5fa; }
+.stat-label { font-size: 0.75rem; color: #6b7280; margin-top: 2px; }
+.stat-change { font-size: 0.75rem; margin-top: 6px; }
+.up { color: #4ade80; }
+.down { color: #f87171; }` },
+    ],
+  },
+];
+
 const TERMINAL_LANGS = ['javascript', 'typescript', 'python', 'bash', 'ruby'];
 
 const CODEGEN_TOOLS = [
@@ -252,7 +545,7 @@ export default function DeveloperPage() {
   const [activeTool, setActiveTool] = useState<string | null>(null);
   const toolsScrollRef = useRef<HTMLDivElement>(null);
 
-  const [aiTab, setAiTab] = useState<'chat' | 'rewrite' | 'tools'>('chat');
+  const [aiTab, setAiTab] = useState<'chat' | 'rewrite' | 'tools' | 'templates'>('chat');
   const [aiMessages, setAiMessages] = useState<AiMessage[]>([]);
   const [aiInput, setAiInput] = useState('');
   const [aiCategory, setAiCategory] = useState<'frontend' | 'backend' | 'server' | null>(null);
@@ -263,6 +556,7 @@ export default function DeveloperPage() {
   const [rewriteDone, setRewriteDone] = useState(false);
   const [rewriteCleanCode, setRewriteCleanCode] = useState('');
   const [rewriteMode, setRewriteMode] = useState<'build' | 'rewrite'>('build');
+  const [templateSearch, setTemplateSearch] = useState('');
   const [builderPrompt, setBuilderPrompt] = useState('');
   const [layoutPendingPrompt, setLayoutPendingPrompt] = useState('');
   const [layoutPendingMsgs, setLayoutPendingMsgs] = useState<{role:string;content:string}[]>([]);
@@ -1052,7 +1346,18 @@ Rewrite the ENTIRE file based on the instructions. Return ONLY the complete rewr
     try {
       const res = await fetch(`${BASE_PATH}/api/chat/message`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-        body: JSON.stringify({ userMessage: prompt, history: [] }),
+        body: JSON.stringify({
+          userMessage: prompt,
+          history: [],
+          systemPrompt: `You are a code rewriting engine. Your ONLY job is to rewrite code files exactly as instructed.
+RULES:
+- Output ONLY the complete rewritten code in a single code block
+- Do NOT say "I can build a website" or offer alternatives
+- Do NOT add any explanations, comments, or text outside the code block
+- Do NOT refuse — just rewrite the file as instructed
+- Return the ENTIRE file content, not just changed parts
+- Use the same programming language as the original file`,
+        }),
       });
       const reader = res.body?.getReader();
       const decoder = new TextDecoder();
@@ -1764,6 +2069,11 @@ Format EXACTLY like this:
                 ${aiTab === 'rewrite' ? 'border-primary text-white' : 'border-transparent text-muted-foreground hover:text-white'}`}>
               <Wand2 className="h-3.5 w-3.5" /> AI Rewrite
             </button>
+            <button onClick={() => setAiTab('templates')}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium transition-colors border-b-2
+                ${aiTab === 'templates' ? 'border-primary text-white' : 'border-transparent text-muted-foreground hover:text-white'}`}>
+              <Sparkles className="h-3.5 w-3.5" /> Templates
+            </button>
           </div>
 
           {/* CHAT TAB */}
@@ -2177,6 +2487,69 @@ Format EXACTLY like this:
                   </div>
                 </div>
               )}
+
+
+          {/* TEMPLATES TAB */}
+          {aiTab === 'templates' && (
+            <div className="flex-1 flex flex-col overflow-hidden">
+              <div className="p-3 border-b border-[#30363d] shrink-0">
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles className="h-4 w-4 text-primary shrink-0" />
+                  <p className="text-xs font-semibold text-white">Starter Templates</p>
+                </div>
+                <Input
+                  placeholder="Search templates..."
+                  value={templateSearch}
+                  onChange={e => setTemplateSearch(e.target.value)}
+                  className="h-7 text-xs bg-[#0d1117] border-[#30363d] text-white"
+                />
+              </div>
+              <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
+                {DEV_TEMPLATES.filter(t =>
+                  templateSearch === '' ||
+                  t.name.toLowerCase().includes(templateSearch.toLowerCase()) ||
+                  t.desc.toLowerCase().includes(templateSearch.toLowerCase())
+                ).map(t => (
+                  <div key={t.id}
+                    className="border border-[#30363d] rounded-lg p-2.5 hover:border-primary/40 hover:bg-[#21262d] transition-colors cursor-pointer group"
+                    onClick={() => {
+                      const newTabs: OpenTab[] = t.files.map(f => ({ path: f.path, name: f.name, content: f.content, language: f.language, isDirty: false }));
+                      const newFlatFiles: FileNode[] = t.files.map(f => ({ name: f.name, path: f.path, type: 'file' as const, content: f.content, language: f.language }));
+                      setOpenTabs(newTabs);
+                      setFlatFiles(newFlatFiles);
+                      setFileTree(buildTree(newFlatFiles));
+                      setActiveTab(newTabs[0]?.path);
+                      setSelectedPath(newTabs[0]?.path);
+                      setRepoLoaded(true);
+                      if (t.files.some(f => f.language === 'html')) {
+                        const htmlFile = newTabs.find(tb => tb.name.match(/\.html?$/i));
+                        if (htmlFile) {
+                          const css = newTabs.filter(tb => tb.name.endsWith('.css')).map(tb => `<style>${tb.content}</style>`).join('\n');
+                          const js = newTabs.filter(tb => tb.name.match(/\.js$/) && !tb.name.endsWith('.min.js')).map(tb => `<script>${tb.content}</script>`).join('\n');
+                          const combined = htmlFile.content.replace('</head>', `${css}\n</head>`).replace('</body>', `${js}\n</body>`);
+                          setPreviewContent(combined); setPreviewKey(k => k + 1); setShowPreview(true);
+                        }
+                      }
+                      toast({ title: `Loaded template: ${t.name}` });
+                    }}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-white truncate">{t.name}</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5 leading-relaxed line-clamp-2">{t.desc}</p>
+                        <div className="flex flex-wrap gap-1 mt-1.5">
+                          {t.tags.map(tag => (
+                            <span key={tag} className="text-[9px] px-1.5 py-0.5 bg-[#0d1117] rounded text-muted-foreground border border-[#30363d]">{tag}</span>
+                          ))}
+                        </div>
+                      </div>
+                      <Play className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary shrink-0 mt-0.5 transition-colors" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
             </div>
           )}
         </div>
