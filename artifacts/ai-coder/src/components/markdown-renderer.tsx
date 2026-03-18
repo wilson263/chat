@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { Check, Copy } from 'lucide-react';
+import { Check, Copy, Download } from 'lucide-react';
 import { Button } from './ui/button';
 
 interface MarkdownRendererProps {
@@ -46,18 +46,39 @@ function CodeBlock({ language, code }: { language: string; code: string }) {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleDownload = () => {
+    const extMap: Record<string, string> = { javascript: 'js', typescript: 'ts', python: 'py', html: 'html', css: 'css', json: 'json', bash: 'sh', shell: 'sh', sql: 'sql', markdown: 'md', yaml: 'yml', rust: 'rs', go: 'go', java: 'java' };
+    const ext = extMap[language] || language || 'txt';
+    const filename = window.prompt('Save as filename:', `code.${ext}`) || `code.${ext}`;
+    const blob = new Blob([code], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = filename; a.click(); URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="relative group rounded-lg overflow-hidden border border-border/50 my-4 bg-background">
       <div className="flex items-center justify-between px-4 py-2 bg-muted/50 border-b border-border/50">
         <span className="text-xs font-mono text-muted-foreground uppercase tracking-wider">{language}</span>
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="h-6 w-6 text-muted-foreground hover:text-foreground"
-          onClick={handleCopy}
-        >
-          {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 text-muted-foreground hover:text-green-400"
+            onClick={handleDownload}
+            title="AI Write — save to file"
+          >
+            <Download className="h-3 w-3" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-6 w-6 text-muted-foreground hover:text-foreground"
+            onClick={handleCopy}
+            title="Copy code"
+          >
+            {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+          </Button>
+        </div>
       </div>
       <SyntaxHighlighter
         style={vscDarkPlus as any}
