@@ -143,63 +143,57 @@ function buildImportMap(allCode: string): string {
   return `<script type="importmap">\n${JSON.stringify({ imports }, null, 2)}\n</script>`;
 }
 
+// ── File lookup helper ────────────────────────────────────────────────────────
+// Normalizes stored paths so "css/style.css", "/css/style.css", and name "style.css"
+// all resolve when the browser requests "css/style.css".
+function findFile(
+  files: { name: string; content: string; path?: string | null }[],
+  requestedPath: string
+): { name: string; content: string; path?: string | null } | undefined {
+  const clean = requestedPath.replace(/^\/+/, "");
+  return files.find((f) => {
+    const storedPath = (f.path ?? "").replace(/^\/+/, "");
+    return storedPath === clean || f.name === clean || storedPath === requestedPath;
+  });
+}
+
 function buildProjectHtml(
   files: { name: string; content: string; language?: string | null; path?: string | null }[],
   baseHref: string,
   projectTitle: string
 ): string {
-  const cssFiles = files.filter((f) => f.language === "css" || f.name.endsWith(".css"));
   const jsFiles = files.filter((f) =>
     f.language === "javascript" || f.language === "typescript" ||
     f.name.endsWith(".js") || f.name.endsWith(".jsx") ||
     f.name.endsWith(".ts") || f.name.endsWith(".tsx")
   );
+  const cssFiles = files.filter((f) => f.language === "css" || f.name.endsWith(".css"));
   const htmlFile =
     files.find((f) => f.name === "index.html") ||
     files.find((f) => f.name.endsWith(".html")) ||
     files.find((f) => f.language === "html");
 
   if (htmlFile) {
-    return buildFromHtmlFile(htmlFile.content, cssFiles, jsFiles.filter((f) => f.name !== htmlFile.name), baseHref);
+    return buildFromHtmlFile(htmlFile.content, baseHref);
   }
   return buildAutoHtml(jsFiles, cssFiles, baseHref, projectTitle);
 }
 
+// ── HTML-first build: serve index.html as-is, relying on separate asset serving ──
+// The index.html already has <link> and <script> tags pointing to css/ and js/ folders.
+// We just inject the <base> tag so relative URLs resolve correctly.
+// CSS and JS are served as individual files via the asset-serving route below.
 function buildFromHtmlFile(
   htmlContent: string,
-  cssFiles: { name: string; content: string }[],
-  jsFiles: { name: string; content: string }[],
-  baseHref: string
+  baseHref: string,
 ): string {
   let html = htmlContent;
-  const allJsCode = jsFiles.map((f) => f.content).join("\n");
-  const importMap = buildImportMap(allJsCode);
 
-  if (cssFiles.length > 0) {
-    const styles = cssFiles.map((f) => `<style>\n${f.content}\n</style>`).join("\n");
-    html = html.includes("</head>") ? html.replace("</head>", `${styles}\n</head>`) : styles + html;
-  }
-
-  const headInject = `${importMap}\n<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>`;
-  html = html.includes("<head>")
-    ? html.replace("<head>", `<head>\n${headInject}`)
-    : headInject + html;
-
-  html = html.replace(/<script(\s+type=["']module["'])?(\s*)>/g, '<script type="text/babel" data-type="module"$2>');
-  html = html.replace(
-    /<script\s[^>]*data-type="module"[^>]*>([\s\S]*?)<\/script>/g,
-    (match, code) => match.replace(code, rewriteImportsToEsm(code))
-  );
-
-  if (jsFiles.length > 0) {
-    const scriptTags = jsFiles
-      .map((f) => `<script type="text/babel" data-type="module">\n/* ${f.name} */\n${rewriteImportsToEsm(f.content)}\n</script>`)
-      .join("\n");
-    html = html.includes("</body>") ? html.replace("</body>", `${scriptTags}\n</body>`) : html + scriptTags;
-  }
-
+  // Inject <base> tag so all relative URLs (css/, js/, images/) resolve correctly
   if (!html.includes("<base")) {
-    html = html.includes("<head>") ? html.replace("<head>", `<head>\n<base href="${baseHref}">`) : html;
+    html = html.includes("<head>")
+      ? html.replace("<head>", `<head>\n<base href="${baseHref}">`)
+      : html;
   }
 
   return html;
@@ -338,12 +332,13 @@ router.use("/preview", async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
-  // Serve a specific sub-asset (e.g. /preview/14/style.css)
+  // Serve a specific sub-asset (e.g. /preview/14/css/style.css or /preview/14/js/app.js)
   const assetPath = parts.slice(1).join("/");
   if (assetPath) {
-    const match = files.find((f) => f.path === assetPath || f.name === assetPath || f.path === `/${assetPath}`);
+    const match = findFile(files, assetPath);
     if (match && !match.name.endsWith(".html")) {
       res.setHeader("Content-Type", getMime(match.name));
+      res.setHeader("Cache-Control", "no-cache");
       res.send(match.content);
       return;
     }
@@ -372,6 +367,7 @@ router.use("/preview", async (req: Request, res: Response): Promise<void> => {
   const previewBase = `/api/hosting/preview/${projectId}/`;
   const html = buildProjectHtml(files, previewBase, projectTitle);
   res.setHeader("Content-Type", "text/html; charset=utf-8");
+  res.setHeader("Cache-Control", "no-cache");
   res.send(html);
 });
 
@@ -384,12 +380,12 @@ router.use("/", async (req: Request, res: Response): Promise<void> => {
   const projectId = parseInt(parts[0] ?? "", 10);
 
   if (isNaN(projectId)) {
-    res.status(400).send(errorPage("Invalid project ID", "The URL must include a numeric project ID."));
+    res.status(400).send(errorPage("Invalid URL", "The URL must include a project ID."));
     return;
   }
 
   let isPublished = false;
-  let projectTitle = "Published App";
+  let projectTitle = `Project #${projectId}`;
   try {
     const rows = await db.execute(sql`SELECT published, name FROM projects WHERE id = ${projectId}`);
     const row = (rows as any).rows?.[0] ?? (Array.isArray(rows) ? rows[0] : null);
@@ -411,11 +407,13 @@ h1{margin:0 0 .5rem;font-size:1.5rem}p{color:#8b949e}</style></head>
   const files = await db.select().from(projectFilesTable).where(eq(projectFilesTable.projectId, projectId));
   if (!files.length) { res.status(404).send(errorPage("No files found", "")); return; }
 
+  // Serve a sub-asset (e.g. /hosted/14/css/style.css or /hosted/14/js/pages/home.js)
   const assetPath = parts.slice(1).join("/");
   if (assetPath) {
-    const match = files.find((f) => f.path === assetPath || f.name === assetPath || f.path === `/${assetPath}`);
+    const match = findFile(files, assetPath);
     if (match && !match.name.endsWith(".html")) {
       res.setHeader("Content-Type", getMime(match.name));
+      res.setHeader("Cache-Control", "public, max-age=60");
       res.send(match.content);
       return;
     }
