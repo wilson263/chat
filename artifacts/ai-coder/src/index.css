@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;1,14..32,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,400&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 @plugin "@tailwindcss/typography";
@@ -48,30 +48,31 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
 }
 
 :root {
-  /* ── Deep dark, barely-blue — precise and neutral like a pro IDE ── */
-  --background:        224 14% 5%;
-  --foreground:        210 20% 96%;
+  /* ── Deep dark — precise, near-black, barely blue-tinted ── */
+  --background:        225 14% 4.5%;
+  --foreground:        210 20% 95%;
 
-  --card:              224 14% 7%;
-  --card-foreground:   210 20% 96%;
-  --card-border:       224 14% 13%;
+  --card:              225 14% 7%;
+  --card-foreground:   210 20% 95%;
+  --card-border:       225 14% 13%;
 
-  --popover:           224 14% 9%;
-  --popover-foreground: 210 20% 96%;
-  --popover-border:    224 14% 16%;
+  --popover:           225 15% 8.5%;
+  --popover-foreground: 210 20% 95%;
+  --popover-border:    225 14% 16%;
 
   /* ── Violet primary — brand identity ── */
   --primary:           252 94% 67%;
   --primary-foreground: 0 0% 100%;
 
-  --secondary:         224 14% 11%;
+  --secondary:         225 14% 10.5%;
   --secondary-foreground: 210 20% 85%;
 
-  --muted:             224 14% 11%;
-  --muted-foreground:  215 14% 52%;
+  --muted:             225 14% 10.5%;
+  --muted-foreground:  215 14% 50%;
 
   --accent:            280 90% 62%;
   --accent-foreground: 0 0% 100%;
@@ -79,17 +80,17 @@
   --destructive:       0 80% 58%;
   --destructive-foreground: 0 0% 100%;
 
-  --border:            224 14% 13%;
-  --input:             224 14% 10%;
+  --border:            225 14% 12%;
+  --input:             225 14% 9.5%;
   --ring:              252 94% 67%;
 
-  --editor-bg:         224 16% 4%;
-  --panel-bg:          224 14% 7%;
+  --editor-bg:         225 16% 3.5%;
+  --panel-bg:          225 14% 7%;
 
-  /* ── Surface scale ── */
-  --surface-1:         224 14% 9%;
-  --surface-2:         224 14% 12%;
-  --surface-3:         224 14% 16%;
+  /* ── Surface scale — subtle depth ── */
+  --surface-1:         225 14% 8.5%;
+  --surface-2:         225 14% 11%;
+  --surface-3:         225 14% 15%;
 
   --radius: 0.5rem;
 }
@@ -106,24 +107,26 @@
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    scroll-behavior: smooth;
   }
 
   body {
     @apply font-sans bg-background text-foreground;
     font-size: 14px;
     line-height: 1.6;
+    overflow-x: hidden;
   }
 
   /* ── Focus rings — precise 2px offset style ── */
   :focus-visible {
-    outline: 2px solid hsl(var(--ring));
+    outline: 2px solid hsl(var(--ring) / 0.8);
     outline-offset: 2px;
     border-radius: var(--radius);
   }
 
   /* ── Text selection ── */
   ::selection {
-    background: hsl(var(--primary) / 0.25);
+    background: hsl(var(--primary) / 0.22);
     color: hsl(var(--foreground));
   }
 
@@ -137,8 +140,8 @@
 
 /* ── Scrollbar — thin, refined ────────────────────────────────────────── */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
@@ -148,7 +151,7 @@
   border-radius: 100px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground) / 0.4);
+  background: hsl(var(--muted-foreground) / 0.35);
 }
 ::-webkit-scrollbar-corner {
   background: transparent;
@@ -164,33 +167,46 @@
 
 /* ── Prose / Markdown ─────────────────────────────────────────────────── */
 .prose {
-  --tw-prose-body: hsl(var(--foreground));
+  --tw-prose-body: hsl(var(--foreground) / 0.9);
   --tw-prose-headings: hsl(var(--foreground));
   --tw-prose-links: hsl(var(--primary));
-  --tw-prose-code: hsl(var(--primary));
-  --tw-prose-pre-bg: hsl(var(--editor-bg));
+  --tw-prose-code: hsl(var(--primary) / 0.85);
+  --tw-prose-pre-bg: transparent;
   font-size: 0.9rem;
+  line-height: 1.7;
 }
 .prose pre {
   margin: 0;
-  border-radius: calc(var(--radius) + 2px);
+  border-radius: calc(var(--radius) + 4px);
   border: 1px solid hsl(var(--border));
 }
 .prose code:not(pre code) {
-  color: hsl(var(--primary));
-  background: hsl(var(--primary) / 0.1);
-  padding: 0.1em 0.35em;
-  border-radius: 4px;
-  font-size: 0.85em;
+  color: hsl(var(--primary) / 0.9);
+  background: hsl(var(--primary) / 0.08);
+  padding: 0.12em 0.4em;
+  border-radius: 5px;
+  font-size: 0.82em;
   font-weight: 500;
-  border: 1px solid hsl(var(--primary) / 0.15);
+  border: 1px solid hsl(var(--primary) / 0.12);
+}
+.prose p {
+  margin-top: 0.6em;
+  margin-bottom: 0.6em;
+}
+.prose li {
+  margin-top: 0.25em;
+  margin-bottom: 0.25em;
+}
+.prose strong {
+  color: hsl(var(--foreground));
+  font-weight: 600;
 }
 
 /* ── Glass panel ─────────────────────────────────────────────────────── */
 .glass-panel {
-  background: hsl(var(--surface-1) / 0.8);
-  backdrop-filter: blur(16px) saturate(180%);
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  background: hsl(var(--surface-1) / 0.75);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid hsl(var(--border));
 }
 
@@ -207,36 +223,34 @@
 
 /* ── Glow effects ────────────────────────────────────────────────────── */
 .glow-primary {
-  box-shadow: 0 0 0 1px hsl(var(--primary) / 0.3),
-              0 4px 24px hsl(var(--primary) / 0.15);
+  box-shadow:
+    0 0 0 1px hsl(var(--primary) / 0.25),
+    0 4px 24px hsl(var(--primary) / 0.12);
 }
 .glow-accent {
-  box-shadow: 0 0 0 1px hsl(var(--accent) / 0.3),
-              0 4px 24px hsl(var(--accent) / 0.15);
+  box-shadow:
+    0 0 0 1px hsl(var(--accent) / 0.25),
+    0 4px 24px hsl(var(--accent) / 0.12);
 }
 
-/* ── Animated background mesh (used on auth pages) ───────────────────── */
+/* ── Animated background mesh ────────────────────────────────────────── */
 @keyframes mesh-drift-1 {
   0%, 100% { transform: translate(0, 0) scale(1); }
-  50%       { transform: translate(60px, -40px) scale(1.1); }
+  33%       { transform: translate(50px, -30px) scale(1.08); }
+  66%       { transform: translate(-20px, 40px) scale(0.96); }
 }
 @keyframes mesh-drift-2 {
   0%, 100% { transform: translate(0, 0) scale(1); }
-  50%       { transform: translate(-50px, 60px) scale(0.9); }
+  33%       { transform: translate(-40px, 50px) scale(0.93); }
+  66%       { transform: translate(60px, -20px) scale(1.06); }
 }
 @keyframes mesh-drift-3 {
   0%, 100% { transform: translate(0, 0) scale(1); }
-  50%       { transform: translate(40px, 40px) scale(1.05); }
+  50%       { transform: translate(30px, 30px) scale(1.04); }
 }
-.mesh-orb-1 {
-  animation: mesh-drift-1 12s ease-in-out infinite;
-}
-.mesh-orb-2 {
-  animation: mesh-drift-2 16s ease-in-out infinite;
-}
-.mesh-orb-3 {
-  animation: mesh-drift-3 20s ease-in-out infinite;
-}
+.mesh-orb-1 { animation: mesh-drift-1 14s ease-in-out infinite; }
+.mesh-orb-2 { animation: mesh-drift-2 18s ease-in-out infinite; }
+.mesh-orb-3 { animation: mesh-drift-3 22s ease-in-out infinite; }
 
 /* ── Dot-grid background ─────────────────────────────────────────────── */
 .dot-grid {
@@ -257,26 +271,107 @@
     hsl(var(--surface-1)) 75%
   );
   background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
+  animation: shimmer 1.8s ease-in-out infinite;
   border-radius: var(--radius);
 }
 
-/* ── Fade-in entrance ────────────────────────────────────────────────── */
+/* ── Entrance animations ─────────────────────────────────────────────── */
 @keyframes fade-up {
-  from { opacity: 0; transform: translateY(10px); }
+  from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes slide-right {
+  from { opacity: 0; transform: translateX(-12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes slide-up-sm {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes bounce-sm {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0); }
+  50% { box-shadow: 0 0 0 6px hsl(var(--primary) / 0.1); }
+}
+@keyframes spin-slow {
+  to { transform: rotate(360deg); }
+}
+@keyframes typing-dot {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
+
 .animate-fade-up {
   animation: fade-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.animate-fade-in {
+  animation: fade-in 0.25s ease forwards;
+}
+.animate-scale-in {
+  animation: scale-in 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+.animate-slide-right {
+  animation: slide-right 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.animate-slide-up-sm {
+  animation: slide-up-sm 0.2s ease forwards;
+}
+.animate-bounce-sm {
+  animation: bounce-sm 0.5s ease infinite;
+}
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+.animate-spin-slow {
+  animation: spin-slow 3s linear infinite;
+}
+
+/* ── Typing indicator dots ───────────────────────────────────────────── */
+.typing-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: hsl(var(--muted-foreground));
+  animation: typing-dot 1.2s ease-in-out infinite;
+}
+.typing-dot:nth-child(1) { animation-delay: 0s; }
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+/* ── Chat message bubble ─────────────────────────────────────────────── */
+.message-user {
+  background: hsl(var(--primary) / 0.12);
+  border: 1px solid hsl(var(--primary) / 0.2);
+  border-radius: 16px 16px 4px 16px;
+}
+.message-assistant {
+  background: hsl(var(--surface-1));
+  border: 1px solid hsl(var(--border));
+  border-radius: 4px 16px 16px 16px;
 }
 
 /* ── Sidebar ─────────────────────────────────────────────────────────── */
 .sidebar-item {
-  @apply flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-sm text-muted-foreground
-         hover:bg-surface-2 hover:text-foreground cursor-pointer transition-colors;
+  @apply flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-sm text-muted-foreground
+         hover:bg-surface-2 hover:text-foreground cursor-pointer transition-all duration-100;
 }
 .sidebar-item.active {
   @apply bg-surface-2 text-foreground;
+  box-shadow: inset 0 0 0 1px hsl(var(--primary) / 0.15);
+}
+.sidebar-item:hover .sidebar-item-icon {
+  color: hsl(var(--primary));
 }
 
 /* ── Code annotation tooltip ─────────────────────────────────────────── */
@@ -287,7 +382,7 @@
   color: hsl(var(--foreground));
 }
 
-/* ── Input override — more refined than shadcn defaults ─────────────── */
+/* ── Input override — refined caret ──────────────────────────────────── */
 input[type="text"],
 input[type="email"],
 input[type="password"],
@@ -296,7 +391,7 @@ textarea {
   caret-color: hsl(var(--primary));
 }
 
-/* ── Noise texture overlay on cards ──────────────────────────────────── */
+/* ── Noise texture on cards ──────────────────────────────────────────── */
 .noise-card {
   position: relative;
 }
@@ -307,10 +402,10 @@ textarea {
   border-radius: inherit;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
   pointer-events: none;
-  opacity: 0.4;
+  opacity: 0.35;
 }
 
-/* ── Typography ──────────────────────────────────────────────────────── */
+/* ── Typography utilities ────────────────────────────────────────────── */
 .text-gradient-primary {
   background: linear-gradient(135deg, hsl(var(--foreground)) 0%, hsl(var(--primary)) 100%);
   -webkit-background-clip: text;
@@ -318,7 +413,13 @@ textarea {
   background-clip: text;
 }
 .text-gradient-brand {
-  background: linear-gradient(135deg, #c4b5fd 0%, #a78bfa 40%, #818cf8 70%, #22d3ee 100%);
+  background: linear-gradient(135deg, #c4b5fd 0%, #a78bfa 35%, #818cf8 65%, #67e8f9 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.text-gradient-subtle {
+  background: linear-gradient(135deg, hsl(var(--foreground) / 0.9) 0%, hsl(var(--foreground) / 0.6) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -336,4 +437,162 @@ textarea {
   background: hsl(var(--surface-2));
   border: 1px solid hsl(var(--border));
   color: hsl(var(--muted-foreground));
+  transition: all 0.12s ease;
+}
+.chip:hover {
+  background: hsl(var(--surface-3));
+  border-color: hsl(var(--border) / 1.5);
+  color: hsl(var(--foreground));
+}
+
+/* ── Interactive highlight ───────────────────────────────────────────── */
+.highlight-interactive {
+  position: relative;
+  overflow: hidden;
+}
+.highlight-interactive::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: hsl(var(--primary) / 0);
+  transition: background 0.15s ease;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.highlight-interactive:hover::after {
+  background: hsl(var(--primary) / 0.05);
+}
+
+/* ── Send button ring animation ──────────────────────────────────────── */
+@keyframes ring-expand {
+  from { transform: scale(1); opacity: 0.6; }
+  to   { transform: scale(2.2); opacity: 0; }
+}
+.send-ring {
+  animation: ring-expand 0.5s ease-out forwards;
+}
+
+/* ── Message appear ──────────────────────────────────────────────────── */
+@keyframes message-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.99); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.message-appear {
+  animation: message-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ── Sidebar collapse transition ─────────────────────────────────────── */
+.sidebar-transition {
+  transition: width 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.18s ease,
+              transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Context menu ────────────────────────────────────────────────────── */
+.context-menu {
+  background: hsl(var(--popover));
+  border: 1px solid hsl(var(--popover-border));
+  border-radius: calc(var(--radius) + 2px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px hsl(var(--border));
+  padding: 4px;
+  min-width: 180px;
+}
+.context-menu-item {
+  @apply flex items-center gap-2.5 px-3 py-1.5 rounded-md text-sm text-foreground cursor-pointer;
+  transition: background 0.1s ease;
+}
+.context-menu-item:hover {
+  background: hsl(var(--primary) / 0.1);
+  color: hsl(var(--primary));
+}
+.context-menu-item.destructive:hover {
+  background: hsl(var(--destructive) / 0.1);
+  color: hsl(var(--destructive));
+}
+
+/* ── Status badge ────────────────────────────────────────────────────── */
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.status-dot.online {
+  background: hsl(142 71% 45%);
+  box-shadow: 0 0 0 2px hsl(142 71% 45% / 0.25);
+}
+.status-dot.busy {
+  background: hsl(38 92% 50%);
+  box-shadow: 0 0 0 2px hsl(38 92% 50% / 0.25);
+}
+.status-dot.offline {
+  background: hsl(var(--muted-foreground) / 0.4);
+}
+
+/* ── Follow-up suggestion chips ──────────────────────────────────────── */
+.followup-chip {
+  @apply inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium
+         border cursor-pointer transition-all duration-150;
+  background: hsl(var(--surface-1));
+  border-color: hsl(var(--border));
+  color: hsl(var(--muted-foreground));
+}
+.followup-chip:hover {
+  background: hsl(var(--primary) / 0.08);
+  border-color: hsl(var(--primary) / 0.3);
+  color: hsl(var(--primary) / 0.9);
+  transform: translateY(-1px);
+}
+
+/* ── Model pill badge ────────────────────────────────────────────────── */
+.model-pill {
+  @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium;
+  background: hsl(var(--surface-2));
+  border: 1px solid hsl(var(--border));
+  color: hsl(var(--muted-foreground));
+  letter-spacing: 0.01em;
+}
+
+/* ── Hover action row ────────────────────────────────────────────────── */
+.hover-actions {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.group:hover .hover-actions,
+.hover-actions:focus-within {
+  opacity: 1;
+}
+
+/* ── Textarea auto-expand hint ───────────────────────────────────────── */
+.textarea-wrapper {
+  position: relative;
+}
+.textarea-wrapper:focus-within {
+  --tw-ring-shadow: 0 0 0 3px hsl(var(--primary) / 0.12);
+}
+
+/* ── Welcome card hover ──────────────────────────────────────────────── */
+.welcome-card {
+  @apply rounded-xl border cursor-pointer transition-all duration-200;
+  background: hsl(var(--surface-1));
+  border-color: hsl(var(--border));
+}
+.welcome-card:hover {
+  background: hsl(var(--surface-2));
+  border-color: hsl(var(--primary) / 0.25);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px hsl(var(--primary) / 0.08);
+}
+.welcome-card:active {
+  transform: translateY(0);
+}
+
+/* ── Textarea resize handle hidden ──────────────────────────────────── */
+textarea {
+  resize: none;
+}
+
+/* ── Code block syntax override – tighter line heights ──────────────── */
+.token-line {
+  line-height: 1.65 !important;
 }

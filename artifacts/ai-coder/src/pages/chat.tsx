@@ -1487,41 +1487,82 @@ export default function ChatPage() {
         {/* Messages */}
         <div className="flex-1 overflow-y-auto px-4 py-6">
           {isEmpty ? (
-            <div className="max-w-2xl mx-auto text-center pt-12">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary/40 flex items-center justify-center mx-auto mb-6 shadow-xl shadow-primary/20">
-                <Bot className="w-8 h-8 text-white"/>
+            <div className="max-w-2xl mx-auto text-center pt-10 pb-8 px-2">
+              {/* Hero icon */}
+              <div className="relative inline-flex mb-7">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 via-violet-600 to-violet-800 flex items-center justify-center shadow-2xl shadow-violet-500/30">
+                  <Sparkles className="w-8 h-8 text-white drop-shadow"/>
+                </div>
+                <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-green-500 border-2 border-background flex items-center justify-center">
+                  <span className="w-2 h-2 rounded-full bg-green-300 animate-pulse"/>
+                </span>
               </div>
-              <h2 className="text-2xl font-bold mb-2">What can I help you build?</h2>
-              <p className="text-muted-foreground mb-8">Your AI coding companion. Ask me to write code, debug issues, explain concepts, or build entire applications.</p>
-              <div className="grid grid-cols-2 gap-3 text-left mb-6">
-                {SUGGESTIONS.map(s => (
-                  <button key={s.label} onClick={()=>sendMessage(s.prompt)} className="p-4 rounded-xl border border-border/50 hover:border-primary/40 hover:bg-primary/5 transition-all text-left group">
-                    <s.icon className="w-5 h-5 text-primary mb-2 group-hover:scale-110 transition-transform"/>
-                    <p className="text-sm font-semibold mb-1">{s.label}</p>
-                    <p className="text-xs text-muted-foreground line-clamp-2">{s.prompt}</p>
+              <h2 className="text-[22px] font-bold mb-2 tracking-tight">What can I help you build?</h2>
+              <p className="text-sm text-muted-foreground mb-8 max-w-md mx-auto leading-relaxed">
+                Your AI coding companion — write code, debug issues, explain concepts, build entire applications, and more.
+              </p>
+
+              {/* Suggestion cards */}
+              <div className="grid grid-cols-2 gap-2.5 text-left mb-5">
+                {SUGGESTIONS.map((s, i) => (
+                  <button
+                    key={s.label}
+                    onClick={() => sendMessage(s.prompt)}
+                    className="welcome-card p-4 text-left group animate-fade-up"
+                    style={{ animationDelay: `${i * 0.07}s`, animationFillMode: 'both' }}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/15 flex items-center justify-center shrink-0 group-hover:bg-primary/20 group-hover:border-primary/30 transition-colors">
+                        <s.icon className="w-4 h-4 text-primary"/>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold mb-0.5 group-hover:text-foreground transition-colors">{s.label}</p>
+                        <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">{s.prompt}</p>
+                      </div>
+                    </div>
                   </button>
                 ))}
               </div>
-              {/* Slash commands preview */}
-              <div className="bg-muted/30 border border-border/40 rounded-xl p-4 mb-6 text-left">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Slash Commands</p>
-                <div className="grid grid-cols-2 gap-2">
+
+              {/* Slash commands */}
+              <div className="rounded-xl border border-border/40 bg-surface-1/60 p-4 mb-5 text-left">
+                <p className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-widest mb-3">Slash Commands</p>
+                <div className="grid grid-cols-2 gap-1">
                   {SLASH_COMMANDS.slice(0, 6).map(sc => (
-                    <button key={sc.cmd} onClick={() => { setInput(sc.cmd + ' '); textareaRef.current?.focus(); }} className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-primary/10 transition-colors text-left">
-                      <span className="text-sm">{sc.icon}</span>
-                      <span className="text-xs font-mono text-primary">{sc.cmd}</span>
-                      <span className="text-xs text-muted-foreground hidden sm:block">— {sc.desc}</span>
+                    <button
+                      key={sc.cmd}
+                      onClick={() => { setInput(sc.cmd + ' '); textareaRef.current?.focus(); }}
+                      className="flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-primary/8 transition-colors text-left group"
+                    >
+                      <span className="text-base leading-none">{sc.icon}</span>
+                      <div className="min-w-0">
+                        <span className="text-xs font-mono text-primary/80 group-hover:text-primary transition-colors">{sc.cmd}</span>
+                        <span className="text-[11px] text-muted-foreground/50 hidden sm:block truncate"> {sc.desc}</span>
+                      </div>
                     </button>
                   ))}
                 </div>
               </div>
+
+              {/* Quick links */}
               <div className="flex gap-2 justify-center flex-wrap">
-                <button onClick={()=>setShowTemplates(true)} className="px-3 py-1.5 rounded-full border border-border/50 text-xs text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all flex items-center gap-1.5"><LayoutTemplate className="w-3 h-3"/>Templates</button>
-                <button onClick={()=>setPromptLibOpen(true)} className="px-3 py-1.5 rounded-full border border-border/50 text-xs text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all flex items-center gap-1.5"><BookMarked className="w-3 h-3"/>Prompts</button>
-                <button onClick={()=>setLocation('/compare')} className="px-3 py-1.5 rounded-full border border-border/50 text-xs text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all flex items-center gap-1.5"><GitCompare className="w-3 h-3"/>Compare Models</button>
-                <button onClick={()=>setLocation('/playground')} className="px-3 py-1.5 rounded-full border border-border/50 text-xs text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all flex items-center gap-1.5"><Code2 className="w-3 h-3"/>Playground</button>
-                <button onClick={()=>setShowProjectContext(true)} className="px-3 py-1.5 rounded-full border border-border/50 text-xs text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all flex items-center gap-1.5"><FolderOpen className="w-3 h-3"/>Project Files</button>
-                <button onClick={()=>setLocation('/explore')} className="px-3 py-1.5 rounded-full border border-border/50 text-xs text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all flex items-center gap-1.5"><Globe className="w-3 h-3"/>Explore Community</button>
+                {[
+                  { icon: LayoutTemplate, label: 'Templates', action: () => setShowTemplates(true) },
+                  { icon: BookMarked, label: 'Prompts', action: () => setPromptLibOpen(true) },
+                  { icon: GitCompare, label: 'Compare Models', action: () => setLocation('/compare') },
+                  { icon: Code2, label: 'Playground', action: () => setLocation('/playground') },
+                  { icon: FolderOpen, label: 'Project Files', action: () => setShowProjectContext(true) },
+                  { icon: Globe, label: 'Community', action: () => setLocation('/explore') },
+                ].map(({ icon: Icon, label, action }) => (
+                  <button
+                    key={label}
+                    onClick={action}
+                    className="px-3 py-1.5 rounded-full border border-border/40 text-xs text-muted-foreground hover:text-foreground hover:border-primary/30 hover:bg-primary/5 transition-all flex items-center gap-1.5"
+                  >
+                    <Icon className="w-3 h-3"/>
+                    {label}
+                  </button>
+                ))}
               </div>
             </div>
           ) : (
@@ -1548,16 +1589,20 @@ export default function ChatPage() {
                           </div>
                         </div>
                       ) : (
-                        <div className={`rounded-2xl px-4 py-3 ${msg.role==='user'?'bg-primary text-primary-foreground':'bg-muted/50 border border-border/30'}`}>
+                        <div className={`rounded-2xl px-4 py-3 ${msg.role==='user'?'bg-primary/15 border border-primary/25':'bg-surface-1 border border-border/30'}`}>
                           {msg.isImage ? (
                             <img src={msg.content.match(/!\[.*?\]\((.*?)\)/)?.[1] || ''} alt="Generated" className="max-w-sm rounded-lg"/>
                           ) : msg.role === 'assistant' && !msg.content ? (
-                            <div className="flex gap-1 py-1"><span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce"/><span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce [animation-delay:0.15s]"/><span className="w-2 h-2 bg-primary/60 rounded-full animate-bounce [animation-delay:0.3s]"/></div>
+                            <div className="flex items-center gap-1.5 py-0.5">
+                              <span className="typing-dot"/>
+                              <span className="typing-dot"/>
+                              <span className="typing-dot"/>
+                            </div>
                           ) : msg.role === 'assistant' ? (
                             <MarkdownRenderer content={msg.content} onPreview={openPreview}/>
                           ) : (
                             <div>
-                              <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                              <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
                               {msg.attachments?.map((a,i)=>(
                                 <div key={i} className="mt-2">
                                   {a.type==='image'&&a.preview?<img src={a.preview} alt={a.name} className="max-h-32 rounded-lg object-contain"/>:<span className="inline-flex items-center gap-1 text-xs bg-white/10 rounded px-2 py-1"><FileText className="w-3 h-3"/>{a.name}</span>}
