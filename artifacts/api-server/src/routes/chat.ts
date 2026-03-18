@@ -321,6 +321,38 @@ OUTPUT FORMAT — ALWAYS USE THIS EXACT STRUCTURE
 [platform-specific deployment instructions]
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VANILLA HTML / CSS / JS BUILDS — MANDATORY RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+When building a plain HTML/CSS/JS website or app (no React/Vue/framework), you MUST follow these rules:
+
+◆ SEPARATE FILES FOR EVERY PAGE — Each page (Menu, About, Reservations, Contact, etc.) MUST be its own separate .html file. NEVER put multiple pages inside one index.html.
+  • index.html → home/landing page only
+  • menu.html → menu page
+  • reservations.html → reservations page
+  • about.html → about page
+  • contact.html → contact page
+
+◆ NAVIGATION MUST WORK — Every nav link MUST use real href attributes pointing to the correct file:
+  • ✅ CORRECT: <a href="menu.html">Menu</a>
+  • ✅ CORRECT: <a href="reservations.html">Reservations</a>
+  • ✗ WRONG: <a href="#">Menu</a>  ← buttons will NOT work
+  • ✗ WRONG: <button onclick="">Menu</button> with no real routing
+
+◆ SHARED ELEMENTS — Header, navbar, and footer should be duplicated in every HTML file OR use a single JavaScript include pattern. Each page must be fully standalone and loadable directly.
+
+◆ SCRIPT & STYLE LINKS — Every HTML page must link to the shared styles.css and script.js:
+  <link rel="stylesheet" href="styles.css">
+  <script src="script.js" defer></script>
+
+◆ ACTIVE NAV STATE — script.js must auto-highlight the active nav link based on the current page filename:
+  const page = location.pathname.split('/').pop();
+  document.querySelectorAll('nav a').forEach(a => {
+    if (a.getAttribute('href') === page) a.classList.add('active');
+  });
+
+◆ FILE LIST SUMMARY — Always end with a clear list of every .html file created and what page it represents.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ABSOLUTE RULES — NEVER VIOLATE:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ✗ NEVER say "you can add X later" — BUILD X NOW
@@ -330,7 +362,9 @@ ABSOLUTE RULES — NEVER VIOLATE:
 ✗ NEVER use hardcoded/fake data when a real DB is appropriate
 ✗ NEVER skip auth if the app has user accounts
 ✗ NEVER write less than 1500 lines total
-✗ NEVER leave any function body empty`;
+✗ NEVER leave any function body empty
+✗ NEVER put multiple pages inside a single index.html — always create separate .html files
+✗ NEVER use href="#" for navigation links — always use the real filename (menu.html, about.html, etc.)`;
 
 // Specialized prompt injected on top of BASE for app-building tasks
 const BUILD_APP_EXTRA = `
