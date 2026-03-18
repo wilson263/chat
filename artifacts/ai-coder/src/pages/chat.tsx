@@ -1304,10 +1304,19 @@ export default function ChatPage() {
               {[
                 { icon: FolderKanban, label: 'Dashboard', path: '/projects', color: 'hover:text-primary' },
                 { icon: Monitor, label: 'Workspace', path: '/projects', color: 'hover:text-blue-400' },
-                { icon: Wand2, label: 'Prompts', path: '/prompt-generator', color: 'hover:text-violet-400' },
+                { icon: Wand2, label: 'Prompt Gen', path: '/prompt-generator', color: 'hover:text-violet-400' },
                 { icon: Globe, label: 'Explore', path: '/explore', color: 'hover:text-teal-400' },
+                { icon: Play, label: 'Playground', path: '/playground', color: 'hover:text-green-400' },
+                { icon: LayoutTemplate, label: 'Templates', path: '/templates', color: 'hover:text-yellow-400' },
+                { icon: GitCompare, label: 'Compare', path: '/compare', color: 'hover:text-pink-400' },
+                { icon: BarChart3, label: 'Analytics', path: '/analytics', color: 'hover:text-cyan-400' },
+                { icon: Hash, label: 'Usage', path: '/usage', color: 'hover:text-indigo-400' },
+                { icon: Terminal, label: 'Developer', path: '/developer', color: 'hover:text-emerald-400' },
                 { icon: Settings, label: 'Settings', path: '/settings', color: 'hover:text-muted-foreground' },
                 { icon: Shield, label: 'Admin', path: '/admin', color: 'hover:text-orange-400' },
+                { icon: Grid3X3, label: 'Our Apps', path: '/our-apps', color: 'hover:text-purple-400' },
+                { icon: Info, label: 'About', path: '/about', color: 'hover:text-blue-300' },
+                { icon: Mail, label: 'Contact', path: '/contact', color: 'hover:text-rose-400' },
               ].map(item => (
                 <button
                   key={item.label}
