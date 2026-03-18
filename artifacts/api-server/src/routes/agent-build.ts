@@ -169,7 +169,7 @@ REMEMBER: Respond with ONLY the raw JSON object.`;
     : `Build this: ${prompt}\n\nPREVIOUS ATTEMPT FAILED. You MUST respond with ONLY a raw JSON object. No markdown fences, no explanation text.`;
 
   const response = await openai.chat.completions.create({
-    model: "gpt-5.2",
+    model: "llama-3.3-70b-versatile",
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: userMessage },
@@ -214,7 +214,7 @@ async function fixErrors(
   const errorsText = errors.join("\n");
 
   const response = await openai.chat.completions.create({
-    model: "gpt-5.2",
+    model: "llama-3.3-70b-versatile",
     messages: [
       {
         role: "user",
