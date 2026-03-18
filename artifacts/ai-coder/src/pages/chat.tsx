@@ -1129,23 +1129,34 @@ export default function ChatPage() {
 
                     {/* Star rating for AI messages */}
                     {msg.role === 'assistant' && msg.content && editingIdx !== idx && (
-                      <div className="flex items-center gap-3 px-1">
-                        <div className="flex items-center gap-0.5">
-                          {[1,2,3,4,5].map(star=>(
-                            <button key={star} onClick={()=>rateMessage(idx,star)} className={`transition-colors ${(msg.rating||0)>=star?'text-yellow-400':'text-muted-foreground/30 hover:text-yellow-400/60'}`}>
-                              <Star className="w-3.5 h-3.5" fill={(msg.rating||0)>=star?'currentColor':'none'}/>
+                      <div className="flex flex-col gap-2 px-1">
+                        {/* AI Write — always visible save button when code is present */}
+                        {(msg.content.includes('```') || msg.content.includes('===FILE:')) && (
+                          <div>
+                            <button
+                              onClick={()=>saveCodeFromMessage(msg.content)}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-green-500/15 text-green-400 border border-green-500/30 hover:bg-green-500/25 hover:border-green-500/50 transition-colors"
+                            >
+                              <Download className="w-3.5 h-3.5"/>
+                              AI Write — Save to File
                             </button>
-                          ))}
-                        </div>
-                        <div className="flex items-center gap-1 opacity-0 hover:opacity-100 transition-opacity [.group:hover_&]:opacity-100">
-                          <button onClick={()=>copyToClipboard(msg.content)} className="p-1 rounded text-muted-foreground hover:text-foreground transition-colors" title="Copy"><Copy className="w-3 h-3"/></button>
-                          <button onClick={()=>readAloud(msg.content)} className={`p-1 rounded transition-colors ${isSpeaking?'text-primary':'text-muted-foreground hover:text-foreground'}`} title="Read aloud">{isSpeaking?<VolumeX className="w-3 h-3"/>:<Volume2 className="w-3 h-3"/>}</button>
-                          <button onClick={regenerate} className="p-1 rounded text-muted-foreground hover:text-foreground transition-colors" title="Regenerate"><RefreshCw className="w-3 h-3"/></button>
-                          <button onClick={()=>branchChat(idx)} className="p-1 rounded text-muted-foreground hover:text-primary transition-colors" title="Branch from here"><GitBranch className="w-3 h-3"/></button>
-                          <button onClick={()=>{setCommentingIdx(idx);setCommentText(msg.comment||'');}} className="p-1 rounded text-muted-foreground hover:text-yellow-400 transition-colors" title="Add comment"><MessageCircle className="w-3 h-3"/></button>
-                          {(msg.content.includes('```') || msg.content.includes('===FILE:')) && (
-                            <button onClick={()=>saveCodeFromMessage(msg.content)} className="p-1 rounded text-muted-foreground hover:text-green-400 transition-colors" title="AI Write — save code to file"><Download className="w-3 h-3"/></button>
-                          )}
+                          </div>
+                        )}
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-0.5">
+                            {[1,2,3,4,5].map(star=>(
+                              <button key={star} onClick={()=>rateMessage(idx,star)} className={`transition-colors ${(msg.rating||0)>=star?'text-yellow-400':'text-muted-foreground/30 hover:text-yellow-400/60'}`}>
+                                <Star className="w-3.5 h-3.5" fill={(msg.rating||0)>=star?'currentColor':'none'}/>
+                              </button>
+                            ))}
+                          </div>
+                          <div className="flex items-center gap-1 opacity-0 hover:opacity-100 transition-opacity [.group:hover_&]:opacity-100">
+                            <button onClick={()=>copyToClipboard(msg.content)} className="p-1 rounded text-muted-foreground hover:text-foreground transition-colors" title="Copy"><Copy className="w-3 h-3"/></button>
+                            <button onClick={()=>readAloud(msg.content)} className={`p-1 rounded transition-colors ${isSpeaking?'text-primary':'text-muted-foreground hover:text-foreground'}`} title="Read aloud">{isSpeaking?<VolumeX className="w-3 h-3"/>:<Volume2 className="w-3 h-3"/>}</button>
+                            <button onClick={regenerate} className="p-1 rounded text-muted-foreground hover:text-foreground transition-colors" title="Regenerate"><RefreshCw className="w-3 h-3"/></button>
+                            <button onClick={()=>branchChat(idx)} className="p-1 rounded text-muted-foreground hover:text-primary transition-colors" title="Branch from here"><GitBranch className="w-3 h-3"/></button>
+                            <button onClick={()=>{setCommentingIdx(idx);setCommentText(msg.comment||'');}} className="p-1 rounded text-muted-foreground hover:text-yellow-400 transition-colors" title="Add comment"><MessageCircle className="w-3 h-3"/></button>
+                          </div>
                         </div>
                       </div>
                     )}
