@@ -885,7 +885,7 @@ Rules:
         </div>
 
         {/* AI PANEL */}
-        <div className="w-72 shrink-0 border-l border-[#30363d] bg-[#161b22] flex flex-col overflow-hidden">
+        <div className="w-96 shrink-0 border-l border-[#30363d] bg-[#161b22] flex flex-col overflow-hidden">
           <div className="flex border-b border-[#30363d] shrink-0">
             <button onClick={() => setAiTab('chat')}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium transition-colors border-b-2
