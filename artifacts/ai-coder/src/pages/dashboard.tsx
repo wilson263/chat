@@ -15,6 +15,7 @@ import {
   Code2, FolderKanban, Plus, Clock, TerminalSquare, Trash2, ArrowRight, Github, Rocket,
   Loader2, Globe, Sparkles, Info, Mail, Grid3X3, LogOut, MessageSquare, Terminal, Settings,
   BarChart3, Wand2, ChevronDown, ExternalLink, Layout, Play, LayoutTemplate, GitCompare, Compass,
+  ShieldCheck,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import {
@@ -209,6 +210,9 @@ export default function Dashboard() {
               <DropdownMenuItem onClick={() => setLocation('/our-apps')} className="cursor-pointer">
                 <Grid3X3 className="h-4 w-4 mr-2" /> Our Apps
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setLocation('/admin')} className="cursor-pointer">
+                <ShieldCheck className="h-4 w-4 mr-2" /> Admin
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => setLocation('/about')} className="cursor-pointer">
                 <Info className="h-4 w-4 mr-2" /> About
@@ -281,6 +285,63 @@ export default function Dashboard() {
               <p className="text-xs text-muted-foreground leading-relaxed">Publish your project to the web and share it with the world instantly.</p>
             </div>
             <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all mt-1 shrink-0" />
+          </button>
+
+          <button
+            onClick={() => {
+              if (projects && projects.length > 0) {
+                openProject(projects[0].id);
+              } else {
+                setIsCreateOpen(true);
+              }
+            }}
+            className="group relative flex items-start gap-4 p-5 rounded-2xl border border-blue-500/20 bg-gradient-to-br from-blue-500/10 to-cyan-500/5 hover:border-blue-500/40 hover:scale-[1.01] transition-all duration-200 text-left cursor-pointer"
+          >
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/20">
+              <Layout className="h-6 w-6 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="font-semibold text-foreground">Workspace</h3>
+                <Badge className="text-[10px] bg-blue-500/20 text-blue-300 border-blue-500/30 px-1.5 py-0">IDE</Badge>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">Open your full IDE workspace with Monaco editor, terminal, Git, and AI assistant.</p>
+            </div>
+            <ArrowRight className="h-4 w-4 text-blue-400 group-hover:translate-x-1 transition-transform mt-1 shrink-0" />
+          </button>
+
+          <button
+            onClick={() => setLocation('/explore')}
+            className="group relative flex items-start gap-4 p-5 rounded-2xl border border-teal-500/20 bg-gradient-to-br from-teal-500/10 to-emerald-500/5 hover:border-teal-500/40 hover:scale-[1.01] transition-all duration-200 text-left cursor-pointer"
+          >
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center shrink-0 shadow-lg shadow-teal-500/20">
+              <Compass className="h-6 w-6 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="font-semibold text-foreground">Explore</h3>
+                <Badge className="text-[10px] bg-teal-500/20 text-teal-300 border-teal-500/30 px-1.5 py-0">New</Badge>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">Discover and fork community projects. Find inspiration from what others are building.</p>
+            </div>
+            <ArrowRight className="h-4 w-4 text-teal-400 group-hover:translate-x-1 transition-transform mt-1 shrink-0" />
+          </button>
+
+          <button
+            onClick={() => setLocation('/admin')}
+            className="group relative flex items-start gap-4 p-5 rounded-2xl border border-orange-500/20 bg-gradient-to-br from-orange-500/10 to-red-500/5 hover:border-orange-500/40 hover:scale-[1.01] transition-all duration-200 text-left cursor-pointer"
+          >
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center shrink-0 shadow-lg shadow-orange-500/20">
+              <ShieldCheck className="h-6 w-6 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="font-semibold text-foreground">Admin</h3>
+                <Badge className="text-[10px] bg-orange-500/20 text-orange-300 border-orange-500/30 px-1.5 py-0">Admin</Badge>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">Manage users, view platform stats, and control system settings.</p>
+            </div>
+            <ArrowRight className="h-4 w-4 text-orange-400 group-hover:translate-x-1 transition-transform mt-1 shrink-0" />
           </button>
         </div>
 
