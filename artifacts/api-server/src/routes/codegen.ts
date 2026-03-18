@@ -81,8 +81,7 @@ async function streamToResponse(res: any, messages: { role: string; content: str
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
 
-  const stream = await openai.chat.completions.create({
-    model: "meta-llama/llama-3.3-70b-instruct:free",
+  const stream = await createChatCompletion({
     messages: [
       { role: "system", content: systemPrompt },
       ...messages.map(m => ({ role: m.role as "user" | "assistant", content: m.content })),
