@@ -149,11 +149,11 @@ export default function TemplatesPage() {
   );
 
   const openInPlayground = (template: typeof TEMPLATES[0]) => {
-    const encoded = encodeURIComponent(JSON.stringify({
+    sessionStorage.setItem('playground_template', JSON.stringify({
       projectName: template.id,
       files: template.files,
     }));
-    setLocation(`/playground?template=${encoded}`);
+    setLocation('/playground');
   };
 
   const useInProject = async (template: typeof TEMPLATES[0]) => {
@@ -164,7 +164,7 @@ export default function TemplatesPage() {
         data: { name: template.name, description: template.desc, language: template.files[0]?.language ?? 'html' }
       });
       for (const file of template.files) {
-        await createFileMutation.mutateAsync({ data: { projectId: proj.id, name: file.name, path: file.path, content: file.content, language: file.language } });
+        await createFileMutation.mutateAsync({ projectId: proj.id, data: { name: file.name, path: file.path, content: file.content, language: file.language } });
       }
       setActiveProject(proj.id);
       toast({ title: `Project "${template.name}" created!` });
