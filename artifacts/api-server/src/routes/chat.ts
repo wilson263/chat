@@ -44,7 +44,7 @@ const MODEL_MAP: Record<string, string> = {
   "deepseek-r1-distill-llama-70b": "llama-3.3-70b-versatile",
   "llama-3.3-70b-versatile": "llama-3.3-70b-versatile",
   "llama-3.3-70b-versatile": "llama-3.1-8b-instant",
-  "o1-mini": "llama-3.3-70b-versatile",
+  "llama-3.3-70b-versatile": "llama-3.3-70b-versatile",
   "llama-3.3-70b-versatile": "llama-3.3-70b-versatile",
 };
 
