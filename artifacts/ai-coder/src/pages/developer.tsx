@@ -529,47 +529,68 @@ Rewrite the ENTIRE file based on the instructions. Return ONLY the complete rewr
     setBuildStatus('');
     setBuildDone(false);
 
-    const prompt = `You are an expert software engineer. Build a complete, production-ready application based on this description:
-"${builderPrompt}"
+    const prompt = `Build a complete, production-ready application: "${builderPrompt}"
 
-Analyze the request and automatically choose the best language, framework, and file structure.
-- If it sounds like a website or web app use HTML + CSS + JavaScript (or React/Vue if appropriate)
-- If it sounds like a Python script/app use Python with appropriate libraries
-- If it sounds like a CLI tool use the most appropriate language
-- If a specific language or framework is mentioned use exactly that
-- Support ANY language: Python, JavaScript, TypeScript, Rust, Go, Java, C++, C#, Ruby, PHP, Swift, Kotlin, Dart/Flutter, SQL, Bash, etc.
-
-Format your response EXACTLY like this with NO other text outside the file blocks:
+Format your response EXACTLY like this — NO other text outside the file blocks:
 
 ===FILE: filename.ext===
 [complete file content here]
 ===FILE: filename2.ext===
 [complete file content here]
 
-Rules:
-- Choose filenames and extensions that match the language/framework correctly
-- Generate ALL files needed to run the app
-- Write complete, working, production-quality code with no placeholders or TODOs
-- For web apps: make them visually stunning with modern CSS
-- For non-web apps: include a README.md explaining how to run it`;
+CRITICAL RULES FOR HTML/CSS/JS WEBSITES:
+- Use a SINGLE index.html that contains ALL pages as hidden <section> elements
+- Each page must be a section: <section id="page-home" class="page">, <section id="page-menu" class="page hidden">, etc.
+- script.js MUST implement a showPage(id) function that hides all sections and shows the requested one
+- ALL navigation buttons/links MUST call showPage() — NEVER use href="#" or broken onclick handlers
+- This is required because the live preview uses an inline iframe (srcDoc) — separate .html files CANNOT be navigated to
+- styles.css handles all visual styling including .page { display:none } and .page.active { display:block }`;
 
     // System prompt tells the backend exactly which file format to use — overrides the default
-    const buildSystemPrompt = `You are an expert software engineer. Build complete, production-ready applications.
+    const buildSystemPrompt = `You are an expert software engineer building apps for a live browser-preview IDE.
 Output ONLY file blocks — no introductions, explanations, or text outside the blocks.
 
 Format EXACTLY like this (one block per file):
 ===FILE: filename.ext===
 [complete file content]
-===FILE: folder/filename2.ext===
-[complete file content]
+===FILE: styles.css===
+[complete CSS]
+===FILE: script.js===
+[complete JS]
 
-Rules:
-- Choose filenames that match the language/framework correctly
-- Generate ALL files needed to run the app
-- Write complete, working code — no placeholders, no TODOs, no "// implement later"
-- For web apps: stunning modern CSS, dark themes, smooth animations
-- For non-web apps: include a README.md explaining how to run it
-- ANY language supported: HTML/CSS/JS, React, Python, Rust, Go, Java, C++, Swift, Kotlin, etc.`;
+━━━ CRITICAL: HTML MULTI-PAGE NAVIGATION RULES ━━━
+The preview renders HTML using srcDoc (inline iframe). Separate .html files CANNOT navigate between each other.
+You MUST use Single-Page App (SPA) routing inside index.html:
+
+1. ALL pages go inside index.html as <section> elements:
+   <section id="page-home" class="page active">...</section>
+   <section id="page-menu" class="page">...</section>
+   <section id="page-reservations" class="page">...</section>
+   <section id="page-about" class="page">...</section>
+   <section id="page-contact" class="page">...</section>
+
+2. styles.css MUST include:
+   .page { display: none; }
+   .page.active { display: block; }
+
+3. script.js MUST include a working showPage function:
+   function showPage(id) {
+     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+     document.getElementById('page-' + id)?.classList.add('active');
+     document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
+     document.querySelector('nav a[data-page="' + id + '"]')?.classList.add('active');
+   }
+
+4. Every nav link MUST use data-page and onclick:
+   <a href="#" data-page="menu" onclick="showPage('menu'); return false;">Menu</a>
+   NEVER: <a href="menu.html"> — this will NOT work in the preview
+   NEVER: <a href="#"> with no onclick — buttons will do nothing
+
+━━━ GENERAL RULES ━━━
+- Write complete, working code — no placeholders, no TODOs
+- Visually stunning with modern CSS, smooth animations, gradient backgrounds
+- Fully functional — every button, form, and feature must work
+- ANY language supported for non-web apps: Python, Rust, Go, Java, etc.`;
 
     let fullResponse = '';
     try {
