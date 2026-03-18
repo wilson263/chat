@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import { openai } from "@workspace/integrations-openai-ai-server";
 import {
   GenerateCodeBody,
   ExplainCodeBody,
@@ -69,15 +70,14 @@ async function streamToResponse(res: any, messages: { role: string; content: str
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
 
-  const { groq } = await import("@workspace/integrations-groq-ai");
-  const stream = await groq.chat.completions.create({
-    model: "llama-3.3-70b-versatile",
+  const stream = await openai.chat.completions.create({
+    model: "gpt-5.2",
     messages: [
       { role: "system", content: systemPrompt },
       ...messages.map(m => ({ role: m.role as "user" | "assistant", content: m.content })),
     ],
     stream: true,
-    max_tokens: 8192,
+    max_completion_tokens: 8192,
   });
 
   for await (const chunk of stream) {
