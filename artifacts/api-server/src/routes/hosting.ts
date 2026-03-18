@@ -132,7 +132,7 @@ router.get("/status/:projectId", async (req: Request, res: Response): Promise<vo
   }
 });
 
-router.get("/:projectId/*splat", async (req: Request, res: Response): Promise<void> => {
+router.use("/:projectId", async (req: Request, res: Response): Promise<void> => {
   await runMigrationOnce();
   const projectId = parseInt(req.params.projectId, 10);
   if (isNaN(projectId)) { res.status(400).send("Invalid project"); return; }
@@ -166,7 +166,7 @@ router.get("/:projectId/*splat", async (req: Request, res: Response): Promise<vo
     return;
   }
 
-  const requestedPath = (req.params as any).splat || "";
+  const requestedPath = (req.path || "").replace(/^\/+/, "");
   const cleanPath = requestedPath.replace(/^\/+/, "") || "index.html";
 
   const exactMatch = files.find(
