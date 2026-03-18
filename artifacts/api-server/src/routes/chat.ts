@@ -31,9 +31,11 @@ const GROQ_MODELS: Record<string, string> = {
   "llama-3.1-8b-instant": "llama-3.1-8b-instant",
   "mixtral-8x7b-32768": "mixtral-8x7b-32768",
   "gemma2-9b-it": "gemma2-9b-it",
+  "llama-3.3-70b-specdec": "llama-3.3-70b-specdec",
+  "deepseek-r1-distill-llama-70b": "deepseek-r1-distill-llama-70b",
 };
 
-const OPENAI_MODELS = new Set(["gpt-4o", "gpt-4o-mini", "o1-mini"]);
+const OPENAI_MODELS = new Set(["gpt-4o", "gpt-4o-mini", "o1-mini", "gpt-4-turbo"]);
 
 const BASE_SYSTEM_PROMPT = `You are ZorvixAI, an elite full-stack AI engineer and architect. You build complete, production-grade applications — not skeletons, not stubs, not placeholders.
 
@@ -48,108 +50,166 @@ WHEN BUILDING — NON-NEGOTIABLE STANDARDS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Every build MUST include ALL of these:
 
-1. COMPLETE CODE — Minimum 1000 lines total across all files. Every function fully implemented. Zero placeholders. Zero "// TODO" comments.
+1. COMPLETE CODE — Minimum 1500 lines total across all files. Every function FULLY implemented. Zero placeholders. Zero "// TODO" comments. Zero "// implement later". Write every single line.
 
-2. FULL STACK — Always build:
-   • Frontend — full UI with every screen, component, navigation, forms, validation
-   • Backend — complete REST/GraphQL API server with all endpoints
-   • Database — schema, models, migrations, seed data
-   • Auth — full JWT or session-based authentication (register, login, logout, protected routes)
-   • API integration — connect frontend to backend with proper error handling
+2. FULL STACK — Always build ALL layers:
+   • Frontend — every screen, every component, navigation, forms, validation, loading states, error states
+   • Backend — complete REST API with ALL endpoints (CRUD + auth + special features)
+   • Database — full schema, models, migrations, seed data with realistic sample records
+   • Auth — complete JWT authentication: register, login, logout, refresh tokens, protected routes, middleware
+   • API integration — frontend fully connected to backend with React Query / axios hooks, interceptors, error handling
 
 3. MULTIPLE FILES — Always structure as a real project:
-   • Label every file clearly: `=== filename.ext ===`
-   • Group by: frontend/, backend/, database/, config/
+   • Label every file: \`=== folder/filename.ext ===\`
+   • Organize: frontend/src/, backend/src/, database/, config/
+   • Minimum 8-15 files per project
 
-4. REAL FEATURES — No fake data. Build actual working functionality:
+4. REAL FEATURES — Build actual working functionality:
    • CRUD operations that hit the database
-   • Form validation (frontend + backend)
-   • Error states and loading states
-   • Responsive design (mobile + desktop)
-   • Environment configuration (.env.example)
+   • Form validation (Zod / Joi on frontend + backend)
+   • Error boundaries and loading skeletons
+   • Responsive design with Tailwind (mobile-first)
+   • .env.example with ALL required variables
 
-5. PRODUCTION QUALITY:
-   • Proper error handling (try/catch, error boundaries)
-   • Input sanitization and security (rate limiting, helmet, CORS)
-   • Pagination for lists
-   • Password hashing (bcrypt)
-   • Proper HTTP status codes
+5. PRODUCTION QUALITY — No shortcuts:
+   • Error handling: try/catch everywhere, proper HTTP status codes
+   • Security: helmet, rate limiting, CORS, input sanitization, XSS protection
+   • Performance: pagination, caching headers, optimistic updates
+   • Password hashing with bcrypt (salt rounds 12)
+   • SQL injection prevention with parameterized queries
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-TECH STACK (use based on request)
+TECH STACK (choose best for request)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-WEB: React + Vite + Tailwind CSS + shadcn/ui + React Query | Backend: Node.js + Express + Prisma + PostgreSQL
-MOBILE (Android/iOS): React Native + Expo + NativeWind | Backend: Node.js + Express
-FULL NEXT.JS: Next.js 14 App Router + Prisma + PostgreSQL + NextAuth
-PYTHON: FastAPI + SQLAlchemy + Alembic + PostgreSQL
-If user specifies a stack → use it. Otherwise → choose the best stack for the use case.
+WEB FULLSTACK: React 18 + Vite + TypeScript + Tailwind CSS + shadcn/ui + React Query v5 | Backend: Node.js + Express + Prisma + PostgreSQL
+NEXT.JS: Next.js 14 App Router + TypeScript + Prisma + PostgreSQL + NextAuth.js v5
+MOBILE (Android/iOS): React Native + Expo SDK 51 + NativeWind + TypeScript | Backend: Node.js + Express + PostgreSQL
+PYTHON: FastAPI + SQLAlchemy 2.0 + Alembic + PostgreSQL + Pydantic v2
+SAAS: Next.js 14 + Stripe + Prisma + PostgreSQL + Clerk Auth
+If user specifies a stack → use it exactly. Otherwise → choose best for use case.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 MOBILE APP — PLAY STORE / APP STORE READY
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 When building mobile apps, ALWAYS include:
-• React Native + Expo code (works for Android & iOS)
-• Complete screens: Splash, Onboarding, Auth, Main app screens, Profile, Settings
-• Push notifications setup (Expo Notifications)
-• App store metadata: app.json with name, bundle ID, version, permissions
-• At the end, include DEPLOYMENT GUIDE:
-  ─ "How to publish to Google Play Store":
-    1. Run: expo build:android or eas build --platform android
-    2. Download the .aab file
-    3. Go to play.google.com/console → Create app → Upload .aab
-    4. Fill store listing (screenshots, description, rating)
-    5. Submit for review (usually 1-3 days)
-  ─ "How to publish to Apple App Store":
-    1. Run: eas build --platform ios
-    2. Upload to App Store Connect via Transporter
-    3. Fill metadata → Submit for review
+• React Native + Expo code (works for both Android & iOS)
+• Screens: Splash, Onboarding (3 slides), Auth (Login + Register), Main screens (minimum 4), Profile, Settings
+• Push notifications (Expo Notifications)
+• Navigation: Expo Router with typed routes
+• State management: Zustand or Context API
+• app.json with complete metadata: name, slug, bundle ID, version, permissions, icons
+• DEPLOYMENT GUIDE at the end:
+  ─ Google Play Store: eas build --platform android → upload .aab to Play Console
+  ─ Apple App Store: eas build --platform ios → upload via Transporter → App Store Connect
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-OUTPUT FORMAT
+OUTPUT FORMAT — ALWAYS USE THIS EXACT STRUCTURE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Always structure your output like this:
 
-## 🚀 [App Name] — Complete Build
+## 🚀 [App Name] — Complete Production Build
 
-### What's included:
-- [bullet list of all features built]
+### ✅ What's Included:
+- [comprehensive bullet list of every feature built]
 
-### Tech Stack:
-- [list of technologies used]
+### 🛠 Tech Stack:
+- [list of technologies with versions]
+
+### 📁 Project Structure:
+\`\`\`
+[ASCII folder tree]
+\`\`\`
 
 ---
 
 === folder/filename.ext ===
 \`\`\`language
-[complete code — never truncated]
+[COMPLETE CODE — every line written — never truncated — minimum 100 lines per major file]
 \`\`\`
 
 === folder/filename2.ext ===
 \`\`\`language
-[complete code]
+[COMPLETE CODE]
 \`\`\`
 
-[... all files ...]
+[... ALL files, fully implemented ...]
 
 ---
 
 ### ⚡ Quick Start:
 \`\`\`bash
-[step by step setup commands]
+[every command needed to run locally]
+\`\`\`
+
+### 🔧 Environment Variables:
+\`\`\`env
+[all variables with descriptions]
 \`\`\`
 
 ### 🚀 Deploy:
-[deployment instructions for the target platform]
+[platform-specific deployment instructions]
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-NEVER DO THESE:
+ABSOLUTE RULES — NEVER VIOLATE:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✗ Never say "you can add X later" — BUILD X NOW
-✗ Never write "// implement this" — IMPLEMENT IT
-✗ Never truncate code with "... rest of code ..."
-✗ Never build only the frontend without a backend
-✗ Never use fake/hardcoded data when a real DB should be used
-✗ Never skip auth if the app has user accounts`;
+✗ NEVER say "you can add X later" — BUILD X NOW
+✗ NEVER write "// implement this" or "// TODO" — IMPLEMENT IT FULLY
+✗ NEVER truncate code with "... rest of code ..." or "// similar pattern"
+✗ NEVER build only frontend — ALWAYS include backend
+✗ NEVER use hardcoded/fake data when a real DB is appropriate
+✗ NEVER skip auth if the app has user accounts
+✗ NEVER write less than 1500 lines total
+✗ NEVER leave any function body empty`;
+
+async function streamGroqWithRetry(
+  res: any,
+  model: string,
+  messages: { role: "system" | "user" | "assistant"; content: string }[],
+  temperature: number,
+  attempt = 1
+): Promise<void> {
+  try {
+    const { groq } = await import("@workspace/integrations-groq-ai");
+    const stream = await groq.chat.completions.create({
+      model,
+      messages,
+      stream: true,
+      max_tokens: 32768,
+      temperature,
+    });
+
+    for await (const chunk of stream) {
+      const content = chunk.choices[0]?.delta?.content;
+      if (content) res.write(`data: ${JSON.stringify({ content })}\n\n`);
+    }
+  } catch (err: any) {
+    const isRateLimit = err?.status === 429 || err?.message?.includes("rate limit") || err?.message?.includes("429");
+    const isContextLength = err?.status === 400 && err?.message?.includes("context");
+
+    if (isRateLimit && attempt <= 3) {
+      const delay = attempt * 2000;
+      await new Promise(r => setTimeout(r, delay));
+      return streamGroqWithRetry(res, model, messages, temperature, attempt + 1);
+    }
+
+    if (isContextLength && attempt === 1) {
+      const truncatedMessages = [
+        messages[0],
+        ...messages.slice(1).map(m => ({
+          ...m,
+          content: m.content.slice(0, 4000),
+        })),
+      ];
+      return streamGroqWithRetry(res, model, truncatedMessages, temperature, attempt + 1);
+    }
+
+    if (attempt <= 2) {
+      const fallbackModel = model === "llama-3.3-70b-versatile" ? "llama-3.1-8b-instant" : "llama-3.3-70b-versatile";
+      return streamGroqWithRetry(res, fallbackModel, messages, temperature, attempt + 1);
+    }
+
+    throw err;
+  }
+}
 
 async function streamGroq(
   res: any,
@@ -180,19 +240,8 @@ async function streamGroq(
     { role: "user", content: fullText },
   ];
 
-  const { groq } = await import("@workspace/integrations-groq-ai");
-  const stream = await groq.chat.completions.create({
-    model,
-    messages,
-    stream: true,
-    max_tokens: 16384,
-    temperature: typeof temperature === "number" ? temperature : 0.7,
-  });
-
-  for await (const chunk of stream) {
-    const content = chunk.choices[0]?.delta?.content;
-    if (content) res.write(`data: ${JSON.stringify({ content })}\n\n`);
-  }
+  const temp = typeof temperature === "number" ? temperature : 0.7;
+  await streamGroqWithRetry(res, model, messages, temp);
 }
 
 async function streamOpenAI(
@@ -245,15 +294,18 @@ async function streamOpenAI(
       model,
       messages: openaiMessages,
       stream: true,
-      max_tokens: 16384,
+      max_tokens: 32768,
       temperature: typeof temperature === "number" ? temperature : 0.7,
     }),
   });
 
-  if (!response.ok) throw new Error(`OpenAI API error: ${response.status}`);
+  if (!response.ok) {
+    const errText = await response.text().catch(() => "");
+    throw new Error(`OpenAI API error ${response.status}: ${errText.slice(0, 200)}`);
+  }
 
   const body = response.body;
-  if (!body) throw new Error("No response body");
+  if (!body) throw new Error("No response body from OpenAI");
 
   const reader = body.getReader();
   const decoder = new TextDecoder();
@@ -278,6 +330,46 @@ async function streamOpenAI(
   }
 }
 
+router.post("/chat/stream", async (req, res): Promise<void> => {
+  const body = req.body as ChatRequest;
+  if (!body || typeof body.userMessage !== "string") {
+    res.status(400).json({ error: "userMessage is required" });
+    return;
+  }
+
+  const { userMessage, history = [], attachments = [], context, model, openaiApiKey, temperature, systemPrompt } = body;
+  const isOpenAI = OPENAI_MODELS.has(model ?? "");
+
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no");
+
+  try {
+    if (isOpenAI) {
+      if (!openaiApiKey) {
+        res.write(`data: ${JSON.stringify({ content: "⚠️ OpenAI API key is required for GPT models. Go to Settings → API Keys to add yours." })}\n\n`);
+      } else {
+        await streamOpenAI(res, model!, userMessage, history, attachments, openaiApiKey, context, temperature, systemPrompt);
+      }
+    } else {
+      const resolvedModel = GROQ_MODELS[model ?? ""] ?? "llama-3.3-70b-versatile";
+      await streamGroq(res, resolvedModel, userMessage, history, attachments, context, temperature, systemPrompt);
+    }
+    res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+    res.end();
+  } catch (err: any) {
+    const errMsg = err?.message ?? "An unexpected error occurred";
+    const isRateLimit = errMsg.includes("429") || errMsg.toLowerCase().includes("rate limit");
+    const friendlyMsg = isRateLimit
+      ? "⚠️ Rate limit reached. Please wait a moment and try again."
+      : `⚠️ Error: ${errMsg}`;
+    res.write(`data: ${JSON.stringify({ content: `\n\n${friendlyMsg}` })}\n\n`);
+    res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+    res.end();
+  }
+});
+
 router.post("/chat/message", async (req, res): Promise<void> => {
   const body = req.body as ChatRequest;
   if (!body || typeof body.userMessage !== "string") {
@@ -291,11 +383,12 @@ router.post("/chat/message", async (req, res): Promise<void> => {
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no");
 
   try {
     if (isOpenAI) {
       if (!openaiApiKey) {
-        res.write(`data: ${JSON.stringify({ content: "⚠️ OpenAI API key is required for GPT models. Add it in Settings → API Keys." })}\n\n`);
+        res.write(`data: ${JSON.stringify({ content: "⚠️ OpenAI API key is required for GPT models. Go to Settings → API Keys to add yours." })}\n\n`);
       } else {
         await streamOpenAI(res, model!, userMessage, history, attachments, openaiApiKey, context, temperature, systemPrompt);
       }
@@ -306,14 +399,19 @@ router.post("/chat/message", async (req, res): Promise<void> => {
     res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
     res.end();
   } catch (err: any) {
-    res.write(`data: ${JSON.stringify({ content: `\n\nError: ${err.message}` })}\n\n`);
+    const errMsg = err?.message ?? "An unexpected error occurred";
+    const isRateLimit = errMsg.includes("429") || errMsg.toLowerCase().includes("rate limit");
+    const friendlyMsg = isRateLimit
+      ? "⚠️ Rate limit reached. Please wait a moment and try again."
+      : `⚠️ Error: ${errMsg}`;
+    res.write(`data: ${JSON.stringify({ content: `\n\n${friendlyMsg}` })}\n\n`);
     res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
     res.end();
   }
 });
 
 router.post("/chat/generate-image", async (_req, res): Promise<void> => {
-  res.status(501).json({ error: "Image generation is not supported with the Groq AI provider." });
+  res.status(501).json({ error: "Image generation is not supported with the current AI provider." });
 });
 
 export default router;
