@@ -7,6 +7,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { MarkdownRenderer } from '@/components/markdown-renderer';
 import {
@@ -14,6 +16,9 @@ import {
   Plus, Trash2, Download, Save, FolderOpen, X, Loader2, GitBranch,
   Bot, Send, Sparkles, Wand2, MessageSquare, RefreshCw, Copy, Check,
   Eye, Monitor, ExternalLink, Search, FileCode,
+  Terminal, Play, Square, Settings, ZoomIn, ZoomOut, Map,
+  FileSearch, Bug, TestTube2, BookOpen, ArrowRightLeft, FileText,
+  Wrench, AlignLeft, ChevronUp, ChevronDown as ChevronDownIcon,
 } from 'lucide-react';
 
 const BASE_PATH = import.meta.env.BASE_URL?.replace(/\/$/, '') || '';
@@ -91,6 +96,17 @@ interface AiMessage {
   layoutOptions?: LayoutOption[];
   isPicker?: boolean;
   chosenLayout?: string;
+}
+
+interface TerminalLine {
+  type: 'stdout' | 'stderr' | 'info' | 'error' | 'exit';
+  text: string;
+}
+
+interface FindResult {
+  path: string;
+  line: number;
+  text: string;
 }
 
 function buildTree(files: FileNode[]): FileNode[] {
@@ -172,6 +188,17 @@ function extractCodeFromMarkdown(text: string): string {
   return text.trim();
 }
 
+const TERMINAL_LANGS = ['javascript', 'typescript', 'python', 'bash', 'ruby'];
+
+const CODEGEN_TOOLS = [
+  { id: 'explain', label: 'Explain Code', icon: BookOpen, color: 'text-blue-400', desc: 'Understand what the code does' },
+  { id: 'fix', label: 'Fix Bugs', icon: Bug, color: 'text-red-400', desc: 'Find & fix errors in the code' },
+  { id: 'review', label: 'Review', icon: Eye, color: 'text-yellow-400', desc: 'Quality, security & best practices' },
+  { id: 'test', label: 'Generate Tests', icon: TestTube2, color: 'text-green-400', desc: 'Write unit tests for this file' },
+  { id: 'document', label: 'Add Docs', icon: FileText, color: 'text-purple-400', desc: 'Add comments & documentation' },
+  { id: 'convert', label: 'Convert', icon: ArrowRightLeft, color: 'text-cyan-400', desc: 'Convert to another language' },
+];
+
 export default function DeveloperPage() {
   const { toast } = useToast();
 
@@ -197,7 +224,35 @@ export default function DeveloperPage() {
   const [previewContent, setPreviewContent] = useState('');
   const [previewKey, setPreviewKey] = useState(0);
 
-  const [aiTab, setAiTab] = useState<'chat' | 'rewrite'>('chat');
+  // --- NEW: Terminal ---
+  const [showTerminal, setShowTerminal] = useState(false);
+  const [terminalOutput, setTerminalOutput] = useState<TerminalLine[]>([{ type: 'info', text: '▶  Press Run to execute the current file, or open a file first.' }]);
+  const [terminalRunning, setTerminalRunning] = useState(false);
+  const [terminalLang, setTerminalLang] = useState('javascript');
+  const terminalAbortRef = useRef<AbortController | null>(null);
+  const terminalScrollRef = useRef<HTMLDivElement>(null);
+
+  // --- NEW: Editor settings ---
+  const [editorFontSize, setEditorFontSize] = useState(13);
+  const [editorMinimap, setEditorMinimap] = useState(false);
+  const [editorWordWrap, setEditorWordWrap] = useState<'on' | 'off'>('on');
+  const [cursorLine, setCursorLine] = useState(1);
+  const [cursorCol, setCursorCol] = useState(1);
+  const editorRef = useRef<any>(null);
+
+  // --- NEW: Find in files ---
+  const [showFindInFiles, setShowFindInFiles] = useState(false);
+  const [findQuery, setFindQuery] = useState('');
+  const [findResults, setFindResults] = useState<FindResult[]>([]);
+
+  // --- NEW: AI Tools tab ---
+  const [convertTargetLang, setConvertTargetLang] = useState('python');
+  const [toolsResult, setToolsResult] = useState('');
+  const [toolsRunning, setToolsRunning] = useState(false);
+  const [activeTool, setActiveTool] = useState<string | null>(null);
+  const toolsScrollRef = useRef<HTMLDivElement>(null);
+
+  const [aiTab, setAiTab] = useState<'chat' | 'rewrite' | 'tools'>('chat');
   const [aiMessages, setAiMessages] = useState<AiMessage[]>([]);
   const [aiInput, setAiInput] = useState('');
   const [aiCategory, setAiCategory] = useState<'frontend' | 'backend' | 'server' | null>(null);
@@ -224,6 +279,155 @@ export default function DeveloperPage() {
   });
   const aiScrollRef = useRef<HTMLDivElement>(null);
   const rewriteScrollRef = useRef<HTMLDivElement>(null);
+
+  // Sync terminal lang with active file
+  useEffect(() => {
+    const lang = activeTab ? getLanguage(activeTab) : 'javascript';
+    if (TERMINAL_LANGS.includes(lang)) setTerminalLang(lang);
+  }, [activeTab]);
+
+  // Scroll terminal to bottom
+  useEffect(() => {
+    if (terminalScrollRef.current) terminalScrollRef.current.scrollTop = terminalScrollRef.current.scrollHeight;
+  }, [terminalOutput]);
+
+  // Scroll tools result
+  useEffect(() => {
+    if (toolsScrollRef.current) toolsScrollRef.current.scrollTop = toolsScrollRef.current.scrollHeight;
+  }, [toolsResult]);
+
+  // --- NEW: Run current file in terminal ---
+  const runCurrentFile = async () => {
+    const activeTabData = openTabs.find(t => t.path === activeTab);
+    if (!activeTabData?.content?.trim()) {
+      toast({ title: 'No code to run', description: 'Open a file first', variant: 'destructive' });
+      return;
+    }
+    setShowTerminal(true);
+    setTerminalRunning(true);
+    setTerminalOutput([{ type: 'info', text: `▶  Running ${activeTabData.name} (${terminalLang})...` }]);
+    terminalAbortRef.current = new AbortController();
+    try {
+      const res = await fetch(`${BASE_PATH}/api/terminal/exec`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ code: activeTabData.content, language: terminalLang }),
+        signal: terminalAbortRef.current.signal,
+      });
+      if (!res.ok) { const e = await res.json(); setTerminalOutput(p => [...p, { type: 'error', text: `Error: ${e.error}` }]); return; }
+      const reader = res.body!.getReader();
+      const decoder = new TextDecoder();
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        for (const line of chunk.split('\n')) {
+          if (!line.startsWith('data: ')) continue;
+          try {
+            const data = JSON.parse(line.slice(6));
+            if (data.type === 'exit') {
+              setTerminalOutput(p => [...p, { type: 'info', text: `\n● Process exited with code ${data.code}` }]);
+            } else if (data.text) {
+              setTerminalOutput(p => [...p, { type: data.type, text: data.text }]);
+            }
+          } catch { }
+        }
+      }
+    } catch (err: any) {
+      if (err.name !== 'AbortError') setTerminalOutput(p => [...p, { type: 'error', text: `Error: ${err.message}` }]);
+    } finally {
+      setTerminalRunning(false);
+    }
+  };
+
+  const stopRun = () => {
+    terminalAbortRef.current?.abort();
+    setTerminalOutput(p => [...p, { type: 'info', text: '\n■ Execution stopped.' }]);
+    setTerminalRunning(false);
+  };
+
+  // --- NEW: Find in files ---
+  const searchInFiles = useCallback((query: string) => {
+    if (!query.trim()) { setFindResults([]); return; }
+    const q = query.toLowerCase();
+    const results: FindResult[] = [];
+    for (const file of flatFiles) {
+      if (!file.content) continue;
+      const lines = file.content.split('\n');
+      lines.forEach((lineText, idx) => {
+        if (lineText.toLowerCase().includes(q)) {
+          results.push({ path: file.path, line: idx + 1, text: lineText.trim() });
+        }
+      });
+      if (results.length >= 100) break;
+    }
+    setFindResults(results);
+  }, [flatFiles]);
+
+  useEffect(() => { searchInFiles(findQuery); }, [findQuery, searchInFiles]);
+
+  // --- NEW: AI Codegen tools ---
+  const callCodegenTool = async (toolId: string) => {
+    const activeTabData = openTabs.find(t => t.path === activeTab);
+    if (!activeTabData?.content?.trim()) {
+      toast({ title: 'Open a file first', variant: 'destructive' }); return;
+    }
+    setActiveTool(toolId);
+    setToolsRunning(true);
+    setToolsResult('');
+    const lang = activeTabData.language;
+    const code = activeTabData.content.slice(0, 8000);
+    let endpoint = '';
+    let body: Record<string, string> = { code, language: lang };
+    switch (toolId) {
+      case 'explain': endpoint = 'explain'; break;
+      case 'fix': endpoint = 'fix'; break;
+      case 'review': endpoint = 'review'; break;
+      case 'test': endpoint = 'test'; break;
+      case 'document': endpoint = 'document'; body = { ...body, style: 'inline' }; break;
+      case 'convert': endpoint = 'convert'; body = { code, fromLanguage: lang, toLanguage: convertTargetLang }; break;
+      default: return;
+    }
+    try {
+      const res = await fetch(`${BASE_PATH}/api/codegen/${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(body),
+      });
+      if (!res.ok || !res.body) { const e = await res.json(); throw new Error(e.error || 'Failed'); }
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let result = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        for (const line of chunk.split('\n')) {
+          if (!line.startsWith('data: ')) continue;
+          try {
+            const data = JSON.parse(line.slice(6));
+            if (data.done) break;
+            if (data.content) { result += data.content; setToolsResult(result); }
+          } catch { }
+        }
+      }
+    } catch (err: any) {
+      setToolsResult(`Error: ${err.message}`);
+    } finally {
+      setToolsRunning(false);
+    }
+  };
+
+  // Apply generated code from tools back to file
+  const applyToolResult = () => {
+    if (!activeTab || !toolsResult) return;
+    const clean = extractCodeFromMarkdown(toolsResult);
+    setOpenTabs(prev => prev.map(t => t.path === activeTab ? { ...t, content: clean, isDirty: true } : t));
+    setFlatFiles(prev => prev.map(f => f.path === activeTab ? { ...f, content: clean } : f));
+    toast({ title: 'Applied to file' });
+  };
 
   const cloneRepo = async () => {
     if (!repoUrl.trim()) { toast({ title: 'Enter a GitHub repo URL', variant: 'destructive' }); return; }
@@ -465,14 +669,12 @@ export default function DeveloperPage() {
       language: getLanguage(f.name),
       isDirty: false,
     }));
-    // Build directory nodes for the new files
     const dirSet = new Set<string>();
     for (const f of newFileNodes) {
       const parts = f.path.split('/');
       for (let i = 1; i < parts.length; i++) dirSet.add(parts.slice(0, i).join('/'));
     }
     const dirNodes: FileNode[] = Array.from(dirSet).map(p => ({ name: p.split('/').pop()!, path: p, type: 'dir' as const }));
-    // Replace all files with the new project's files (clear previous project)
     setFlatFiles(newFileNodes);
     setFileTree(buildTree([...dirNodes, ...newFileNodes]));
     setOpenTabs(newTabs);
@@ -653,7 +855,6 @@ Write complete, working code. No placeholders. No TODO comments.${layoutContext}
       return;
     }
 
-    // If message is casual/conversational, always respond in plain text regardless of category
     const isCodeRequest = /\b(build|create|make|generate|write|code|implement|fix|refactor|add|develop|update|rewrite|change|modify|create the|build the|can you make|can you create|i need|help me build|help me create)\b/i.test(userMsg);
     if (!isCodeRequest) {
       const conversationalPrompt = `You are ZorvixAI, a helpful AI coding assistant. The user is asking a casual or general question. Reply in plain, friendly conversational text. Do NOT output any ===FILE:=== blocks. Do NOT generate code unless asked directly.`;
@@ -702,7 +903,6 @@ Write complete, working code. No placeholders. No TODO comments.${layoutContext}
       return;
     }
 
-    // For frontend/UI code build requests — show layout picker first
     const isUIBuildRequest = /\b(build|create|make|generate|design|develop)\b.*\b(website|site|page|app|portfolio|landing|store|shop|dashboard|blog|restaurant|hotel|agency|business|company|school|clinic|hospital|gym|salon|gallery|travel|booking|ecommerce|e-commerce|saas|startup|service|product)\b|\b(website|site|landing page|web app)\b.*\b(build|create|make|generate)\b/i.test(userMsg);
     const shouldShowLayouts = isUIBuildRequest && (aiCategory === 'frontend' || aiCategory === null);
     if (shouldShowLayouts) {
@@ -711,7 +911,7 @@ Write complete, working code. No placeholders. No TODO comments.${layoutContext}
       const layouts = await fetchLayoutOptions(userMsg);
       setIsLoadingLayouts(false);
       if (layouts.length > 0) {
-        const pickerIndex = newMessages.length; // index in the AiMessages array after user msg
+        const pickerIndex = newMessages.length;
         setAiMessages(prev => {
           const msgs = [...prev];
           msgs[msgs.length - 1] = { role: 'assistant', content: 'Choose a layout for your project:', layoutOptions: layouts, isPicker: true };
@@ -724,7 +924,6 @@ Write complete, working code. No placeholders. No TODO comments.${layoutContext}
       }
     }
 
-    // Build a focused system prompt based on the selected category
     let systemPrompt: string | undefined;
     if (aiCategory === 'frontend') {
       systemPrompt = `You are a senior frontend developer helping with code in an IDE.
@@ -810,9 +1009,8 @@ Write complete, working code. No placeholders. No TODO comments. No truncation.`
           }
         }
       }
-      // Only auto-apply files if the user explicitly asked to build/create/write code
-      const isCodeRequest = /\b(build|create|make|generate|write|code|implement|fix|refactor|add|develop|update the file|rewrite|change the file)\b/i.test(userMsg);
-      const fileCount = isCodeRequest ? applyChatFiles(assistantContent) : 0;
+      const isCodeRequest2 = /\b(build|create|make|generate|write|code|implement|fix|refactor|add|develop|update the file|rewrite|change the file)\b/i.test(userMsg);
+      const fileCount = isCodeRequest2 ? applyChatFiles(assistantContent) : 0;
       if (fileCount > 0) {
         toast({ title: `${fileCount} file${fileCount !== 1 ? 's' : ''} created in editor` });
         setAiMessages(prev => {
@@ -991,7 +1189,6 @@ Format EXACTLY like this:
         }
       }
 
-      // Parse ===FILE: filename=== blocks
       const parsedFiles: { name: string; content: string }[] = [];
       const filePattern = /===FILE:\s*([^\n=]+?)===\n?([\s\S]*?)(?====FILE:|$)/g;
       let match;
@@ -999,7 +1196,6 @@ Format EXACTLY like this:
         const name = match[1].trim(); const content = match[2].trim();
         if (name && content) parsedFiles.push({ name, content });
       }
-      // Fallback: === filename === format
       if (parsedFiles.length === 0) {
         const alt = /===\s*([^\n=]+\.[a-zA-Z0-9]+)\s*===\n?([\s\S]*?)(?====\s*[^\n=]+\.[a-zA-Z0-9]+\s*===|$)/g;
         while ((match = alt.exec(fullResponse)) !== null) {
@@ -1007,7 +1203,6 @@ Format EXACTLY like this:
           if (name && content) parsedFiles.push({ name, content });
         }
       }
-      // Last resort
       if (parsedFiles.length === 0) {
         const ext = phase === 'backend' ? 'server.js' : phase === 'api' ? 'routes/api.js' : 'index.html';
         parsedFiles.push({ name: ext, content: extractCodeFromMarkdown(fullResponse) });
@@ -1016,7 +1211,6 @@ Format EXACTLY like this:
       const newTabs: OpenTab[] = parsedFiles.map(f => ({ path: f.name, name: f.name.split('/').pop()!, content: f.content, language: getLanguage(f.name), isDirty: false }));
       const newFlatFiles: FileNode[] = parsedFiles.map(f => ({ name: f.name.split('/').pop()!, path: f.name, type: 'file' as const, content: f.content, language: getLanguage(f.name) }));
 
-      // Build directory nodes for the new files
       const dirSet2 = new Set<string>();
       for (const f of newFlatFiles) {
         const parts = f.path.split('/');
@@ -1024,7 +1218,6 @@ Format EXACTLY like this:
       }
       const dirNodes2: FileNode[] = Array.from(dirSet2).map(p => ({ name: p.split('/').pop()!, path: p, type: 'dir' as const }));
 
-      // Replace all files with this phase's files (clear previous project)
       setOpenTabs(newTabs);
       setFlatFiles(newFlatFiles);
       setFileTree(buildTree([...dirNodes2, ...newFlatFiles]));
@@ -1063,7 +1256,6 @@ Format EXACTLY like this:
     if (rewriteScrollRef.current) rewriteScrollRef.current.scrollTop = rewriteScrollRef.current.scrollHeight;
   }, [phaseStatuses]);
 
-  // Persist workspace state so it survives page navigation
   useEffect(() => { localStorage.setItem('dev_flatFiles', JSON.stringify(flatFiles)); }, [flatFiles]);
   useEffect(() => { localStorage.setItem('dev_fileTree', JSON.stringify(fileTree)); }, [fileTree]);
   useEffect(() => { localStorage.setItem('dev_openTabs', JSON.stringify(openTabs)); }, [openTabs]);
@@ -1116,8 +1308,19 @@ Format EXACTLY like this:
     ? flatFiles.filter(f => f.path.toLowerCase().includes(searchQuery.toLowerCase()))
     : [];
 
+  const terminalLineColor = (type: TerminalLine['type']) => {
+    if (type === 'stderr' || type === 'error') return 'text-red-400';
+    if (type === 'info') return 'text-blue-400';
+    if (type === 'exit') return 'text-yellow-400';
+    return 'text-green-300';
+  };
+
+  const isRunnable = activeTabData && TERMINAL_LANGS.includes(activeTabData.language);
+
   return (
     <div className="h-screen w-full flex flex-col bg-[#0d1117] text-foreground overflow-hidden">
+
+      {/* HEADER */}
       <header className="h-11 border-b border-[#30363d] bg-[#161b22] flex items-center justify-between px-3 shrink-0 z-20">
         <div className="flex items-center gap-3">
           <Link href="/">
@@ -1139,11 +1342,25 @@ Format EXACTLY like this:
         </div>
 
         <div className="flex items-center gap-1.5">
+          {/* Run button */}
+          {isRunnable && (
+            terminalRunning ? (
+              <Button variant="ghost" size="sm" className="h-7 text-xs bg-red-600/20 text-red-400 hover:bg-red-600/30 border border-red-600/30" onClick={stopRun}>
+                <Square className="h-3 w-3 mr-1 fill-current" /> Stop
+              </Button>
+            ) : (
+              <Button variant="ghost" size="sm" className="h-7 text-xs bg-green-600/20 text-green-400 hover:bg-green-600/30 border border-green-600/30" onClick={runCurrentFile}>
+                <Play className="h-3 w-3 mr-1 fill-current" /> Run
+              </Button>
+            )
+          )}
+
           {activeTabData && (
             <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground hover:text-white" onClick={saveCurrentFile}>
               <Save className="h-3.5 w-3.5 mr-1" /> Save
             </Button>
           )}
+
           {openTabs.length > 0 && (
             <Button variant="ghost" size="sm" className="h-7 text-xs text-green-400 hover:text-green-300 hover:bg-green-400/10" onClick={downloadFiles}>
               <Download className="h-3.5 w-3.5 mr-1.5" /> Download ZIP
@@ -1159,6 +1376,56 @@ Format EXACTLY like this:
               <Monitor className="h-3.5 w-3.5 mr-1" /> Preview
             </Button>
           )}
+
+          {/* Editor Settings */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-white" title="Editor Settings">
+                <Settings className="h-3.5 w-3.5" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-56 bg-[#161b22] border-[#30363d] text-white p-3" align="end">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">Editor Settings</p>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1.5 block">Font Size: {editorFontSize}px</label>
+                  <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="icon" className="h-6 w-6 border border-[#30363d]" onClick={() => setEditorFontSize(s => Math.max(10, s - 1))}><ZoomOut className="h-3 w-3" /></Button>
+                    <div className="flex-1 text-center text-xs text-white font-mono">{editorFontSize}</div>
+                    <Button variant="ghost" size="icon" className="h-6 w-6 border border-[#30363d]" onClick={() => setEditorFontSize(s => Math.min(24, s + 1))}><ZoomIn className="h-3 w-3" /></Button>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs text-muted-foreground">Word Wrap</label>
+                  <button
+                    onClick={() => setEditorWordWrap(w => w === 'on' ? 'off' : 'on')}
+                    className={`w-8 h-4 rounded-full transition-colors relative ${editorWordWrap === 'on' ? 'bg-primary' : 'bg-[#30363d]'}`}
+                  >
+                    <span className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${editorWordWrap === 'on' ? 'left-4.5 translate-x-0' : 'left-0.5'}`} style={{ left: editorWordWrap === 'on' ? '18px' : '2px' }} />
+                  </button>
+                </div>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs text-muted-foreground">Minimap</label>
+                  <button
+                    onClick={() => setEditorMinimap(m => !m)}
+                    className={`w-8 h-4 rounded-full transition-colors relative ${editorMinimap ? 'bg-primary' : 'bg-[#30363d]'}`}
+                  >
+                    <span className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all`} style={{ left: editorMinimap ? '18px' : '2px' }} />
+                  </button>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          {/* Terminal toggle */}
+          <Button
+            variant="ghost" size="icon"
+            className={`h-7 w-7 ${showTerminal ? 'text-green-400 bg-green-400/10' : 'text-muted-foreground hover:text-white'}`}
+            title="Toggle Terminal"
+            onClick={() => setShowTerminal(s => !s)}
+          >
+            <Terminal className="h-3.5 w-3.5" />
+          </Button>
 
           <Dialog>
             <DialogTrigger asChild>
@@ -1202,7 +1469,12 @@ Format EXACTLY like this:
           <div className="flex items-center justify-between px-2 py-1.5 border-b border-[#30363d] shrink-0">
             <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Explorer</span>
             <div className="flex items-center gap-0.5">
-              <Button variant="ghost" size="icon" className="h-5 w-5 text-muted-foreground hover:text-white" onClick={() => setShowSearch(s => !s)}>
+              <Button variant="ghost" size="icon" className={`h-5 w-5 ${showFindInFiles ? 'text-primary' : 'text-muted-foreground hover:text-white'}`}
+                title="Find in Files" onClick={() => { setShowFindInFiles(s => !s); setShowSearch(false); }}>
+                <FileSearch className="h-3 w-3" />
+              </Button>
+              <Button variant="ghost" size="icon" className={`h-5 w-5 ${showSearch ? 'text-primary' : 'text-muted-foreground hover:text-white'}`}
+                onClick={() => { setShowSearch(s => !s); setShowFindInFiles(false); }}>
                 <Search className="h-3 w-3" />
               </Button>
               <Button variant="ghost" size="icon" className="h-5 w-5 text-muted-foreground hover:text-white" onClick={() => setIsCreatingFile(true)}>
@@ -1216,9 +1488,52 @@ Format EXACTLY like this:
             </div>
           </div>
 
+          {/* File name search */}
           {showSearch && (
             <div className="px-2 py-1.5 border-b border-[#30363d] shrink-0">
               <Input placeholder="Search files..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="h-6 text-xs bg-[#0d1117] border-[#30363d] text-white" autoFocus />
+            </div>
+          )}
+
+          {/* Find in files */}
+          {showFindInFiles && (
+            <div className="border-b border-[#30363d] shrink-0">
+              <div className="px-2 py-1.5">
+                <Input
+                  placeholder="Search in all files..."
+                  value={findQuery}
+                  onChange={e => setFindQuery(e.target.value)}
+                  className="h-6 text-xs bg-[#0d1117] border-[#30363d] text-white"
+                  autoFocus
+                />
+              </div>
+              {findQuery && (
+                <div className="max-h-48 overflow-y-auto">
+                  {findResults.length === 0 ? (
+                    <p className="text-[10px] text-muted-foreground px-3 py-2">No results found</p>
+                  ) : (
+                    <>
+                      <p className="text-[9px] text-muted-foreground px-2 py-1">{findResults.length}{findResults.length >= 100 ? '+' : ''} matches</p>
+                      {findResults.map((r, i) => (
+                        <div key={i}
+                          className="px-2 py-1 hover:bg-[#21262d] cursor-pointer"
+                          onClick={() => {
+                            const node = flatFiles.find(f => f.path === r.path);
+                            if (node) openFileFromTree(node as FileNode);
+                          }}
+                        >
+                          <div className="flex items-center gap-1 mb-0.5">
+                            {getFileIcon(r.path.split('/').pop() || '')}
+                            <span className="text-[10px] text-[#8b949e] truncate">{r.path}</span>
+                            <span className="text-[9px] text-muted-foreground/50 ml-auto shrink-0">:{r.line}</span>
+                          </div>
+                          <p className="text-[10px] text-[#c9d1d9] truncate font-mono ml-4">{r.text.slice(0, 50)}</p>
+                        </div>
+                      ))}
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -1264,6 +1579,7 @@ Format EXACTLY like this:
 
         {/* EDITOR AREA */}
         <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+          {/* Tabs */}
           <div className="flex items-center border-b border-[#30363d] bg-[#161b22] overflow-x-auto shrink-0 min-h-[34px]">
             {openTabs.length === 0 ? (
               <div className="flex-1 flex items-center justify-center text-xs text-muted-foreground py-2 gap-1.5">
@@ -1286,42 +1602,106 @@ Format EXACTLY like this:
             )}
           </div>
 
-          {activeTabData ? (
-            <div className="flex-1 overflow-hidden">
-              <Editor
-                key={activeTab}
-                height="100%"
-                language={activeTabData.language}
-                value={activeTabData.content}
-                onChange={val => updateTabContent(val || '')}
-                theme="vs-dark"
-                options={{
-                  fontSize: 13,
-                  fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Courier New', monospace",
-                  minimap: { enabled: false },
-                  scrollBeyondLastLine: false,
-                  wordWrap: 'on',
-                  lineNumbers: 'on',
-                  renderLineHighlight: 'all',
-                  cursorBlinking: 'smooth',
-                  cursorSmoothCaretAnimation: 'on',
-                  smoothScrolling: true,
-                  tabSize: 2,
-                  automaticLayout: true,
-                  padding: { top: 12 },
-                  bracketPairColorization: { enabled: true },
-                  guides: { bracketPairs: true },
-                }}
-              />
-            </div>
-          ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-[#0d1117]">
-              <Code2 className="h-16 w-16 text-muted-foreground/15 mb-4" />
-              <p className="text-muted-foreground text-sm font-medium">No file open</p>
-              <p className="text-muted-foreground/50 text-xs mt-1">Select a file from the explorer or clone a GitHub repository</p>
-            </div>
-          )}
+          {/* Editor + Terminal flex column */}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            {activeTabData ? (
+              <div className={`${showTerminal ? 'flex-1' : 'flex-1'} overflow-hidden`} style={{ flex: showTerminal ? '1 1 0' : '1 1 0' }}>
+                <Editor
+                  key={`${activeTab}-${editorFontSize}-${editorWordWrap}-${editorMinimap}`}
+                  height="100%"
+                  language={activeTabData.language}
+                  value={activeTabData.content}
+                  onChange={val => updateTabContent(val || '')}
+                  theme="vs-dark"
+                  onMount={(editor) => {
+                    editorRef.current = editor;
+                    editor.onDidChangeCursorPosition((e: any) => {
+                      setCursorLine(e.position.lineNumber);
+                      setCursorCol(e.position.column);
+                    });
+                  }}
+                  options={{
+                    fontSize: editorFontSize,
+                    fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Courier New', monospace",
+                    minimap: { enabled: editorMinimap },
+                    scrollBeyondLastLine: false,
+                    wordWrap: editorWordWrap,
+                    lineNumbers: 'on',
+                    renderLineHighlight: 'all',
+                    cursorBlinking: 'smooth',
+                    cursorSmoothCaretAnimation: 'on',
+                    smoothScrolling: true,
+                    tabSize: 2,
+                    automaticLayout: true,
+                    padding: { top: 12 },
+                    bracketPairColorization: { enabled: true },
+                    guides: { bracketPairs: true },
+                  }}
+                />
+              </div>
+            ) : (
+              <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-[#0d1117]">
+                <Code2 className="h-16 w-16 text-muted-foreground/15 mb-4" />
+                <p className="text-muted-foreground text-sm font-medium">No file open</p>
+                <p className="text-muted-foreground/50 text-xs mt-1">Select a file from the explorer or clone a GitHub repository</p>
+              </div>
+            )}
 
+            {/* TERMINAL PANEL */}
+            {showTerminal && (
+              <div className="h-52 border-t border-[#30363d] flex flex-col shrink-0 bg-[#0d1117]">
+                {/* Terminal toolbar */}
+                <div className="flex items-center gap-2 px-3 py-1.5 border-b border-[#30363d] bg-[#161b22] shrink-0">
+                  <Terminal className="h-3.5 w-3.5 text-green-400" />
+                  <span className="text-xs font-semibold text-white">Terminal</span>
+                  <div className="ml-auto flex items-center gap-1.5">
+                    <Select value={terminalLang} onValueChange={setTerminalLang}>
+                      <SelectTrigger className="h-6 text-[11px] w-28 bg-[#21262d] border-[#30363d]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-[#161b22] border-[#30363d] text-white">
+                        {TERMINAL_LANGS.map(l => <SelectItem key={l} value={l} className="text-xs">{l}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    <Button size="icon" variant="ghost" className="h-6 w-6"
+                      onClick={() => { navigator.clipboard.writeText(terminalOutput.map(l => l.text).join('')); toast({ title: 'Copied' }); }}>
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                    <Button size="icon" variant="ghost" className="h-6 w-6"
+                      onClick={() => setTerminalOutput([{ type: 'info', text: '▶  Terminal cleared.' }])}>
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                    {terminalRunning ? (
+                      <Button size="sm" onClick={stopRun} className="h-6 text-[11px] bg-red-600 hover:bg-red-700 px-2">
+                        <Square className="h-2.5 w-2.5 mr-1 fill-current" /> Stop
+                      </Button>
+                    ) : (
+                      <Button size="sm" onClick={runCurrentFile} className="h-6 text-[11px] bg-green-600 hover:bg-green-700 px-2" disabled={!activeTabData}>
+                        <Play className="h-2.5 w-2.5 mr-1 fill-current" /> Run
+                      </Button>
+                    )}
+                    <Button size="icon" variant="ghost" className="h-6 w-6 text-muted-foreground hover:text-white" onClick={() => setShowTerminal(false)}>
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+                {/* Terminal output */}
+                <div ref={terminalScrollRef} className="flex-1 overflow-auto p-3 font-mono space-y-0.5">
+                  {terminalOutput.map((line, i) => (
+                    <pre key={i} className={`whitespace-pre-wrap break-all leading-5 text-[11px] ${terminalLineColor(line.type)}`}>{line.text}</pre>
+                  ))}
+                  {terminalRunning && (
+                    <div className="flex items-center gap-1.5 text-yellow-400 text-xs mt-1">
+                      <div className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse" />
+                      Running...
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Live Preview Panel */}
           {showPreview && previewContent && (
             <div className="h-72 border-t border-[#30363d] flex flex-col shrink-0">
               <div className="flex items-center justify-between px-3 py-1 border-b border-[#30363d] bg-[#21262d] shrink-0">
@@ -1341,6 +1721,29 @@ Format EXACTLY like this:
               <iframe key={previewKey} title="Live Preview" srcDoc={previewContent} className="flex-1 w-full border-none bg-white" sandbox="allow-scripts allow-same-origin allow-forms allow-modals" />
             </div>
           )}
+
+          {/* STATUS BAR */}
+          <div className="h-5 shrink-0 bg-[#0078d4] flex items-center px-3 gap-4 text-white text-[10px] font-mono select-none">
+            {activeTabData ? (
+              <>
+                <span className="opacity-90">{activeTabData.language}</span>
+                <span className="opacity-70">|</span>
+                <span className="opacity-90">Ln {cursorLine}, Col {cursorCol}</span>
+                <span className="opacity-70">|</span>
+                <span className="opacity-90">{activeTabData.content.split('\n').length} lines</span>
+                <span className="opacity-70">|</span>
+                <span className="opacity-90">{(new TextEncoder().encode(activeTabData.content).length / 1024).toFixed(1)} KB</span>
+                {activeTabData.isDirty && <><span className="opacity-70">|</span><span className="text-yellow-200">● unsaved</span></>}
+              </>
+            ) : (
+              <span className="opacity-60">No file open</span>
+            )}
+            <div className="ml-auto flex items-center gap-3">
+              <span className="opacity-80">UTF-8</span>
+              <span className="opacity-80">Spaces: 2</span>
+              <span className="opacity-80 capitalize">{editorWordWrap === 'on' ? 'Wrap On' : 'Wrap Off'}</span>
+            </div>
+          </div>
         </div>
 
         {/* AI PANEL */}
@@ -1350,6 +1753,11 @@ Format EXACTLY like this:
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium transition-colors border-b-2
                 ${aiTab === 'chat' ? 'border-primary text-white' : 'border-transparent text-muted-foreground hover:text-white'}`}>
               <MessageSquare className="h-3.5 w-3.5" /> Chat
+            </button>
+            <button onClick={() => setAiTab('tools')}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium transition-colors border-b-2
+                ${aiTab === 'tools' ? 'border-primary text-white' : 'border-transparent text-muted-foreground hover:text-white'}`}>
+              <Wrench className="h-3.5 w-3.5" /> Tools
             </button>
             <button onClick={() => setAiTab('rewrite')}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium transition-colors border-b-2
@@ -1496,6 +1904,106 @@ Format EXACTLY like this:
             </div>
           )}
 
+          {/* TOOLS TAB */}
+          {aiTab === 'tools' && (
+            <div className="flex-1 flex flex-col overflow-hidden">
+              <div className="p-3 border-b border-[#30363d] shrink-0">
+                {activeTabData ? (
+                  <div className="flex items-center gap-1.5 bg-[#21262d] rounded-md px-2 py-1.5 mb-3">
+                    {getFileIcon(activeTabData.name)}
+                    <span className="text-xs text-[#c9d1d9] truncate flex-1">{activeTabData.name}</span>
+                    <Badge className="text-[9px] h-3.5 px-1 bg-green-500/20 text-green-400 border-green-500/30 shrink-0">{activeTabData.language}</Badge>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5 bg-yellow-400/10 text-yellow-400 rounded-md px-2 py-1.5 mb-3">
+                    <FileCode className="h-3.5 w-3.5 shrink-0" />
+                    <span className="text-[11px]">Open a file to use AI tools</span>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-1.5">
+                  {CODEGEN_TOOLS.map(tool => {
+                    const Icon = tool.icon;
+                    const isActive = activeTool === tool.id && toolsRunning;
+                    return (
+                      <button
+                        key={tool.id}
+                        onClick={() => callCodegenTool(tool.id)}
+                        disabled={toolsRunning || !activeTabData}
+                        className={`flex items-start gap-2 p-2.5 rounded-lg border text-left transition-all
+                          ${isActive
+                            ? 'border-primary/60 bg-primary/10'
+                            : 'border-[#30363d] hover:border-[#6e7681] hover:bg-[#21262d]'}
+                          ${!activeTabData ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+                      >
+                        {isActive
+                          ? <Loader2 className="h-3.5 w-3.5 animate-spin text-primary shrink-0 mt-0.5" />
+                          : <Icon className={`h-3.5 w-3.5 shrink-0 mt-0.5 ${tool.color}`} />}
+                        <div>
+                          <p className="text-[11px] font-medium text-white leading-tight">{tool.label}</p>
+                          <p className="text-[9px] text-muted-foreground mt-0.5 leading-tight">{tool.desc}</p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Convert language selector */}
+                <div className="mt-2 flex items-center gap-2">
+                  <span className="text-[10px] text-muted-foreground shrink-0">Convert to:</span>
+                  <Select value={convertTargetLang} onValueChange={setConvertTargetLang}>
+                    <SelectTrigger className="h-6 text-[11px] flex-1 bg-[#21262d] border-[#30363d] text-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-[#161b22] border-[#30363d] text-white">
+                      {['python', 'javascript', 'typescript', 'java', 'go', 'rust', 'php', 'ruby', 'csharp', 'cpp'].map(l => (
+                        <SelectItem key={l} value={l} className="text-xs">{l}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Tools result */}
+              <div ref={toolsScrollRef} className="flex-1 overflow-y-auto p-3">
+                {toolsRunning && !toolsResult && (
+                  <div className="flex items-center gap-2 text-xs text-primary">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    <span>Analyzing code...</span>
+                  </div>
+                )}
+                {toolsResult ? (
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider">
+                        {CODEGEN_TOOLS.find(t => t.id === activeTool)?.label || 'Result'}
+                      </span>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="sm" className="h-5 text-[10px] text-muted-foreground hover:text-white px-1.5"
+                          onClick={() => { navigator.clipboard.writeText(toolsResult); toast({ title: 'Copied' }); }}>
+                          <Copy className="h-3 w-3 mr-1" />Copy
+                        </Button>
+                        {(activeTool === 'test' || activeTool === 'document' || activeTool === 'convert') && (
+                          <Button variant="ghost" size="sm" className="h-5 text-[10px] text-green-400 hover:text-green-300 px-1.5"
+                            onClick={applyToolResult}>
+                            <Check className="h-3 w-3 mr-1" />Apply
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-xs"><MarkdownRenderer content={toolsResult} /></div>
+                  </div>
+                ) : !toolsRunning ? (
+                  <div className="flex flex-col items-center justify-center h-full text-center py-8 min-h-[150px]">
+                    <Wrench className="h-8 w-8 text-muted-foreground/20 mb-3" />
+                    <p className="text-xs text-muted-foreground">AI-powered code tools</p>
+                    <p className="text-[10px] text-muted-foreground/60 mt-1">Open a file and click any tool above</p>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          )}
+
           {/* REWRITE TAB */}
           {aiTab === 'rewrite' && (
             <div className="flex-1 flex flex-col overflow-hidden">
@@ -1527,7 +2035,6 @@ Format EXACTLY like this:
                         className="text-xs bg-[#0d1117] border-[#30363d] text-white resize-none min-h-[80px]"
                       />
                     </div>
-                    {/* 3 Phase Buttons */}
                     <div className="grid grid-cols-3 gap-1.5">
                       {(['frontend', 'backend', 'api'] as const).map(phase => {
                         const icons = { frontend: '🎨', backend: '⚙️', api: '🔌' };
@@ -1553,7 +2060,6 @@ Format EXACTLY like this:
                         );
                       })}
                     </div>
-                    {/* How-to hint */}
                     <p className="text-[10px] text-muted-foreground/60 leading-relaxed">
                       Build each part separately: <span className="text-muted-foreground">Frontend</span> → UI &amp; pages,{' '}
                       <span className="text-muted-foreground">Backend</span> → server &amp; data,{' '}
