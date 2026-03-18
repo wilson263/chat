@@ -132,11 +132,10 @@ export async function createChatCompletion(
       if (isAuthError(err)) {
         throw new Error(`OpenRouter authentication failed (${err?.status}). Please check your OPENROUTER_API_KEY.`);
       }
-      if (isRetryableError(err) && i < modelsToTry.length - 1) {
-        console.warn(`Model ${modelsToTry[i]} unavailable (${err?.status ?? "error"}), trying ${modelsToTry[i + 1]}...`);
+      if (i < modelsToTry.length - 1) {
+        console.warn(`Model ${modelsToTry[i]} unavailable (${err?.status ?? "error"}), switching to ${modelsToTry[i + 1]}...`);
         continue;
       }
-      break;
     }
   }
   console.error("All models failed. Last error:", lastError?.status, lastError?.message);
@@ -159,11 +158,10 @@ export async function createChatCompletionStream(
       if (isAuthError(err)) {
         throw new Error(`OpenRouter authentication failed (${err?.status}). Please check your OPENROUTER_API_KEY.`);
       }
-      if (isRetryableError(err) && i < modelsToTry.length - 1) {
-        console.warn(`Model ${modelsToTry[i]} unavailable (${err?.status ?? "error"}), trying ${modelsToTry[i + 1]}...`);
+      if (i < modelsToTry.length - 1) {
+        console.warn(`Model ${modelsToTry[i]} unavailable (${err?.status ?? "error"}), switching to ${modelsToTry[i + 1]}...`);
         continue;
       }
-      break;
     }
   }
   console.error("All models failed. Last error:", lastError?.status, lastError?.message);
@@ -191,11 +189,10 @@ export async function createChatCompletionStreamFromList(
       if (isAuthError(err)) {
         throw new Error(`OpenRouter authentication failed. Please check your OPENROUTER_API_KEY.`);
       }
-      if (isRetryableError(err) && i < modelList.length - 1) {
-        console.warn(`[agent] ${modelList[i]} unavailable (${err?.status}), trying ${modelList[i + 1]}...`);
+      if (i < modelList.length - 1) {
+        console.warn(`[agent] ${modelList[i]} unavailable (${err?.status}), switching to ${modelList[i + 1]}...`);
         continue;
       }
-      break;
     }
   }
   throw new Error("No AI models available right now. Please try again in a moment.");
