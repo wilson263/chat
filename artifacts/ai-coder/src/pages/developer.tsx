@@ -184,9 +184,16 @@ export default function DeveloperPage() {
   const [rewriteDone, setRewriteDone] = useState(false);
   const [rewriteMode, setRewriteMode] = useState<'build' | 'rewrite'>('build');
   const [builderPrompt, setBuilderPrompt] = useState('');
-  const [isBuildingApp, setIsBuildingApp] = useState(false);
-  const [buildStatus, setBuildStatus] = useState('');
-  const [buildDone, setBuildDone] = useState(false);
+  const [buildPhase, setBuildPhase] = useState<'frontend' | 'backend' | 'api' | null>(null);
+  const [phaseStatuses, setPhaseStatuses] = useState<{
+    frontend: { text: string; done: boolean; count: number };
+    backend:  { text: string; done: boolean; count: number };
+    api:      { text: string; done: boolean; count: number };
+  }>({
+    frontend: { text: '', done: false, count: 0 },
+    backend:  { text: '', done: false, count: 0 },
+    api:      { text: '', done: false, count: 0 },
+  });
   const aiScrollRef = useRef<HTMLDivElement>(null);
   const rewriteScrollRef = useRef<HTMLDivElement>(null);
 
@@ -523,80 +530,86 @@ Rewrite the ENTIRE file based on the instructions. Return ONLY the complete rewr
     }
   };
 
-  const buildApp = async () => {
-    if (!builderPrompt.trim() || isBuildingApp) return;
-    setIsBuildingApp(true);
-    setBuildStatus('');
-    setBuildDone(false);
+  const PHASE_PROMPTS: Record<'frontend' | 'backend' | 'api', { system: string; user: (p: string) => string }> = {
+    frontend: {
+      system: `You are building the FRONTEND ONLY for a live browser-preview IDE.
+Output ONLY file blocks — no text outside the blocks.
 
-    const prompt = `Build a complete, production-ready application: "${builderPrompt}"
-
-Format your response EXACTLY like this — NO other text outside the file blocks:
-
-===FILE: filename.ext===
-[complete file content here]
-===FILE: filename2.ext===
-[complete file content here]
-
-CRITICAL RULES FOR HTML/CSS/JS WEBSITES:
-- Use a SINGLE index.html that contains ALL pages as hidden <section> elements
-- Each page must be a section: <section id="page-home" class="page">, <section id="page-menu" class="page hidden">, etc.
-- script.js MUST implement a showPage(id) function that hides all sections and shows the requested one
-- ALL navigation buttons/links MUST call showPage() — NEVER use href="#" or broken onclick handlers
-- This is required because the live preview uses an inline iframe (srcDoc) — separate .html files CANNOT be navigated to
-- styles.css handles all visual styling including .page { display:none } and .page.active { display:block }`;
-
-    // System prompt tells the backend exactly which file format to use — overrides the default
-    const buildSystemPrompt = `You are an expert software engineer building apps for a live browser-preview IDE.
-Output ONLY file blocks — no introductions, explanations, or text outside the blocks.
-
-Format EXACTLY like this (one block per file):
-===FILE: filename.ext===
-[complete file content]
+Format EXACTLY like this:
+===FILE: index.html===
+[complete html]
 ===FILE: styles.css===
-[complete CSS]
+[complete css]
 ===FILE: script.js===
-[complete JS]
+[complete js]
 
-━━━ CRITICAL: HTML MULTI-PAGE NAVIGATION RULES ━━━
-The preview renders HTML using srcDoc (inline iframe). Separate .html files CANNOT navigate between each other.
-You MUST use Single-Page App (SPA) routing inside index.html:
+━━━ SPA NAVIGATION RULES (CRITICAL) ━━━
+The preview uses srcDoc — separate HTML files CANNOT navigate to each other.
+Use Single-Page App routing inside ONE index.html:
+• All pages = <section id="page-X" class="page"> inside index.html
+• styles.css: .page{display:none} .page.active{display:block}
+• script.js: function showPage(id){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById('page-'+id)?.classList.add('active');}
+• Nav links: <a href="#" onclick="showPage('menu');return false;">Menu</a>
+• NEVER href="menu.html" — NEVER href="#" with no onclick
 
-1. ALL pages go inside index.html as <section> elements:
-   <section id="page-home" class="page active">...</section>
-   <section id="page-menu" class="page">...</section>
-   <section id="page-reservations" class="page">...</section>
-   <section id="page-about" class="page">...</section>
-   <section id="page-contact" class="page">...</section>
+━━━ QUALITY RULES ━━━
+- Visually stunning: gradients, animations, modern dark or light design
+- Every section fully built — no lorem ipsum, no placeholder content
+- Forms, buttons, interactive elements all functional with JS`,
+      user: (p) => `Build the complete FRONTEND (UI only) for: "${p}"\nInclude: index.html (all pages as SPA sections), styles.css, script.js.\nUse mock/sample data for any dynamic content.`,
+    },
+    backend: {
+      system: `You are building the BACKEND SERVER only.
+Output ONLY file blocks — no text outside the blocks.
 
-2. styles.css MUST include:
-   .page { display: none; }
-   .page.active { display: block; }
+Format EXACTLY like this:
+===FILE: server.js===
+[complete server code]
+===FILE: package.json===
+[complete package.json]
 
-3. script.js MUST include a working showPage function:
-   function showPage(id) {
-     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-     document.getElementById('page-' + id)?.classList.add('active');
-     document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
-     document.querySelector('nav a[data-page="' + id + '"]')?.classList.add('active');
-   }
+━━━ RULES ━━━
+- Use Node.js + Express (preferred) OR Python + Flask/FastAPI
+- Enable CORS for all origins (the frontend will call this API)
+- Include ALL API endpoints the frontend will need (GET, POST, PUT, DELETE)
+- Use a simple storage solution: JSON file, SQLite, or in-memory array
+- Include proper error handling and JSON responses
+- Include a README.md showing how to run: npm install && node server.js
+- No auth complexity unless the app explicitly needs it`,
+      user: (p) => `Build the complete BACKEND SERVER for: "${p}"\nInclude: server.js (Express), package.json, and a README.md with run instructions.`,
+    },
+    api: {
+      system: `You are building the API ROUTES / ENDPOINTS only.
+Output ONLY file blocks — no text outside the blocks.
 
-4. Every nav link MUST use data-page and onclick:
-   <a href="#" data-page="menu" onclick="showPage('menu'); return false;">Menu</a>
-   NEVER: <a href="menu.html"> — this will NOT work in the preview
-   NEVER: <a href="#"> with no onclick — buttons will do nothing
+Format EXACTLY like this:
+===FILE: routes/api.js===
+[complete route file]
+===FILE: middleware/validate.js===
+[complete middleware]
 
-━━━ GENERAL RULES ━━━
-- Write complete, working code — no placeholders, no TODOs
-- Visually stunning with modern CSS, smooth animations, gradient backgrounds
-- Fully functional — every button, form, and feature must work
-- ANY language supported for non-web apps: Python, Rust, Go, Java, etc.`;
+━━━ RULES ━━━
+- Define all RESTful CRUD endpoints with proper HTTP methods
+- Include input validation and error responses
+- Include any database models or schemas needed
+- Use clear, consistent JSON response format: {success, data, error}
+- Add comments documenting each endpoint (method, path, params, response)
+- If the app needs auth, include JWT middleware`,
+      user: (p) => `Build all API ROUTES and ENDPOINTS for: "${p}"\nInclude: routes/api.js with full CRUD, middleware/validate.js, and any model files needed.`,
+    },
+  };
 
+  const runBuildPhase = async (phase: 'frontend' | 'backend' | 'api') => {
+    if (!builderPrompt.trim() || buildPhase !== null) return;
+    setBuildPhase(phase);
+    setPhaseStatuses(prev => ({ ...prev, [phase]: { text: '', done: false, count: 0 } }));
+
+    const { system, user } = PHASE_PROMPTS[phase];
     let fullResponse = '';
     try {
       const res = await fetch(`${BASE_PATH}/api/chat/message`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-        body: JSON.stringify({ userMessage: `Build this: ${builderPrompt.trim()}`, history: [], systemPrompt: buildSystemPrompt }),
+        body: JSON.stringify({ userMessage: user(builderPrompt.trim()), history: [], systemPrompt: system }),
       });
       const reader = res.body?.getReader();
       const decoder = new TextDecoder();
@@ -610,44 +623,37 @@ You MUST use Single-Page App (SPA) routing inside index.html:
               try {
                 const data = JSON.parse(line.slice(6));
                 if (data.done) break;
-                if (data.content) { fullResponse += data.content; setBuildStatus(fullResponse); }
+                if (data.content) { fullResponse += data.content; setPhaseStatuses(prev => ({ ...prev, [phase]: { ...prev[phase], text: fullResponse } })); }
               } catch { }
             }
           }
         }
       }
 
-      // Parse ===FILE: filename=== format (primary — what we instruct the AI to output)
-      const filePattern = /===FILE:\s*([^\n=]+?)===\n?([\s\S]*?)(?====FILE:|$)/g;
+      // Parse ===FILE: filename=== blocks
       const parsedFiles: { name: string; content: string }[] = [];
+      const filePattern = /===FILE:\s*([^\n=]+?)===\n?([\s\S]*?)(?====FILE:|$)/g;
       let match;
       while ((match = filePattern.exec(fullResponse)) !== null) {
-        const name = match[1].trim();
-        const content = match[2].trim();
+        const name = match[1].trim(); const content = match[2].trim();
         if (name && content) parsedFiles.push({ name, content });
       }
-
-      // Fallback: parse === filename === format (used by some models)
+      // Fallback: === filename === format
       if (parsedFiles.length === 0) {
-        const altPattern = /===\s*([^\n=]+\.[a-zA-Z0-9]+)\s*===\n?([\s\S]*?)(?====\s*[^\n=]+\.[a-zA-Z0-9]+\s*===|$)/g;
-        while ((match = altPattern.exec(fullResponse)) !== null) {
-          const name = match[1].trim();
-          const content = match[2].trim();
+        const alt = /===\s*([^\n=]+\.[a-zA-Z0-9]+)\s*===\n?([\s\S]*?)(?====\s*[^\n=]+\.[a-zA-Z0-9]+\s*===|$)/g;
+        while ((match = alt.exec(fullResponse)) !== null) {
+          const name = match[1].trim(); const content = match[2].trim();
           if (name && content) parsedFiles.push({ name, content });
         }
       }
-
-      // Last resort: treat entire response as index.html
+      // Last resort
       if (parsedFiles.length === 0) {
-        parsedFiles.push({ name: 'index.html', content: extractCodeFromMarkdown(fullResponse) });
+        const ext = phase === 'backend' ? 'server.js' : phase === 'api' ? 'routes/api.js' : 'index.html';
+        parsedFiles.push({ name: ext, content: extractCodeFromMarkdown(fullResponse) });
       }
 
-      const newTabs: OpenTab[] = parsedFiles.map(f => ({
-        path: f.name, name: f.name, content: f.content, language: getLanguage(f.name), isDirty: false,
-      }));
-      const newFlatFiles: FileNode[] = parsedFiles.map(f => ({
-        name: f.name, path: f.name, type: 'file' as const, content: f.content, language: getLanguage(f.name),
-      }));
+      const newTabs: OpenTab[] = parsedFiles.map(f => ({ path: f.name, name: f.name.split('/').pop()!, content: f.content, language: getLanguage(f.name), isDirty: false }));
+      const newFlatFiles: FileNode[] = parsedFiles.map(f => ({ name: f.name.split('/').pop()!, path: f.name, type: 'file' as const, content: f.content, language: getLanguage(f.name) }));
 
       setOpenTabs(prev => [...prev.filter(t => !parsedFiles.some(f => f.name === t.path)), ...newTabs]);
       setFlatFiles(prev => [...prev.filter(f => !parsedFiles.some(pf => pf.name === f.path)), ...newFlatFiles]);
@@ -656,22 +662,22 @@ You MUST use Single-Page App (SPA) routing inside index.html:
       setSelectedPath(newTabs[0].path);
       setRepoLoaded(true);
 
-      const htmlFile = newTabs.find(t => t.name.match(/\.html?$/i));
-      if (htmlFile) {
-        const css = newTabs.filter(t => t.name.endsWith('.css')).map(t => `<style>${t.content}</style>`).join('\n');
-        const js = newTabs.filter(t => t.name.match(/\.js$/) && !t.name.endsWith('.min.js')).map(t => `<script>${t.content}</script>`).join('\n');
-        const combined = htmlFile.content.replace('</head>', `${css}\n</head>`).replace('</body>', `${js}\n</body>`);
-        setPreviewContent(combined);
-        setPreviewKey(k => k + 1);
-        setShowPreview(true);
+      if (phase === 'frontend') {
+        const htmlFile = newTabs.find(t => t.name.match(/\.html?$/i));
+        if (htmlFile) {
+          const css = newTabs.filter(t => t.name.endsWith('.css')).map(t => `<style>${t.content}</style>`).join('\n');
+          const js  = newTabs.filter(t => t.name.match(/\.js$/) && !t.name.endsWith('.min.js')).map(t => `<script>${t.content}</script>`).join('\n');
+          const combined = htmlFile.content.replace('</head>', `${css}\n</head>`).replace('</body>', `${js}\n</body>`);
+          setPreviewContent(combined); setPreviewKey(k => k + 1); setShowPreview(true);
+        }
       }
 
-      setBuildDone(true);
-      toast({ title: `App built — ${parsedFiles.length} file${parsedFiles.length !== 1 ? 's' : ''} created` });
+      setPhaseStatuses(prev => ({ ...prev, [phase]: { text: fullResponse, done: true, count: parsedFiles.length } }));
+      toast({ title: `${phase.charAt(0).toUpperCase() + phase.slice(1)} built — ${parsedFiles.length} file${parsedFiles.length !== 1 ? 's' : ''} created` });
     } catch (err: any) {
-      toast({ title: 'Build failed', description: err.message, variant: 'destructive' });
+      toast({ title: `${phase} build failed`, description: err.message, variant: 'destructive' });
     } finally {
-      setIsBuildingApp(false);
+      setBuildPhase(null);
     }
   };
 
@@ -997,43 +1003,73 @@ You MUST use Single-Page App (SPA) routing inside index.html:
                     <div>
                       <label className="text-[10px] text-muted-foreground mb-1 block">Describe your app</label>
                       <Textarea
-                        placeholder="Examples: A todo app, A Python web scraper, A React dashboard"
+                        placeholder="e.g. A restaurant website with menu, reservations, and contact pages"
                         value={builderPrompt}
-                        onChange={e => { setBuilderPrompt(e.target.value); setBuildDone(false); }}
-                        className="text-xs bg-[#0d1117] border-[#30363d] text-white resize-none min-h-[90px]"
+                        onChange={e => { setBuilderPrompt(e.target.value); setPhaseStatuses({ frontend: { text: '', done: false, count: 0 }, backend: { text: '', done: false, count: 0 }, api: { text: '', done: false, count: 0 } }); }}
+                        className="text-xs bg-[#0d1117] border-[#30363d] text-white resize-none min-h-[80px]"
                       />
                     </div>
-                    <Button className="w-full bg-primary hover:bg-primary/90 text-xs h-8" onClick={buildApp} disabled={isBuildingApp || !builderPrompt.trim()}>
-                      {isBuildingApp
-                        ? <><Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />Building...</>
-                        : <><Sparkles className="h-3.5 w-3.5 mr-1.5" />Build App</>}
-                    </Button>
-                    {buildDone && !isBuildingApp && (
-                      <div className="flex items-center gap-2 text-green-400 bg-green-400/10 rounded-md px-2.5 py-2">
-                        <Check className="h-3.5 w-3.5 shrink-0" />
-                        <p className="text-[11px] font-medium">App built and opened in editor!</p>
-                      </div>
-                    )}
+                    {/* 3 Phase Buttons */}
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {(['frontend', 'backend', 'api'] as const).map(phase => {
+                        const icons = { frontend: '🎨', backend: '⚙️', api: '🔌' };
+                        const labels = { frontend: 'Frontend', backend: 'Backend', api: 'API' };
+                        const status = phaseStatuses[phase];
+                        const isBuilding = buildPhase === phase;
+                        const isDisabled = buildPhase !== null || !builderPrompt.trim();
+                        return (
+                          <button key={phase} onClick={() => runBuildPhase(phase)} disabled={isDisabled}
+                            className={`flex flex-col items-center gap-1 py-2 px-1 rounded-md text-[10px] font-medium border transition-colors
+                              ${status.done ? 'border-green-500/50 bg-green-500/10 text-green-400' :
+                                isBuilding ? 'border-primary/60 bg-primary/10 text-primary' :
+                                isDisabled ? 'border-[#30363d] text-muted-foreground/40 cursor-not-allowed' :
+                                'border-[#30363d] text-muted-foreground hover:border-primary/50 hover:text-white hover:bg-[#21262d]'}`}>
+                            {isBuilding
+                              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              : status.done
+                              ? <Check className="h-3.5 w-3.5" />
+                              : <span className="text-sm leading-none">{icons[phase]}</span>}
+                            <span>{labels[phase]}</span>
+                            {status.done && <span className="text-[9px] opacity-70">{status.count} file{status.count !== 1 ? 's' : ''}</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {/* How-to hint */}
+                    <p className="text-[10px] text-muted-foreground/60 leading-relaxed">
+                      Build each part separately: <span className="text-muted-foreground">Frontend</span> → UI &amp; pages,{' '}
+                      <span className="text-muted-foreground">Backend</span> → server &amp; data,{' '}
+                      <span className="text-muted-foreground">API</span> → routes &amp; endpoints
+                    </p>
                   </div>
-                  <div ref={rewriteScrollRef} className="flex-1 overflow-y-auto p-3">
-                    {isBuildingApp && (
-                      <div className="flex items-center gap-2 text-xs text-primary mb-2">
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        <span>Building your app...</span>
+                  <div ref={rewriteScrollRef} className="flex-1 overflow-y-auto p-3 space-y-3">
+                    {buildPhase && (
+                      <div className="flex items-center gap-2 text-xs text-primary">
+                        <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />
+                        <span>Building {buildPhase}...</span>
                       </div>
                     )}
-                    {buildStatus ? (
-                      <div>
-                        <span className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider">AI Output</span>
-                        <div className="text-xs mt-1"><MarkdownRenderer content={buildStatus} /></div>
-                      </div>
-                    ) : !isBuildingApp ? (
+                    {(['frontend', 'backend', 'api'] as const).map(phase => {
+                      const s = phaseStatuses[phase];
+                      if (!s.text) return null;
+                      const labels = { frontend: '🎨 Frontend', backend: '⚙️ Backend', api: '🔌 API' };
+                      return (
+                        <div key={phase} className="border border-[#30363d] rounded-md overflow-hidden">
+                          <div className={`flex items-center justify-between px-2.5 py-1.5 text-[10px] font-semibold border-b border-[#30363d] ${s.done ? 'text-green-400 bg-green-400/5' : 'text-primary bg-primary/5'}`}>
+                            <span>{labels[phase]}</span>
+                            {s.done && <span className="text-green-400/70">{s.count} file{s.count !== 1 ? 's' : ''} created</span>}
+                          </div>
+                          <div className="p-2 text-xs"><MarkdownRenderer content={s.text} /></div>
+                        </div>
+                      );
+                    })}
+                    {!buildPhase && !Object.values(phaseStatuses).some(s => s.text) && (
                       <div className="flex flex-col items-center justify-center h-full text-center py-8 min-h-[150px]">
-                        <Sparkles className="h-8 w-8 text-muted-foreground/20 mb-3" />
-                        <p className="text-xs text-muted-foreground">AI will build a complete app</p>
-                        <p className="text-[10px] text-muted-foreground/60 mt-1">Supports any language or framework</p>
+                        <div className="flex gap-3 mb-3 text-2xl">🎨⚙️🔌</div>
+                        <p className="text-xs text-muted-foreground">Build your app in focused steps</p>
+                        <p className="text-[10px] text-muted-foreground/60 mt-1">Each button makes one focused AI request</p>
                       </div>
-                    ) : null}
+                    )}
                   </div>
                 </div>
               )}
