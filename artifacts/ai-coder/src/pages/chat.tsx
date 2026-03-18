@@ -479,6 +479,48 @@ export default function ChatPage() {
 
   const copyToClipboard = (text: string) => { navigator.clipboard.writeText(text); toast({ title: 'Copied!' }); };
 
+  const saveCodeFromMessage = async (content: string) => {
+    const filePattern = /===FILE:\s*([^\n=]+?)===\n?([\s\S]*?)(?====FILE:|$)/g;
+    const fileBlocks: { name: string; content: string }[] = [];
+    let match;
+    while ((match = filePattern.exec(content)) !== null) {
+      const name = match[1].trim();
+      const text = match[2].trim();
+      if (name && text) fileBlocks.push({ name, content: text });
+    }
+    if (fileBlocks.length > 1) {
+      try {
+        const JSZip = (await import('jszip')).default;
+        const zip = new JSZip();
+        for (const f of fileBlocks) zip.file(f.name, f.content);
+        const blob = await zip.generateAsync({ type: 'blob' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = 'ai-generated-files.zip'; a.click(); URL.revokeObjectURL(url);
+        toast({ title: `Downloaded ${fileBlocks.length} files as ZIP` });
+      } catch { toast({ title: 'Failed to create ZIP', variant: 'destructive' }); }
+      return;
+    }
+    if (fileBlocks.length === 1) {
+      const blob = new Blob([fileBlocks[0].content], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = fileBlocks[0].name; a.click(); URL.revokeObjectURL(url);
+      toast({ title: `Saved ${fileBlocks[0].name}` });
+      return;
+    }
+    const codeMatch = content.match(/```(?:\w+)?\n([\s\S]+?)```/);
+    if (codeMatch) {
+      const langMatch = content.match(/```(\w+)/);
+      const ext = langMatch ? { javascript:'js', typescript:'ts', python:'py', html:'html', css:'css', json:'json', bash:'sh', shell:'sh' }[langMatch[1]] || 'txt' : 'txt';
+      const filename = window.prompt('Save as filename:', `code.${ext}`) || `code.${ext}`;
+      const blob = new Blob([codeMatch[1]], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = filename; a.click(); URL.revokeObjectURL(url);
+      toast({ title: `Saved ${filename}` });
+    } else {
+      toast({ title: 'No code found in this message', variant: 'destructive' });
+    }
+  };
+
   const exportMarkdown = () => {
     const lines = [`# ZorvixAI Chat Export\n_${new Date().toLocaleString()}_\n`];
     messages.forEach(m => { lines.push(`\n## ${m.role === 'user' ? '👤 You' : '🤖 ZorvixAI'}\n`); lines.push(m.content); });
@@ -1101,6 +1143,9 @@ export default function ChatPage() {
                           <button onClick={regenerate} className="p-1 rounded text-muted-foreground hover:text-foreground transition-colors" title="Regenerate"><RefreshCw className="w-3 h-3"/></button>
                           <button onClick={()=>branchChat(idx)} className="p-1 rounded text-muted-foreground hover:text-primary transition-colors" title="Branch from here"><GitBranch className="w-3 h-3"/></button>
                           <button onClick={()=>{setCommentingIdx(idx);setCommentText(msg.comment||'');}} className="p-1 rounded text-muted-foreground hover:text-yellow-400 transition-colors" title="Add comment"><MessageCircle className="w-3 h-3"/></button>
+                          {(msg.content.includes('```') || msg.content.includes('===FILE:')) && (
+                            <button onClick={()=>saveCodeFromMessage(msg.content)} className="p-1 rounded text-muted-foreground hover:text-green-400 transition-colors" title="AI Write — save code to file"><Download className="w-3 h-3"/></button>
+                          )}
                         </div>
                       </div>
                     )}
