@@ -4,8 +4,8 @@ const FREE_MODELS = [
   "meta-llama/llama-3.3-70b-instruct:free",
   "meta-llama/llama-3.1-8b-instruct:free",
   "google/gemma-2-9b-it:free",
-  "deepseek/deepseek-r1:free",
-  "qwen/qwen2.5-72b-instruct:free",
+  "deepseek/deepseek-chat:free",
+  "microsoft/phi-3-mini-128k-instruct:free",
 ];
 
 export function getAIClient(): OpenAI {
@@ -16,6 +16,14 @@ export function getAIClient(): OpenAI {
 
 export const FREE_MODEL = FREE_MODELS[0];
 export const FREE_MODEL_FAST = FREE_MODELS[1];
+
+function shouldRetry(err: any): boolean {
+  const status = err?.status ?? err?.response?.status;
+  if (status === 429 || status === 404 || status === 400) return true;
+  const msg = err?.message ?? "";
+  if (msg.includes("429") || msg.includes("No endpoints found") || msg.includes("not a valid model")) return true;
+  return false;
+}
 
 export async function createChatCompletion(
   params: OpenAI.Chat.ChatCompletionCreateParamsNonStreaming,
@@ -30,9 +38,7 @@ export async function createChatCompletion(
     try {
       return await client.chat.completions.create({ ...params, model: modelsToTry[i] });
     } catch (err: any) {
-      const shouldRetry = err?.status === 429 || err?.status === 404 ||
-        err?.message?.includes("429") || err?.message?.includes("No endpoints found");
-      if (shouldRetry && i < modelsToTry.length - 1) {
+      if (shouldRetry(err) && i < modelsToTry.length - 1) {
         console.warn(`Model ${modelsToTry[i]} unavailable (${err?.status ?? "error"}), trying ${modelsToTry[i + 1]}...`);
         continue;
       }
@@ -55,9 +61,7 @@ export async function createChatCompletionStream(
     try {
       return await client.chat.completions.create({ ...params, model: modelsToTry[i], stream: true });
     } catch (err: any) {
-      const shouldRetry = err?.status === 429 || err?.status === 404 ||
-        err?.message?.includes("429") || err?.message?.includes("No endpoints found");
-      if (shouldRetry && i < modelsToTry.length - 1) {
+      if (shouldRetry(err) && i < modelsToTry.length - 1) {
         console.warn(`Model ${modelsToTry[i]} unavailable (${err?.status ?? "error"}), trying ${modelsToTry[i + 1]}...`);
         continue;
       }
