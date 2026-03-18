@@ -11,7 +11,7 @@ import {
   GitCommit, GitPullRequest, Eye, Rocket, Globe as GlobeIcon,
   Gamepad2, Camera, Music, BarChart, CheckSquare, FileText,
   Monitor, Columns2, GitCompare as GitCompare2, LayoutPanelLeft, AlignLeft,
-  Command, ArrowUp, ArrowDown, Folder, Image, Keyboard,
+  Command, ArrowUp, ArrowDown, Folder, Image, Keyboard, Layout, Compass,
 } from 'lucide-react';
 import { OPENROUTER_MODELS } from '@/components/model-selector';
 
@@ -128,7 +128,25 @@ export default function AboutPage() {
     },
   ];
 
-  const totalFeatures = playgroundFeatures.length + workspaceFeatures.length + chatFeatures.length + powerFeatures.length;
+  const promptGeneratorFeatures = [
+    { icon: Wand2, title: 'AI Prompt Builder', desc: 'Generate professional UI/UX, design, and code prompts for Figma, Canva, Framer, and other design tools in seconds.', color: 'bg-violet-500/10 text-violet-400', badge: 'NEW' },
+    { icon: Layers, title: 'Prompt Categories', desc: 'Browse prompts by category: UI design, landing pages, dashboards, mobile apps, icons, illustrations, and more.', color: 'bg-pink-500/10 text-pink-400', badge: 'NEW' },
+    { icon: Code2, title: 'Code Prompt Templates', desc: 'Pick from pre-built code prompt templates for React, Vue, Python, APIs, and more — fully editable and customizable.', color: 'bg-blue-500/10 text-blue-400', badge: 'NEW' },
+    { icon: Share2, title: 'One-Click Copy', desc: 'Copy any generated prompt to clipboard instantly and paste it directly into your favourite design or AI tool.', color: 'bg-emerald-500/10 text-emerald-400', badge: 'NEW' },
+    { icon: History, title: 'Prompt History', desc: 'All your previously generated prompts are saved in session so you can revisit, tweak, or re-use them quickly.', color: 'bg-amber-500/10 text-amber-400', badge: 'NEW' },
+    { icon: Sparkles, title: 'AI-Powered Refinement', desc: 'Ask the AI to refine, shorten, expand, or rewrite any generated prompt to better match your creative vision.', color: 'bg-cyan-500/10 text-cyan-400', badge: 'NEW' },
+  ];
+
+  const exploreFeatures = [
+    { icon: Compass, title: 'Community Projects', desc: 'Browse and discover projects shared by other ZorvixAI users. Find inspiration, fork a project, and build on it.', color: 'bg-teal-500/10 text-teal-400', badge: 'NEW' },
+    { icon: Search, title: 'Project Search', desc: 'Search across all public community projects by name, language, or description to quickly find what you need.', color: 'bg-blue-500/10 text-blue-400', badge: 'NEW' },
+    { icon: Star, title: 'Featured Projects', desc: 'Curated hand-picked projects featured by the ZorvixAI team — showcasing the best community creations each week.', color: 'bg-yellow-500/10 text-yellow-400', badge: 'NEW' },
+    { icon: Share2, title: 'Fork & Remix', desc: 'Fork any public project directly into your own account with one click and immediately start editing and customizing.', color: 'bg-violet-500/10 text-violet-400', badge: 'NEW' },
+    { icon: Eye, title: 'Live Preview Browsing', desc: 'See a live thumbnail preview of each community project before opening it so you know what you\'re getting into.', color: 'bg-emerald-500/10 text-emerald-400', badge: 'NEW' },
+    { icon: Globe, title: 'Trending Projects', desc: 'Discover the most popular projects ranked by views, forks, and community activity to see what developers are building.', color: 'bg-pink-500/10 text-pink-400', badge: 'NEW' },
+  ];
+
+  const totalFeatures = playgroundFeatures.length + workspaceFeatures.length + chatFeatures.length + powerFeatures.length + promptGeneratorFeatures.length + exploreFeatures.length;
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -337,6 +355,76 @@ export default function AboutPage() {
           </div>
         </section>
 
+        {/* Prompt Generator Features */}
+        <section className="mb-14">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-9 h-9 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center">
+              <Wand2 className="w-4 h-4 text-violet-400" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold">Prompt Generator</h2>
+              <p className="text-sm text-muted-foreground">Generate professional design and code prompts for Figma, Canva, Framer, and more</p>
+            </div>
+            <Badge className="ml-auto bg-violet-500/20 text-violet-400 border-violet-500/30">NEW</Badge>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {promptGeneratorFeatures.map(f => (
+              <div key={f.title} className="bg-card border border-border/50 rounded-xl p-5 hover:border-violet-500/20 transition-colors">
+                <div className="flex items-start gap-3">
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${f.color}`}><f.icon className="w-4 h-4" /></div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <h3 className="font-semibold text-sm">{f.title}</h3>
+                      <Badge variant="outline" className="text-xs py-0 h-4 border-violet-500/40 text-violet-400">{f.badge}</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">{f.desc}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 flex justify-center">
+            <Button onClick={() => setLocation('/prompt-generator')} className="gap-2 shadow-lg shadow-violet-500/20 bg-violet-600 hover:bg-violet-700">
+              <Wand2 className="w-4 h-4" />Try Prompt Generator
+            </Button>
+          </div>
+        </section>
+
+        {/* Explore Features */}
+        <section className="mb-14">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-9 h-9 rounded-xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-center">
+              <Compass className="w-4 h-4 text-teal-400" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold">Explore Community</h2>
+              <p className="text-sm text-muted-foreground">Discover, fork, and build on projects from the ZorvixAI community</p>
+            </div>
+            <Badge className="ml-auto bg-teal-500/20 text-teal-400 border-teal-500/30">NEW</Badge>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {exploreFeatures.map(f => (
+              <div key={f.title} className="bg-card border border-border/50 rounded-xl p-5 hover:border-teal-500/20 transition-colors">
+                <div className="flex items-start gap-3">
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${f.color}`}><f.icon className="w-4 h-4" /></div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <h3 className="font-semibold text-sm">{f.title}</h3>
+                      <Badge variant="outline" className="text-xs py-0 h-4 border-teal-500/40 text-teal-400">{f.badge}</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">{f.desc}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 flex justify-center">
+            <Button variant="outline" onClick={() => setLocation('/explore')} className="gap-2">
+              <Compass className="w-4 h-4" />Browse Community
+            </Button>
+          </div>
+        </section>
+
         {/* AI Models Section */}
         <section className="mb-14">
           <div className="flex items-center gap-3 mb-6">
@@ -449,15 +537,17 @@ export default function AboutPage() {
               {[
                 { label: 'AI Chat', icon: MessageSquare, path: '/' },
                 { label: 'Projects & IDE', icon: FolderKanban, path: '/projects' },
+                { label: 'Workspace', icon: Layout, path: '/projects' },
                 { label: 'AI Playground', icon: Play, path: '/playground' },
                 { label: 'Templates', icon: LayoutTemplate, path: '/templates' },
+                { label: 'Prompt Generator', icon: Wand2, path: '/prompt-generator' },
+                { label: 'Explore', icon: Compass, path: '/explore' },
                 { label: 'Compare Models', icon: GitCompare, path: '/compare' },
                 { label: 'Analytics', icon: BarChart3, path: '/analytics' },
                 { label: 'Settings', icon: Sliders, path: '/settings' },
                 { label: 'Developer API', icon: Terminal, path: '/developer' },
                 { label: 'Usage', icon: Hash, path: '/usage' },
                 { label: 'Our Apps', icon: Globe, path: '/our-apps' },
-                { label: 'Explore', icon: Globe, path: '/explore' },
               ].map(link => (
                 <button key={link.label} onClick={() => setLocation(link.path)} className="flex items-center gap-2 p-3 rounded-xl border border-border/50 hover:border-primary/40 hover:bg-primary/5 transition-all text-left group">
                   <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center group-hover:bg-primary/10 transition-colors shrink-0">
