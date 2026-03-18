@@ -14,7 +14,7 @@ import { useAuth, logout } from '@/hooks/use-auth';
 import {
   Code2, FolderKanban, Plus, Clock, TerminalSquare, Trash2, ArrowRight, Github, Rocket,
   Loader2, Globe, Sparkles, Info, Mail, Grid3X3, LogOut, MessageSquare, Terminal, Settings,
-  BarChart3, Wand2, ChevronDown, ExternalLink, Layout,
+  BarChart3, Wand2, ChevronDown, ExternalLink, Layout, Play, LayoutTemplate, GitCompare, Compass,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import {
@@ -183,7 +183,23 @@ export default function Dashboard() {
                 More <ChevronDown className="h-3.5 w-3.5 ml-1" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48 bg-card border-border/70">
+            <DropdownMenuContent align="end" className="w-52 bg-card border-border/70">
+              <DropdownMenuItem onClick={() => setLocation('/playground')} className="cursor-pointer">
+                <Play className="h-4 w-4 mr-2" /> AI Playground
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setLocation('/templates')} className="cursor-pointer">
+                <LayoutTemplate className="h-4 w-4 mr-2" /> Templates
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setLocation('/explore')} className="cursor-pointer">
+                <Compass className="h-4 w-4 mr-2" /> Explore
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setLocation('/compare')} className="cursor-pointer">
+                <GitCompare className="h-4 w-4 mr-2" /> Compare Models
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setLocation('/analytics')} className="cursor-pointer">
+                <BarChart3 className="h-4 w-4 mr-2" /> Analytics
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setLocation('/usage')} className="cursor-pointer">
                 <BarChart3 className="h-4 w-4 mr-2" /> Usage
               </DropdownMenuItem>
