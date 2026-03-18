@@ -119,9 +119,10 @@ function buildTree(files: FileNode[]): FileNode[] {
   return root;
 }
 
-function TreeNode({ node, depth, onSelect, selectedPath, onToggle }: {
+function TreeNode({ node, depth, onSelect, selectedPath, onToggle, onDelete }: {
   node: FileNode; depth: number; onSelect: (n: FileNode) => void;
   selectedPath: string | null; onToggle: (p: string) => void;
+  onDelete?: (path: string, type: 'file' | 'dir') => void;
 }) {
   const isSelected = selectedPath === node.path;
   return (
@@ -129,7 +130,7 @@ function TreeNode({ node, depth, onSelect, selectedPath, onToggle }: {
       <div
         className={`flex items-center gap-1 py-[3px] cursor-pointer rounded-sm text-xs transition-colors group
           ${isSelected ? 'bg-primary/20 text-white' : 'text-[#c9d1d9] hover:bg-[#21262d]'}`}
-        style={{ paddingLeft: `${8 + depth * 14}px`, paddingRight: '8px' }}
+        style={{ paddingLeft: `${8 + depth * 14}px`, paddingRight: '4px' }}
         onClick={() => node.type === 'dir' ? onToggle(node.path) : onSelect(node)}
       >
         {node.type === 'dir' ? (
@@ -143,12 +144,22 @@ function TreeNode({ node, depth, onSelect, selectedPath, onToggle }: {
             : <Folder className="h-3.5 w-3.5 text-yellow-400 shrink-0 ml-0.5" />)
           : <span className="ml-0.5">{getFileIcon(node.name)}</span>
         }
-        <span className="truncate ml-1">{node.name}</span>
+        <span className="truncate ml-1 flex-1">{node.name}</span>
+        {onDelete && (
+          <button
+            className="opacity-0 group-hover:opacity-100 ml-1 p-0.5 rounded hover:bg-red-500/20 hover:text-red-400 text-muted-foreground transition-all shrink-0"
+            onClick={e => { e.stopPropagation(); onDelete(node.path, node.type); }}
+            title={`Delete ${node.type === 'dir' ? 'folder' : 'file'}`}
+          >
+            <Trash2 className="h-3 w-3" />
+          </button>
+        )}
       </div>
       {node.type === 'dir' && node.expanded && node.children?.map(child => (
         <TreeNode
           key={child.path} node={child} depth={depth + 1}
           onSelect={onSelect} selectedPath={selectedPath} onToggle={onToggle}
+          onDelete={onDelete}
         />
       ))}
     </div>
@@ -344,6 +355,44 @@ export default function DeveloperPage() {
     setNewFileName(''); setIsCreatingFile(false);
   };
 
+  const deleteFileOrFolder = (path: string, type: 'file' | 'dir') => {
+    if (type === 'file') {
+      setFlatFiles(prev => prev.filter(f => f.path !== path));
+      setFileTree(prev => {
+        const remove = (nodes: FileNode[]): FileNode[] =>
+          nodes.filter(n => n.path !== path).map(n => ({ ...n, children: n.children ? remove(n.children) : undefined }));
+        return remove(prev);
+      });
+      setOpenTabs(prev => prev.filter(t => t.path !== path));
+      if (activeTab === path) {
+        setActiveTab(null);
+        setSelectedPath(null);
+      }
+    } else {
+      setFlatFiles(prev => prev.filter(f => !f.path.startsWith(path + '/') && f.path !== path));
+      setFileTree(prev => {
+        const remove = (nodes: FileNode[]): FileNode[] =>
+          nodes.filter(n => n.path !== path).map(n => ({ ...n, children: n.children ? remove(n.children) : undefined }));
+        return remove(prev);
+      });
+      setOpenTabs(prev => prev.filter(t => !t.path.startsWith(path + '/') && t.path !== path));
+      if (activeTab && (activeTab.startsWith(path + '/') || activeTab === path)) {
+        setActiveTab(null);
+        setSelectedPath(null);
+      }
+    }
+  };
+
+  const clearAllFiles = () => {
+    setFlatFiles([]);
+    setFileTree([]);
+    setOpenTabs([]);
+    setActiveTab(null);
+    setSelectedPath(null);
+    setRepoLoaded(false);
+    setRepoName('');
+  };
+
   const runPreview = useCallback(() => {
     const html = openTabs.find(t => t.name.match(/\.html?$/i))?.content || '';
     if (!html) { toast({ title: 'No HTML file open to preview', variant: 'destructive' }); return; }
@@ -416,15 +465,17 @@ export default function DeveloperPage() {
       language: getLanguage(f.name),
       isDirty: false,
     }));
-    setFlatFiles(prev => {
-      const filtered = prev.filter(existing => !parsed.some(p => p.name === existing.path));
-      return [...filtered, ...newFileNodes];
-    });
-    setFileTree(prev => [...prev.filter(n => !parsed.some(p => p.name === n.path)), ...newFileNodes]);
-    setOpenTabs(prev => {
-      const filtered = prev.filter(existing => !parsed.some(p => p.name === existing.path));
-      return [...filtered, ...newTabs];
-    });
+    // Build directory nodes for the new files
+    const dirSet = new Set<string>();
+    for (const f of newFileNodes) {
+      const parts = f.path.split('/');
+      for (let i = 1; i < parts.length; i++) dirSet.add(parts.slice(0, i).join('/'));
+    }
+    const dirNodes: FileNode[] = Array.from(dirSet).map(p => ({ name: p.split('/').pop()!, path: p, type: 'dir' as const }));
+    // Replace all files with the new project's files (clear previous project)
+    setFlatFiles(newFileNodes);
+    setFileTree(buildTree([...dirNodes, ...newFileNodes]));
+    setOpenTabs(newTabs);
     setRepoLoaded(true);
     if (newTabs.length > 0) {
       setActiveTab(newTabs[0].path);
@@ -965,9 +1016,18 @@ Format EXACTLY like this:
       const newTabs: OpenTab[] = parsedFiles.map(f => ({ path: f.name, name: f.name.split('/').pop()!, content: f.content, language: getLanguage(f.name), isDirty: false }));
       const newFlatFiles: FileNode[] = parsedFiles.map(f => ({ name: f.name.split('/').pop()!, path: f.name, type: 'file' as const, content: f.content, language: getLanguage(f.name) }));
 
-      setOpenTabs(prev => [...prev.filter(t => !parsedFiles.some(f => f.name === t.path)), ...newTabs]);
-      setFlatFiles(prev => [...prev.filter(f => !parsedFiles.some(pf => pf.name === f.path)), ...newFlatFiles]);
-      setFileTree(prev => [...prev.filter(n => !parsedFiles.some(f => f.name === n.path)), ...newFlatFiles]);
+      // Build directory nodes for the new files
+      const dirSet2 = new Set<string>();
+      for (const f of newFlatFiles) {
+        const parts = f.path.split('/');
+        for (let i = 1; i < parts.length; i++) dirSet2.add(parts.slice(0, i).join('/'));
+      }
+      const dirNodes2: FileNode[] = Array.from(dirSet2).map(p => ({ name: p.split('/').pop()!, path: p, type: 'dir' as const }));
+
+      // Replace all files with this phase's files (clear previous project)
+      setOpenTabs(newTabs);
+      setFlatFiles(newFlatFiles);
+      setFileTree(buildTree([...dirNodes2, ...newFlatFiles]));
       setActiveTab(newTabs[0].path);
       setSelectedPath(newTabs[0].path);
       setRepoLoaded(true);
@@ -1148,6 +1208,11 @@ Format EXACTLY like this:
               <Button variant="ghost" size="icon" className="h-5 w-5 text-muted-foreground hover:text-white" onClick={() => setIsCreatingFile(true)}>
                 <Plus className="h-3 w-3" />
               </Button>
+              {flatFiles.length > 0 && (
+                <Button variant="ghost" size="icon" className="h-5 w-5 text-muted-foreground hover:text-red-400" onClick={clearAllFiles} title="Clear all files">
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              )}
             </div>
           </div>
 
@@ -1184,7 +1249,7 @@ Format EXACTLY like this:
                 </div>
               ) : (
                 fileTree.map(node => (
-                  <TreeNode key={node.path} node={node} depth={0} onSelect={openFileFromTree} selectedPath={selectedPath} onToggle={toggleDir} />
+                  <TreeNode key={node.path} node={node} depth={0} onSelect={openFileFromTree} selectedPath={selectedPath} onToggle={toggleDir} onDelete={deleteFileOrFolder} />
                 ))
               )}
             </div>
