@@ -12,98 +12,17 @@ import {
   ListOpenaiConversationsResponse,
   ListOpenaiMessagesResponse,
 } from "@workspace/api-zod";
-import Groq from "groq-sdk";
+import OpenAI from "openai";
 
-function getGroqClient(): Groq {
-  const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) {
-    throw new Error("No Groq API key found. Set GROQ_API_KEY environment variable.");
-  }
-  return new Groq({ apiKey });
-}
-
-const router: IRouter = Router();
-
-router.get("/openai/conversations", async (_req, res): Promise<void> => {
-  const convs = await db.select().from(conversations).orderBy(conversations.createdAt);
-  res.json(ListOpenaiConversationsResponse.parse(convs));
-});
-
-router.post("/openai/conversations", async (req, res): Promise<void> => {
-  const parsed = CreateOpenaiConversationBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
-  const [conv] = await db.insert(conversations).values({ title: parsed.data.title }).returning();
-  res.status(201).json(conv);
-});
-
-router.get("/openai/conversations/:id", async (req, res): Promise<void> => {
-  const params = GetOpenaiConversationParams.safeParse(req.params);
-  if (!params.success) {
-    res.status(400).json({ error: params.error.message });
-    return;
-  }
-  const [conv] = await db.select().from(conversations).where(eq(conversations.id, params.data.id));
-  if (!conv) {
-    res.status(404).json({ error: "Conversation not found" });
-    return;
-  }
-  const msgs = await db.select().from(messages).where(eq(messages.conversationId, params.data.id)).orderBy(messages.createdAt);
-  res.json(GetOpenaiConversationResponse.parse({ ...conv, messages: msgs }));
-});
-
-router.delete("/openai/conversations/:id", async (req, res): Promise<void> => {
-  const params = DeleteOpenaiConversationParams.safeParse(req.params);
-  if (!params.success) {
-    res.status(400).json({ error: params.error.message });
-    return;
-  }
-  const [conv] = await db.delete(conversations).where(eq(conversations.id, params.data.id)).returning();
-  if (!conv) {
-    res.status(404).json({ error: "Conversation not found" });
-    return;
-  }
-  res.sendStatus(204);
-});
-
-router.get("/openai/conversations/:id/messages", async (req, res): Promise<void> => {
-  const params = ListOpenaiMessagesParams.safeParse(req.params);
-  if (!params.success) {
-    res.status(400).json({ error: params.error.message });
-    return;
-  }
-  const msgs = await db.select().from(messages).where(eq(messages.conversationId, params.data.id)).orderBy(messages.createdAt);
-  res.json(ListOpenaiMessagesResponse.parse(msgs));
-});
-
-router.post("/openai/conversations/:id/messages", async (req, res): Promise<void> => {
-  const params = SendOpenaiMessageParams.safeParse(req.params);
-  const body = SendOpenaiMessageBody.safeParse(req.body);
-  if (!params.success || !body.success) {
-    res.status(400).json({ error: "Invalid request" });
-    return;
+  function getAIClient(): OpenAI {
+    const apiKey = process.env.OPENROUTER_API_KEY;
+    if (!apiKey) throw new Error("OPENROUTER_API_KEY environment variable is not set.");
+    return new OpenAI({ apiKey, baseURL: "https://openrouter.ai/api/v1" });
   }
 
-  const convId = params.data.id;
-  const userContent = body.data.content;
-
-  await db.insert(messages).values({ conversationId: convId, role: "user", content: userContent });
-
-  const history = await db.select().from(messages).where(eq(messages.conversationId, convId)).orderBy(messages.createdAt);
-
-  const chatMessages = history.map((m) => ({ role: m.role as "user" | "assistant" | "system", content: m.content }));
-
-  res.setHeader("Content-Type", "text/event-stream");
-  res.setHeader("Cache-Control", "no-cache");
-  res.setHeader("Connection", "keep-alive");
-
-  let fullResponse = "";
-
-  const groq = getGroqClient();
+  const groq = getAIClient();
   const stream = await groq.chat.completions.create({
-    model: "llama-3.3-70b-versatile",
+    model: "meta-llama/llama-3.3-70b-instruct:free",
     messages: [
       { role: "system", content: "You are an expert AI coding assistant. You can help with any programming language, framework, or technology. Provide clear, accurate, production-ready code with explanations." },
       ...chatMessages,
