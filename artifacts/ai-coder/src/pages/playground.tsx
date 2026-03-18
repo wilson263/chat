@@ -105,6 +105,21 @@ export default function PlaygroundPage() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
+    // Check sessionStorage first (set by internal navigation from templates page)
+    const stored = sessionStorage.getItem('playground_template');
+    if (stored) {
+      sessionStorage.removeItem('playground_template');
+      try {
+        const data = JSON.parse(stored);
+        setFiles(data.files);
+        setProjectName(data.projectName);
+        const idx = data.files.find((f: ProjectFile) => f.name === 'index.html') ?? data.files[0];
+        if (idx) setSelectedPath(idx.path);
+        setPreviewHtml(buildPreviewHtml(data.files));
+        return;
+      } catch {}
+    }
+    // Fall back to URL query param (for external share links)
     const params = new URLSearchParams(window.location.search);
     const tpl = params.get('template');
     if (tpl) {
