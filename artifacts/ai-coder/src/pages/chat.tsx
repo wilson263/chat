@@ -144,6 +144,7 @@ export default function ChatPage() {
   const [persona, setPersona] = useState<string>('general');
   const [language, setLanguage] = useState('English');
   const [customSystemPrompt, setCustomSystemPrompt] = useState(() => localStorage.getItem('custom_system_prompt') || '');
+  const [codeCategory, setCodeCategory] = useState<'frontend' | 'backend' | 'server' | null>(null);
   const [agentPrompt, setAgentPrompt] = useState<string | null>(null);
   const [lastUserMessage, setLastUserMessage] = useState('');
   const [lastAttachments, setLastAttachments] = useState<Attachment[]>([]);
@@ -419,7 +420,14 @@ export default function ChatPage() {
     const memoryContext = memory.length > 0 ? `\n\nUser Memory Facts:\n${memory.map(m => `- ${m.fact}`).join('\n')}` : '';
     const langInstruction = language !== 'English' ? `\nRespond in ${language}.` : '';
     const personaContext = persona === 'coder' ? '\nYou are in Coder mode — prioritize code solutions.' : persona === 'teacher' ? '\nYou are in Teacher mode — explain concepts clearly with examples.' : persona === 'writer' ? '\nYou are in Writer mode — focus on writing quality and creativity.' : '';
-    const finalSystemPrompt = (customSystemPrompt || '') + memoryContext + langInstruction + personaContext;
+    const categoryContext = codeCategory === 'frontend'
+      ? '\nYou are answering a FRONTEND question. Focus ONLY on Frontend (HTML/CSS/JS/React/UI). Give a complete, self-contained answer for the frontend layer. Do not include backend or server code.'
+      : codeCategory === 'backend'
+      ? '\nYou are answering a BACKEND question. Focus ONLY on Backend (Node.js/Python/databases/APIs/business logic). Give a complete, self-contained answer for the backend layer. Do not include frontend UI code.'
+      : codeCategory === 'server'
+      ? '\nYou are answering a SERVER question. Focus ONLY on Server/DevOps topics (server config, deployment, hosting, nginx, docker, environment setup). Give a complete, self-contained answer.'
+      : '';
+    const finalSystemPrompt = (customSystemPrompt || '') + memoryContext + langInstruction + personaContext + categoryContext;
 
     // When model is 'auto', don't pass it — let the backend smart-route
     const modelToSend = model === AUTO_MODEL_ID ? undefined : model;
@@ -1126,6 +1134,20 @@ export default function ChatPage() {
             )}
             <div className="flex gap-3 items-end">
               <div className="flex-1 bg-muted border border-border/50 rounded-2xl flex flex-col shadow-sm focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/20 transition-all">
+                {/* Category selector */}
+                <div className="flex items-center gap-1.5 px-3 pt-2 pb-0 flex-wrap">
+                  {([
+                    { id: 'frontend' as const, label: '🎨 Frontend', active: 'bg-blue-500/20 text-blue-400 border-blue-500/50', inactive: 'border-border/30 text-muted-foreground hover:border-border/60' },
+                    { id: 'backend' as const, label: '⚙️ Backend', active: 'bg-orange-500/20 text-orange-400 border-orange-500/50', inactive: 'border-border/30 text-muted-foreground hover:border-border/60' },
+                    { id: 'server' as const, label: '🖥️ Server', active: 'bg-green-500/20 text-green-400 border-green-500/50', inactive: 'border-border/30 text-muted-foreground hover:border-border/60' },
+                  ]).map(cat => (
+                    <button key={cat.id} onClick={() => setCodeCategory(prev => prev === cat.id ? null : cat.id)}
+                      className={`px-2.5 py-0.5 rounded-full text-xs font-medium border transition-colors ${codeCategory === cat.id ? cat.active : cat.inactive}`}>
+                      {cat.label}
+                    </button>
+                  ))}
+                  {codeCategory && <span className="ml-1 text-[10px] text-muted-foreground/50">AI focused on {codeCategory} only</span>}
+                </div>
                 <textarea
                   ref={textareaRef}
                   value={input}
