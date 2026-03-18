@@ -3,6 +3,7 @@ import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { PageLayout, PageHero } from '@/components/page-layout';
 import {
   ArrowLeft, Sparkles, Mail, CheckCircle2, MessageCircle, Instagram,
   Twitter, Send, Phone, Globe, Linkedin, ExternalLink, Clock,
@@ -159,28 +160,8 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
-      <div className="absolute top-0 inset-x-0 h-[400px] overflow-hidden -z-10 pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/8 to-background" />
-      </div>
-
-      <header className="border-b border-border/50 bg-card/30 backdrop-blur-sm sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4 flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => setLocation('/projects')} className="text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="w-4 h-4 mr-2" /> Dashboard
-          </Button>
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-white" />
-            </div>
-            <span className="font-semibold">ZorvixAI</span>
-          </div>
-          <span className="text-muted-foreground/40">/</span>
-          <span className="text-sm text-muted-foreground">Contact Us</span>
-        </div>
-      </header>
-
-      <main className="container mx-auto px-4 py-12 max-w-5xl">
+    <PageLayout crumbs={[{ label: 'Contact' }]} backHref="/" withMeshBg>
+      <div>
         <div className="text-center mb-12">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 mb-6">
             <Mail className="w-8 h-8 text-primary" />
@@ -353,7 +334,7 @@ export default function ContactPage() {
             ))}
           </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </PageLayout>
   );
 }
