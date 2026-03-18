@@ -2113,6 +2113,8 @@ Format EXACTLY like this:
                   </div>
                 </div>
               )}
+            </div>
+          )}
 
 
           {/* TEMPLATES TAB */}
