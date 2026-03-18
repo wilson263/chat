@@ -17,6 +17,11 @@ export function getAIClient(): OpenAI {
 export const FREE_MODEL = FREE_MODELS[0];
 export const FREE_MODEL_FAST = FREE_MODELS[1];
 
+function isAuthError(err: any): boolean {
+  const status = err?.status ?? err?.response?.status;
+  return status === 401 || status === 403;
+}
+
 function isRetryableError(err: any): boolean {
   const status = err?.status ?? err?.response?.status;
   if (status === 429 || status === 404 || status === 400 || status === 503) return true;
@@ -45,6 +50,9 @@ export async function createChatCompletion(
       return await client.chat.completions.create({ ...params, model: modelsToTry[i] });
     } catch (err: any) {
       lastError = err;
+      if (isAuthError(err)) {
+        throw new Error(`OpenRouter authentication failed (${err?.status}). Please check your OPENROUTER_API_KEY.`);
+      }
       if (isRetryableError(err) && i < modelsToTry.length - 1) {
         console.warn(`Model ${modelsToTry[i]} unavailable (${err?.status ?? "error"}), trying ${modelsToTry[i + 1]}...`);
         continue;
@@ -52,7 +60,7 @@ export async function createChatCompletion(
       break;
     }
   }
-  console.error("All models failed. Last error:", lastError?.message);
+  console.error("All models failed. Last error:", lastError?.status, lastError?.message);
   throw new Error("The AI service is temporarily unavailable. Please try again in a moment.");
 }
 
@@ -71,6 +79,9 @@ export async function createChatCompletionStream(
       return await client.chat.completions.create({ ...params, model: modelsToTry[i], stream: true });
     } catch (err: any) {
       lastError = err;
+      if (isAuthError(err)) {
+        throw new Error(`OpenRouter authentication failed (${err?.status}). Please check your OPENROUTER_API_KEY.`);
+      }
       if (isRetryableError(err) && i < modelsToTry.length - 1) {
         console.warn(`Model ${modelsToTry[i]} unavailable (${err?.status ?? "error"}), trying ${modelsToTry[i + 1]}...`);
         continue;
@@ -78,6 +89,6 @@ export async function createChatCompletionStream(
       break;
     }
   }
-  console.error("All models failed. Last error:", lastError?.message);
+  console.error("All models failed. Last error:", lastError?.status, lastError?.message);
   throw new Error("The AI service is temporarily unavailable. Please try again in a moment.");
 }

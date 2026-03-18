@@ -92,27 +92,35 @@ router.post("/openai/conversations/:id/messages", async (req, res): Promise<void
 
   let fullResponse = "";
 
-  const stream = await createChatCompletionStream({
-    messages: [
-      { role: "system", content: "You are an expert AI coding assistant. You can help with any programming language, framework, or technology. Provide clear, accurate, production-ready code with explanations." },
-      ...chatMessages,
-    ],
-    stream: true,
-    max_tokens: 8192,
-  });
+  try {
+    const stream = await createChatCompletionStream({
+      messages: [
+        { role: "system", content: "You are an expert AI coding assistant. You can help with any programming language, framework, or technology. Provide clear, accurate, production-ready code with explanations." },
+        ...chatMessages,
+      ],
+      stream: true,
+      max_tokens: 4096,
+    });
 
-  for await (const chunk of stream) {
-    const content = chunk.choices[0]?.delta?.content;
-    if (content) {
-      fullResponse += content;
-      res.write(`data: ${JSON.stringify({ content })}\n\n`);
+    for await (const chunk of stream) {
+      const content = chunk.choices[0]?.delta?.content;
+      if (content) {
+        fullResponse += content;
+        res.write(`data: ${JSON.stringify({ content })}\n\n`);
+      }
     }
+
+    if (fullResponse) {
+      await db.insert(messages).values({ conversationId: convId, role: "assistant", content: fullResponse });
+    }
+
+    res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+    res.end();
+  } catch (err: any) {
+    console.error("Streaming error:", err?.message);
+    res.write(`data: ${JSON.stringify({ error: err?.message ?? "AI service error" })}\n\n`);
+    res.end();
   }
-
-  await db.insert(messages).values({ conversationId: convId, role: "assistant", content: fullResponse });
-
-  res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
-  res.end();
 });
 
 export default router;
