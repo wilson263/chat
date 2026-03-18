@@ -457,6 +457,7 @@ export default function AboutPage() {
                 { label: 'Developer API', icon: Terminal, path: '/developer' },
                 { label: 'Usage', icon: Hash, path: '/usage' },
                 { label: 'Our Apps', icon: Globe, path: '/our-apps' },
+                { label: 'Explore', icon: Globe, path: '/explore' },
               ].map(link => (
                 <button key={link.label} onClick={() => setLocation(link.path)} className="flex items-center gap-2 p-3 rounded-xl border border-border/50 hover:border-primary/40 hover:bg-primary/5 transition-all text-left group">
                   <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center group-hover:bg-primary/10 transition-colors shrink-0">

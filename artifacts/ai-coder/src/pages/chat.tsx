@@ -1488,6 +1488,7 @@ export default function ChatPage() {
                 <button onClick={()=>setLocation('/compare')} className="px-3 py-1.5 rounded-full border border-border/50 text-xs text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all flex items-center gap-1.5"><GitCompare className="w-3 h-3"/>Compare Models</button>
                 <button onClick={()=>setLocation('/playground')} className="px-3 py-1.5 rounded-full border border-border/50 text-xs text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all flex items-center gap-1.5"><Code2 className="w-3 h-3"/>Playground</button>
                 <button onClick={()=>setShowProjectContext(true)} className="px-3 py-1.5 rounded-full border border-border/50 text-xs text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all flex items-center gap-1.5"><FolderOpen className="w-3 h-3"/>Project Files</button>
+                <button onClick={()=>setLocation('/explore')} className="px-3 py-1.5 rounded-full border border-border/50 text-xs text-muted-foreground hover:text-foreground hover:border-primary/30 transition-all flex items-center gap-1.5"><Globe className="w-3 h-3"/>Explore Community</button>
               </div>
             </div>
           ) : (

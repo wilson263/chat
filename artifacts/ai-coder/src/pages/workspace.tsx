@@ -13,15 +13,17 @@ import { DbPanel } from '@/components/workspace/db-panel';
 import { SecretsPanel } from '@/components/workspace/secrets-panel';
 import { PluginsPanel } from '@/components/workspace/plugins-panel';
 import { CollabPresence } from '@/components/workspace/collab-presence';
+import { CheckpointsPanel } from '@/components/workspace/checkpoints-panel';
+import { KvPanel } from '@/components/workspace/kv-panel';
 import { useWorkspaceStore } from '@/store/workspace';
 import { useListFiles } from '@workspace/api-client-react';
 import { useAuth } from '@/hooks/use-auth';
-import { Code2, ArrowLeft, Download, Rocket, Eye, EyeOff, Terminal, GitBranch, Package, Database, KeyRound, Puzzle, ChevronDown, ChevronUp, Globe, Cloud, CloudOff, Copy, ExternalLink, CheckCircle2, Loader2 } from 'lucide-react';
+import { Code2, ArrowLeft, Download, Rocket, Eye, EyeOff, Terminal, GitBranch, Package, Database, KeyRound, Puzzle, ChevronDown, ChevronUp, Globe, Cloud, CloudOff, Copy, ExternalLink, CheckCircle2, Loader2, History, ServerCrash } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
-type BottomTab = 'terminal' | 'git' | 'packages' | 'db' | 'secrets' | 'plugins';
+type BottomTab = 'terminal' | 'git' | 'packages' | 'db' | 'secrets' | 'plugins' | 'checkpoints' | 'kv';
 const BOTTOM_TABS: { id: BottomTab; label: string; icon: React.ElementType }[] = [
   { id: 'terminal', label: 'Terminal', icon: Terminal },
   { id: 'git', label: 'Git', icon: GitBranch },
@@ -29,6 +31,8 @@ const BOTTOM_TABS: { id: BottomTab; label: string; icon: React.ElementType }[] =
   { id: 'db', label: 'Database', icon: Database },
   { id: 'secrets', label: 'Secrets', icon: KeyRound },
   { id: 'plugins', label: 'Extensions', icon: Puzzle },
+  { id: 'checkpoints', label: 'Checkpoints', icon: History },
+  { id: 'kv', label: 'KV Store', icon: ServerCrash },
 ];
 
 export default function WorkspacePage() {
@@ -240,6 +244,8 @@ export default function WorkspacePage() {
               {bottomTab === 'db' && <DbPanel />}
               {bottomTab === 'secrets' && <SecretsPanel projectId={activeProjectId} />}
               {bottomTab === 'plugins' && <PluginsPanel />}
+              {bottomTab === 'checkpoints' && <CheckpointsPanel />}
+              {bottomTab === 'kv' && <KvPanel />}
             </div>
           )}
         </div>
