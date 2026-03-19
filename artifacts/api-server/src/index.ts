@@ -1,14 +1,4 @@
-process.on("uncaughtException", (err) => {
-  console.error("UNCAUGHT EXCEPTION:", err.message);
-  console.error(err.stack);
-  process.exit(1);
-});
-
-process.on("unhandledRejection", (reason) => {
-  console.error("UNHANDLED REJECTION:", reason);
-  process.exit(1);
-});
-
+import { runMigrations } from "@workspace/db/migrate";
 import app from "./app";
 
 const rawPort = process.env["PORT"];
@@ -25,12 +15,16 @@ if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
-const server = app.listen(port, () => {
-  console.log(`Server listening on port ${port}`);
-});
+async function start() {
+  try {
+    await runMigrations();
+  } catch (err) {
+    console.error("[startup] Migration failed — server will start anyway but DB features may not work:", err);
+  }
 
-// Render's proxy can drop long-running SSE connections (e.g. large AI code builds
-// that stream for 3–5 minutes). Raise the Node.js server timeouts so the server
-// side never closes the connection first. Render's own limit is ~10 minutes.
-server.keepAliveTimeout = 600000;  // 10 minutes
-server.headersTimeout  = 605000;  // slightly above keepAliveTimeout
+  app.listen(port, () => {
+    console.log(`Server listening on port ${port}`);
+  });
+}
+
+start();

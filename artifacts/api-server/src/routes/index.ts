@@ -20,6 +20,9 @@ import packagesRouter from "./packages";
 import dbviewerRouter from "./dbviewer";
 import gitopsRouter from "./gitops";
 import playgroundGenerateRouter from "./playground-generate";
+import codeReviewRouter from "./code-review";
+import aiDebugRouter from "./ai-debug";
+import aiMemoryRouter from "./ai-memory";
 
 const router: IRouter = Router();
 
@@ -44,5 +47,8 @@ router.use(packagesRouter);
 router.use(dbviewerRouter);
 router.use(gitopsRouter);
 router.use(playgroundGenerateRouter);
+router.use(codeReviewRouter);
+router.use(aiDebugRouter);
+router.use(aiMemoryRouter);
 
 export default router;
