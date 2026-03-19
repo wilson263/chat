@@ -3455,7 +3455,305 @@ TECHNICAL WRITING & DOCUMENTATION
 • Keep documentation close to the code: prefer docstrings and inline comments over separate wiki pages
 • Review documentation in code review — stale docs are worse than no docs
 • Spell check and grammar check documentation in CI — Vale is a linting tool for prose
+
+═══════════════════════════════════════
+TRPC & TYPE-SAFE API DESIGN
+═══════════════════════════════════════
+• tRPC eliminates the REST API layer for full-stack TypeScript — procedures are just functions
+• Router definition: t.router({ getUser: t.procedure.input(z.string()).query(async ({ input }) => ...) })
+• Mutations vs queries: queries for reads (GET-like), mutations for writes (POST/PUT/DELETE-like)
+• Middleware in tRPC: t.middleware() for auth, logging, and rate limiting — composable and typed
+• Protected procedures: create a protectedProcedure that checks session before executing
+• Context: pass request, session, and DB to every procedure via createContext() — no dependency injection needed
+• tRPC with React Query: useQuery, useMutation, useInfiniteQuery — all fully typed end-to-end
+• Input validation with Zod is built in — the schema is both the runtime validator and the TypeScript type
+• Output validation: .output(Schema) — validate what your procedure returns, not just what it accepts
+• Subscriptions with tRPC + WebSockets for real-time typed updates
+• Error handling: TRPCError with code ('NOT_FOUND', 'UNAUTHORIZED', 'BAD_REQUEST') maps to HTTP status
+• Batching: tRPC batches multiple queries into a single HTTP request automatically
+• tRPC panels: trpc-panel or trpc-openapi for auto-generated API docs and REST compatibility
+• Server-side calling: caller = appRouter.createCaller(ctx) — call procedures internally without HTTP
+• tRPC works with Next.js, Remix, SvelteKit — the router is framework-agnostic
+• Infinite queries: useInfiniteQuery with cursor-based pagination — tRPC handles the cursor protocol
+• Optimistic updates with tRPC + React Query: utils.user.getAll.setData() for instant UI feedback
+• Type-safe error handling: client catches TRPCClientError and accesses the typed data field
+• SSR with tRPC: createServerSideHelpers() for pre-fetching data in getServerSideProps or RSC
+
+═══════════════════════════════════════
+REACT NATIVE & EXPO PATTERNS
+═══════════════════════════════════════
+• Expo is the standard way to build React Native apps — managed workflow for most apps, bare workflow when you need native modules
+• Expo Router for file-based navigation — same conventions as Next.js App Router
+• React Navigation for complex navigation: Stack, Tab, Drawer — compose navigators for deep hierarchies
+• StyleSheet.create() creates a style ID for performance — prefer over inline style objects
+• Flexbox is the default layout in React Native — it behaves like web Flexbox but defaults to column
+• Dimensions API for responsive sizing — or better, use useWindowDimensions hook for reactivity
+• Platform.OS === 'ios' / 'android' / 'web' for platform-specific code branches
+• Platform.select() for style differences: Platform.select({ ios: { shadowOffset: { width: 0, height: 2 } }, android: { elevation: 4 } })
+• SafeAreaView for notch and home bar: use react-native-safe-area-context — more reliable than native SafeAreaView
+• KeyboardAvoidingView for forms: behavior="padding" on iOS, behavior="height" on Android
+• FlatList for large lists: windowSize, initialNumToRender, maxToRenderPerBatch for performance
+• FlashList from Shopify: faster FlatList alternative — recycles list items for O(1) memory
+• React Native Reanimated for 60fps animations running on the UI thread — no JS bridge jank
+• Gesture Handler for touches: PanGestureHandler, TapGestureHandler, Pinch — native gesture recognition
+• Haptic feedback: expo-haptics for tactile responses on button presses and state changes
+• AsyncStorage is deprecated — use expo-secure-store for sensitive data, MMKV for fast key-value
+• expo-camera for camera access, expo-image-picker for gallery, expo-location for GPS
+• Push notifications: expo-notifications with FCM (Android) and APNs (iOS) — test on real devices
+• Over-The-Air (OTA) updates: expo-updates pushes JS bundle changes without App Store review
+• EAS Build for cloud builds: eas build -p android/ios — no local Xcode or Android Studio needed
+• Deep links and universal links: expo-linking for URL scheme handling — configure in app.json
+• Hermes JavaScript engine is the default in React Native — faster startup, lower memory usage
+• Metro bundler: metro.config.js for custom resolvers, aliases, and asset transforms
+
+═══════════════════════════════════════
+FEATURE FLAGS & EXPERIMENTATION
+═══════════════════════════════════════
+• Feature flags decouple deployment from release — ship code dark, enable it independently
+• Kill switch: a feature flag that instantly disables a feature in production without a deploy
+• Gradual rollout: enable for 1% → 10% → 50% → 100% of users — catch issues before full exposure
+• User targeting: enable features for internal users, beta testers, or specific user segments first
+• Context-based flags: user ID, email, plan, region, device type — any property can be a targeting rule
+• LaunchDarkly, Unleash, GrowthBook, Flagsmith — choose based on scale, self-host vs SaaS, cost
+• Feature flag SDK usage: if (flagClient.variation('new-checkout', user, false)) — always provide a default
+• Avoid flag debt: remove flags once the feature is fully rolled out — flags accumulate and confuse
+• Flag naming convention: feature-name-description — lowercase kebab, descriptive, no abbreviations
+• Boolean flags for on/off, multivariate flags for A/B/C testing with multiple variants
+• Server-side evaluation: evaluate flags in the backend to prevent flickering — don't evaluate in the browser for critical UI
+• Bootstrapping: pass evaluated flags as JSON to the client on page load — eliminates the first-render flicker
+• Canary deployments with flags: route 5% of traffic to new service, monitor, increase or roll back
+• Flag-driven development: every feature starts behind a flag — no exceptions, even for small changes
+• Logging flag evaluations: record which variant a user saw — critical for debugging and analytics
+
+═══════════════════════════════════════
+ANALYTICS & USER TRACKING
+═══════════════════════════════════════
+• Privacy-first analytics: collect only what you need, anonymize what you can, respect user consent
+• GDPR and CCPA compliance: cookie consent banners, opt-out mechanisms, data deletion requests
+• Event-driven analytics model: every user action is an event with properties — not just page views
+• Event naming convention: noun_verb — user_signed_up, checkout_completed, feature_clicked
+• Segment as a routing layer: send events once, Segment fans out to PostHog, Mixpanel, Amplitude, etc.
+• PostHog is open-source and self-hostable — product analytics, session replay, feature flags in one
+• Funnel analysis: define the steps, measure drop-off at each — find where users abandon
+• Retention cohort analysis: of users who signed up in week N, what % are still active in week N+4
+• DAU / MAU ratio: daily actives divided by monthly actives — stickiness metric
+• North Star metric: one metric that best captures the value your product delivers to users
+• A/B testing: randomly assign users to control vs treatment, measure statistical significance
+• Minimum detectable effect (MDE): know the smallest change worth detecting before running the test
+• Statistical significance: p < 0.05 means there's a 5% chance the result is a fluke — use 95% confidence
+• Sample size calculator: determine how many users you need before starting the test
+• Never peek at A/B test results before reaching the required sample size — peeking inflates false positives
+• Session replay (FullStory, Hotjar, PostHog): watch real user sessions to understand UX problems
+• Heat maps: visualize where users click, scroll depth, and attention on a page
+• Error tracking events: send error events to analytics to correlate with product metrics
+• Custom dashboards: track retention, activation, revenue, and engagement in one place
+• UTM parameters for marketing attribution: utm_source, utm_medium, utm_campaign, utm_content
+
+═══════════════════════════════════════
+CACHING STRATEGIES
+═══════════════════════════════════════
+• Caching is a performance-correctness tradeoff — incorrect caches cause bugs worse than slowness
+• Cache invalidation is one of the hardest problems in computer science — design invalidation before caching
+• Cache-aside (lazy loading): check cache, miss → fetch from DB, write to cache, return — most common pattern
+• Write-through: write to cache and DB simultaneously — cache is never stale, but writes are slower
+• Write-behind (write-back): write to cache immediately, flush to DB asynchronously — fast writes, risk of data loss
+• Read-through: cache handles the miss itself, fetches from DB and populates — transparent to application
+• TTL (Time To Live): every cache entry should expire — never store data without a TTL in production
+• LRU (Least Recently Used) eviction: evict the entry that hasn't been accessed in the longest time
+• LFU (Least Frequently Used): evict the entry accessed least often — better for skewed access patterns
+• Cache warming: pre-populate the cache on startup or deploy — prevent cold cache thundering herd
+• Cache stampede / thundering herd: many requests all miss at once and hit the DB — use a lock or probabilistic early expiration
+• Stale-while-revalidate: serve the stale cached value while fetching a fresh one — low latency + freshness
+• Redis data structures: String for simple KV, Hash for objects, List for queues, Set for membership, Sorted Set for leaderboards
+• Redis EXPIRE command: set TTL on any key — always set TTL on session and token cache entries
+• Redis SETNX (SET if Not eXists): atomic lock primitive — use SET key value NX EX seconds in production
+• Redis pipeline: batch multiple commands into one network round-trip — huge throughput improvement
+• Redis Cluster: horizontal scaling for Redis — data sharded across nodes automatically
+• Cache key design: include tenant ID, user ID, and resource ID — prevent cross-tenant cache hits
+• CDN caching: set Cache-Control: public, max-age=31536000, immutable for versioned static assets
+• HTTP ETag + If-None-Match: server returns 304 Not Modified if content unchanged — saves bandwidth
+
+═══════════════════════════════════════
+RATE LIMITING & ABUSE PREVENTION
+═══════════════════════════════════════
+• Rate limit every public endpoint — unauthenticated endpoints need tighter limits than authenticated ones
+• Fixed window: N requests per window (1 minute, 1 hour) — simple but allows bursting at window boundaries
+• Sliding window: track request timestamps, count those within the last N seconds — no boundary bursting
+• Token bucket: tokens refill at a constant rate, each request consumes a token — smooth burst handling
+• Leaky bucket: requests drain at a constant rate regardless of arrival — useful for API gateways
+• Redis-based rate limiting: atomic INCR + EXPIRE — consistent across multiple server instances
+• Rate limit by IP for unauthenticated routes, by user ID for authenticated routes
+• Rate limit response: 429 Too Many Requests with Retry-After header (seconds until reset)
+• Differentiated limits: free tier gets 100 req/min, paid gets 1000 req/min — enforce by plan
+• Bot detection: User-Agent heuristics, behavioral analysis, CAPTCHA for suspicious patterns
+• API key rate limiting: per-key limits in Redis — track usage by api_key prefix
+• Webhook delivery limits: limit how many webhooks you fire per second to avoid overwhelming clients
+• DDoS protection: Cloudflare, AWS Shield, or WAF in front of your app — rate limiting alone isn't enough
+• Account enumeration prevention: rate limit login, password reset, and signup endpoints identically
+• Slow down (not just block): increase response time for repeated failures — deters automated attacks
+• Honeypot fields: hidden form fields that bots fill out — real users don't see them
+• Account takeover prevention: alert users on login from new device, IP, or location
+
+═══════════════════════════════════════
+LOGGING BEST PRACTICES
+═══════════════════════════════════════
+• Every log entry needs: timestamp (ISO 8601 UTC), level, message, service name, and correlation ID
+• Log levels: ERROR (needs immediate attention), WARN (unexpected but recoverable), INFO (notable events), DEBUG (verbose, development only)
+• Structured logs (JSON) are machine-parseable — much easier to query in Elasticsearch, Datadog, CloudWatch
+• Correlation ID: generate a UUID per request, attach to all logs within that request lifecycle
+• Log request start and end: method, path, status code, duration, user ID — every HTTP request
+• Never log passwords, tokens, credit card numbers, SSNs, or PII — GDPR and security requirements
+• Log the error and its context: what operation was being performed, with what inputs, by which user
+• Avoid log explosion: don't log inside tight loops — aggregate and sample high-frequency events
+• Log sampling: at high traffic, log 1-in-N debug entries — keeps costs manageable
+• Centralized logging: ship logs to a single system (Datadog, Splunk, ELK, Loki) — never SSH to read logs
+• Log retention policy: keep 30 days hot (fast search), 1 year cold (compliance archive)
+• Alerting on log patterns: regex match on ERROR or specific patterns → PagerDuty/Slack notification
+• pino is the fastest Node.js logger — JSON output, transport plugins, minimal overhead
+• Winston for Node.js: multiple transports, custom formatters, log levels per transport
+• structlog for Python: key-value pairs, processors, renderers — JSON by default
+• zap for Go: zero-allocation, extremely fast, structured JSON logging
+• Avoid string interpolation in log messages: log({ userId, action }) not log(\`user \${userId} did \${action}\`)
+• Child loggers: create a child logger per request with bound context — all child logs include the context
+• Log forwarding: Fluentd, Logstash, Vector for shipping logs from containers to central storage
+
+═══════════════════════════════════════
+WEBRTC & PEER-TO-PEER
+═══════════════════════════════════════
+• WebRTC enables real-time audio, video, and data between browsers without a media server
+• ICE (Interactive Connectivity Establishment): finds the best network path between peers
+• STUN server: helps peers discover their public IP/port — use Google's public STUN or host your own
+• TURN server: relays media when direct peer-to-peer is blocked by firewalls — Coturn is popular
+• SDP (Session Description Protocol): describes media capabilities — offer/answer exchange via signaling
+• Signaling is not part of WebRTC — you build it with WebSockets or any messaging system
+• ICE gathering: peer collects all possible candidates (host, srflx, relay) then sends to the other peer
+• Perfect negotiation pattern: handles simultaneous offer/answer creation without conflicts
+• RTCPeerConnection: the main API — addTrack(), createOffer(), setLocalDescription(), setRemoteDescription()
+• getUserMedia() to capture camera and microphone — request only permissions you need
+• MediaStreamTrack: individual audio or video tracks — mute by setting enabled = false
+• RTCDataChannel for peer-to-peer data transfer — messaging, file transfer, game state sync
+• Selective Forwarding Unit (SFU): server that routes streams between many peers — Mediasoup, LiveKit
+• Simulcast: send multiple resolutions of the same video — SFU selects the right one per receiver
+• Bandwidth estimation: WebRTC adapts video quality to available bandwidth automatically (REMB, TWCC)
+• End-to-end encryption: WebRTC media is encrypted with SRTP by default — no additional work needed
+• Screen sharing: getDisplayMedia() — user picks their window or full screen
+• Recording: MediaRecorder API captures a MediaStream to a Blob — can record locally or upload
+• Echo cancellation, noise suppression, auto gain control: enabled by default in getUserMedia constraints
+• Testing WebRTC: webrtc-internals (chrome://webrtc-internals) for debugging ICE, DTLS, and RTP stats
+
+═══════════════════════════════════════
+MACHINE LEARNING INTEGRATION
+═══════════════════════════════════════
+• ONNX Runtime: run ML models in production without Python — models export from PyTorch/TensorFlow to ONNX
+• TensorFlow.js: run trained models directly in the browser or Node.js — no server round-trip
+• HuggingFace Inference API: HTTP API for 100,000+ models — sentiment analysis, NLP, image classification
+• Embeddings: convert text, images, or audio to a vector — use for semantic search, recommendation, clustering
+• Cosine similarity: measure embedding similarity — values close to 1 are semantically similar
+• Pinecone, Weaviate, Qdrant, pgvector: vector databases for similarity search at scale
+• pgvector: Postgres extension for storing and querying vectors — no separate infrastructure
+• Chunking strategy for RAG: fixed-size chunks vs sentence-aware vs semantic chunking
+• Embedding model selection: text-embedding-3-small (OpenAI) for text, CLIP for image-text pairs
+• Re-ranking: after vector search retrieves candidates, re-rank with a cross-encoder for better relevance
+• Fine-tuning: adapt a base model to your domain with task-specific data — improves accuracy dramatically
+• Few-shot prompting: include 3-5 examples of input-output pairs in the prompt — no training required
+• Model evaluation: precision, recall, F1 for classification; BLEU, ROUGE for text generation; human eval for quality
+• Latency vs accuracy tradeoff: smaller models are faster but less accurate — profile both before choosing
+• Batch inference: process multiple inputs at once — much faster throughput than one-at-a-time
+• GPU inference: 10-100x faster than CPU for large models — use for anything over 1B parameters
+• Model quantization: INT8 or INT4 reduces model size and increases inference speed with minimal quality loss
+• Prompt caching: cache the KV cache of the system prompt — Anthropic and OpenAI support this for long prompts
+• Structured output with constrained decoding: outlines or guidance libraries guarantee JSON schema compliance
+• Guardrails: NeMo Guardrails, Llama Guard — classify inputs and outputs for safety before sending to users
+
+═══════════════════════════════════════
+MULTI-TENANCY ARCHITECTURE
+═══════════════════════════════════════
+• Multi-tenancy means multiple customers share the same infrastructure — isolation and data separation are paramount
+• Three models: shared database/schema (row-level), shared database/separate schemas, separate databases per tenant
+• Row-level isolation: every table has a tenant_id column — every query must filter by it
+• Row Level Security (RLS) in PostgreSQL: create a policy that automatically filters by current_user or a session variable
+• Schema-level isolation: each tenant gets their own Postgres schema — migrations run per-tenant
+• Database-level isolation: each tenant gets their own database — maximum isolation, highest operational cost
+• Tenant context: store the current tenant ID in middleware and attach it to every DB query
+• Multi-tenant indexes: include tenant_id as the first column in composite indexes — WHERE tenant_id = ? AND ...
+• Tenant provisioning: automate creating tenant resources on signup — never do it manually
+• Tenant offboarding: data export, soft delete, then hard delete after retention period — automatable
+• Cross-tenant data: a table that has data shared between tenants must be handled separately (e.g., public content)
+• Tenant-aware caching: include tenant_id in every cache key — never serve cached data across tenants
+• Rate limiting per tenant: each tenant has its own quota — one tenant's traffic can't starve others
+• Tenant-aware logging: every log entry must include tenant_id — essential for debugging tenant-specific issues
+• Subdomain routing: tenant-a.app.com routes to tenant A's context — middleware extracts subdomain and sets tenant
+• Custom domains: tenant maps their domain to your app — CNAME to your load balancer, SSL with Let's Encrypt
+• Tenant settings: configurable options per tenant — branding, feature flags, integrations, limits
+• Usage metering per tenant: track API calls, storage, seats, events — the foundation of usage-based billing
+
+═══════════════════════════════════════
+REAL-TIME COLLABORATION
+═══════════════════════════════════════
+• Operational Transformation (OT): classic algorithm for collaborative text editing — used by Google Docs
+• CRDT (Conflict-free Replicated Data Type): data structures that merge without conflicts — Yjs, Automerge
+• Yjs is the most popular CRDT library — YText, YArray, YMap for collaborative data
+• y-websocket: WebSocket server for Yjs — syncs document state between all clients
+• y-indexeddb: persist Yjs document locally — users keep edits offline, sync when reconnected
+• Presence awareness: show who else is in the document — cursor positions, selections, user names
+• Optimistic concurrency: apply changes locally immediately, sync with server, handle conflicts
+• Vector clocks: track causality in distributed systems — determine if event A happened before B
+• CRDT vs OT: CRDTs are more resilient to network partitions; OT requires a central server
+• Locking: pessimistic locking prevents conflicts by blocking — too limiting for real-time UX
+• Collaborative cursors: broadcast cursor positions via awareness protocol — throttle to 50ms updates
+• Undo history in collaborative context: each user has their own undo stack — not a shared global stack
+• Multiplayer selection: show other users' selections highlighted in different colors
+• Presence protocols: ping every 5-10 seconds, consider users offline after 30 seconds of silence
+• Conflict resolution UI: when auto-merge fails, show the conflict to users and let them choose
+• LiveBlocks, PartyKit, Ditto — hosted infrastructure for real-time collaboration built on CRDTs
+
+═══════════════════════════════════════
+CLI TOOL DEVELOPMENT
+═══════════════════════════════════════
+• CLI tools are products too — the user is another developer; DX matters as much as functionality
+• Commander.js: define commands, subcommands, options, and arguments with automatic --help generation
+• Inquirer.js: interactive prompts — list, checkbox, confirm, input, password — detect non-TTY and skip
+• Chalk for colors, ora for spinners, cli-progress for progress bars — make output beautiful
+• Always check process.stdout.isTTY before adding colors or interactive elements — CI pipes don't support them
+• Exit codes matter: 0 for success, 1 for general error, 2 for misuse, 126 for permission denied, 127 for command not found
+• STDIN support: read from pipe if no argument given — cat file.json | mycli process — unix composability
+• Config files: support both ~/.myclirc (global) and .myclirc (project-local) — local overrides global
+• Environment variables for config: MY_CLI_API_KEY — always document them in --help
+• Verbose mode: --verbose or -v flag for extra output — use log levels internally
+• Dry run mode: --dry-run shows what would happen without doing it — essential for destructive commands
+• Update notifier: check npm registry for newer version, show a banner prompting the user to upgrade
+• npx compatibility: ensure package.json bin field is set, file has a shebang (#!/usr/bin/env node)
+• Cross-platform paths: use path.join() and path.resolve() — never hardcode / or \\ separators
+• Config storage: use conf or cosmiconfig — they handle XDG directories and multiple config formats
+• Global vs local install: prefer local (npx) for project tools, global for personal productivity tools
+• Error messages: print to stderr (console.error), not stdout — allows piping stdout without error noise
+• Async command handlers: wrap in try/catch, catch unhandled rejections with process.on('unhandledRejection')
+• Shell completions: generate completion scripts for bash, zsh, fish — massive DX improvement for frequent users
+
+═══════════════════════════════════════
+DESKTOP APPS WITH TAURI & ELECTRON
+═══════════════════════════════════════
+• Tauri uses Rust + system WebView — much smaller bundles (3-10MB vs 100MB+) and lower memory than Electron
+• Electron bundles Chromium — every Electron app ships its own browser — large but universally compatible
+• Tauri commands: #[tauri::command] Rust functions callable from JavaScript via invoke()
+• Tauri events: emit from Rust to frontend with app.emit(), listen in JS with listen()
+• Tauri file system plugin: use tauri::fs for file access with granular permissions in tauri.conf.json
+• Tauri system tray: SystemTray API for menu bar apps — persistent background apps
+• Auto updater: Tauri's built-in updater checks a JSON endpoint and installs updates seamlessly
+• Content Security Policy in Tauri/Electron: restrict what the WebView can load — prevent injection attacks
+• Electron contextBridge: expose safe APIs to the renderer via preload script — never expose ipcRenderer directly
+• Electron ipcMain / ipcRenderer: IPC for communication between main process and renderer
+• Main process vs renderer: main process has Node.js access, renderer is sandboxed — communicate via IPC
+• Electron Builder / Electron Forge: package and sign for Windows (.exe), macOS (.dmg), Linux (.AppImage)
+• Code signing is mandatory for distribution: Windows SmartScreen and macOS Gatekeeper block unsigned apps
+• Native menus: use the Menu API — native OS menus are faster and more accessible than custom HTML menus
+• Deep links: register a custom URL scheme — myapp://open/file triggers the desktop app
+• Crash reporting: Sentry supports Electron and Tauri — captures renderer and main process errors
+• Offline support is native to desktop — design for disconnected operation from day one
+• File associations: register file extensions so double-clicking opens in your app
+• Keyboard shortcuts: globalShortcut API for OS-level shortcuts, menu accelerators for app shortcuts
 `;
+
 
 
 
