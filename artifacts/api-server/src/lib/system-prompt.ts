@@ -14072,7 +14072,7 @@ data: payload
   • Conditional types: T extends U ? X : Y — distribute over unions, create type-level predicates
   • infer keyword: extract a type from within a conditional type — ReturnType<T>, Parameters<T> use infer
   • Mapped types: { [K in keyof T]: NewType } — transform every property of a type
-  • Template literal types: `${string}-${number}` — constrain string shapes at the type level
+  • Template literal types: `\${string}-\${number}` — constrain string shapes at the type level
   • Distributive conditional types: distribute over unions automatically — FilterUnion<T, U> = T extends U ? T : never
   • Recursive types: JSON value type, deep partial, deep readonly — types that reference themselves
   • Variadic tuple types: [...T, ...U] — typed rest elements, spread in tuples — function argument manipulation
