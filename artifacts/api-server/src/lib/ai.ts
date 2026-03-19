@@ -1,44 +1,38 @@
 import OpenAI from "openai";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// FREE MODELS — verified live on OpenRouter as of latest check (26 total)
-// Ordered by: reliability first, then quality. Dead models removed.
+// FREE MODELS — 26 verified live models on OpenRouter
+// Ordered: fastest/most reliable first
 // ─────────────────────────────────────────────────────────────────────────────
 const FREE_MODELS = [
-  // ── Tier 1: Fast & highly reliable ──────────────────────────────────────
-  "stepfun/step-3.5-flash:free",                    // Very fast, always available
-  "mistralai/mistral-small-3.1-24b-instruct:free",  // Rock-solid reliability
-  "arcee-ai/trinity-mini:free",                     // Fast, 131k context
-  "z-ai/glm-4.5-air:free",                         // Fast, 131k context
-  "liquid/lfm-2.5-1.2b-instruct:free",             // Tiny but fast
-  "liquid/lfm-2.5-1.2b-thinking:free",             // Thinking variant
+  "stepfun/step-3.5-flash:free",
+  "mistralai/mistral-small-3.1-24b-instruct:free",
+  "arcee-ai/trinity-mini:free",
+  "z-ai/glm-4.5-air:free",
+  "liquid/lfm-2.5-1.2b-instruct:free",
+  "liquid/lfm-2.5-1.2b-thinking:free",
   "google/gemma-3-4b-it:free",
   "google/gemma-3n-e4b-it:free",
   "google/gemma-3n-e2b-it:free",
   "meta-llama/llama-3.2-3b-instruct:free",
-
-  // ── Tier 2: Good quality, large context ─────────────────────────────────
-  "meta-llama/llama-3.3-70b-instruct:free",         // Powerful, 128k ctx
-  "nvidia/nemotron-3-nano-30b-a3b:free",            // 256k context
-  "nvidia/nemotron-nano-9b-v2:free",                // 128k context
-  "nvidia/nemotron-nano-12b-v2-vl:free",            // Vision + text, 128k
-  "minimax/minimax-m2.5:free",                      // 197k context
+  "meta-llama/llama-3.3-70b-instruct:free",
+  "nvidia/nemotron-3-nano-30b-a3b:free",
+  "nvidia/nemotron-nano-9b-v2:free",
+  "nvidia/nemotron-nano-12b-v2-vl:free",
+  "minimax/minimax-m2.5:free",
   "cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
   "google/gemma-3-12b-it:free",
   "google/gemma-3-27b-it:free",
-
-  // ── Tier 3: Best quality — large models, sometimes rate-limited ─────────
-  "openai/gpt-oss-120b:free",                       // Best general model
+  "openai/gpt-oss-120b:free",
   "openai/gpt-oss-20b:free",
-  "qwen/qwen3-coder:free",                          // Best coder, 262k ctx
-  "qwen/qwen3-next-80b-a3b-instruct:free",          // 262k context
+  "qwen/qwen3-coder:free",
+  "qwen/qwen3-next-80b-a3b-instruct:free",
   "qwen/qwen3-4b:free",
-  "nvidia/nemotron-3-super-120b-a12b:free",         // 262k context, very capable
-  "arcee-ai/trinity-large-preview:free",            // 131k context
-  "nousresearch/hermes-3-llama-3.1-405b:free",      // Huge, high quality
+  "nvidia/nemotron-3-super-120b-a12b:free",
+  "arcee-ai/trinity-large-preview:free",
+  "nousresearch/hermes-3-llama-3.1-405b:free",
 ];
 
-// ── Coding-first fallback list ────────────────────────────────────────────
 export const CODING_FALLBACKS = [
   "qwen/qwen3-coder:free",
   "openai/gpt-oss-120b:free",
@@ -51,7 +45,6 @@ export const CODING_FALLBACKS = [
   "arcee-ai/trinity-mini:free",
 ];
 
-// ── Agent builder models (skip slow rate-limited ones) ───────────────────
 export const AGENT_BUILD_MODELS = [
   "qwen/qwen3-coder:free",
   "openai/gpt-oss-120b:free",
@@ -63,7 +56,6 @@ export const AGENT_BUILD_MODELS = [
   "nvidia/nemotron-nano-9b-v2:free",
 ];
 
-// ── Planning/analysis (speed over code quality) ──────────────────────────
 export const PLANNING_MODELS = [
   "stepfun/step-3.5-flash:free",
   "mistralai/mistral-small-3.1-24b-instruct:free",
@@ -77,14 +69,12 @@ export const FREE_MODEL = FREE_MODELS[0];
 export const FREE_MODEL_FAST = FREE_MODELS[0];
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CLIENT FACTORY
+// CLIENT
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function getAIClient(): OpenAI {
   const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) {
-    throw new Error("OPENROUTER_API_KEY_MISSING");
-  }
+  if (!apiKey) throw new Error("OPENROUTER_API_KEY_MISSING");
   return new OpenAI({ apiKey, baseURL: "https://openrouter.ai/api/v1" });
 }
 
@@ -96,77 +86,100 @@ function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+// Per-model hard timeout — OpenRouter sometimes queues silently instead of
+// returning 429, so we force a switch after this many ms.
+const MODEL_TIMEOUT_MS = 8_000;
+
+function withTimeout<T>(fn: (signal: AbortSignal) => Promise<T>, ms: number): Promise<T> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  return fn(ctrl.signal).then(
+    r => { clearTimeout(timer); return r; },
+    e => { clearTimeout(timer); throw e; }
+  );
+}
+
 function isAuthError(err: any): boolean {
-  const status = err?.status ?? err?.response?.status;
-  return status === 401 || status === 403;
+  const s = err?.status ?? err?.statusCode ?? err?.response?.status;
+  return s === 401 || s === 403;
 }
 
-function isRateLimit(err: any): boolean {
-  const status = err?.status ?? err?.response?.status;
-  const msg = String(err?.message ?? "").toLowerCase();
-  return status === 429 || msg.includes("rate limit") || msg.includes("too many");
+function isUnavailable(err: any): boolean {
+  const s = err?.status ?? err?.statusCode ?? err?.response?.status;
+  const msg = String(err?.message ?? err?.error?.message ?? "").toLowerCase();
+  return (
+    s === 429 || s === 502 || s === 503 || s === 524 ||
+    err?.name === "APIUserAbortError" ||
+    msg.includes("rate limit") || msg.includes("too many") ||
+    msg.includes("overloaded") || msg.includes("no providers") ||
+    msg.includes("timed out") || msg.includes("unavailable") ||
+    msg.includes("timeout")
+  );
 }
 
-function isServerError(err: any): boolean {
-  const status = err?.status ?? err?.response?.status;
-  return status >= 500 && status < 600;
-}
-
-function buildFallbackList(preferredModel?: string): string[] {
-  if (!preferredModel) return FREE_MODELS;
-  const isCodingModel = CODING_FALLBACKS.includes(preferredModel);
-  if (isCodingModel) {
-    const codingFallbacks = [preferredModel, ...CODING_FALLBACKS.filter(m => m !== preferredModel)];
-    const generalFallbacks = FREE_MODELS.filter(m => !codingFallbacks.includes(m));
-    return [...codingFallbacks, ...generalFallbacks];
-  }
-  return [preferredModel, ...FREE_MODELS.filter(m => m !== preferredModel)];
+function buildModelList(preferredModel?: string, pool: string[] = FREE_MODELS): string[] {
+  if (!preferredModel) return pool;
+  return [preferredModel, ...pool.filter(m => m !== preferredModel)];
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CORE: try every model with smart retry, OpenRouter only
+// CORE: try each model in turn with 8s timeout + pass full list to OpenRouter
+// so OpenRouter can also switch server-side if a model stalls mid-stream.
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function tryModelsNonStream(
+async function tryStream(
   client: OpenAI,
-  params: OpenAI.Chat.ChatCompletionCreateParamsNonStreaming,
-  modelsToTry: string[]
-): Promise<OpenAI.Chat.ChatCompletion> {
-  for (let i = 0; i < modelsToTry.length; i++) {
-    const model = modelsToTry[i];
+  params: Omit<OpenAI.Chat.ChatCompletionCreateParamsStreaming, "model">,
+  models: string[]
+): Promise<AsyncIterable<OpenAI.Chat.ChatCompletionChunk>> {
+  for (let i = 0; i < models.length; i++) {
+    const model = models[i];
     try {
-      const result = await client.chat.completions.create({ ...params, model });
-      if (i > 0) console.log(`[OR] Succeeded with model: ${model} (after ${i} skipped)`);
-      return result;
+      const stream = await withTimeout(
+        (signal) =>
+          client.chat.completions.create(
+            {
+              ...params,
+              model,
+              stream: true,
+              // OpenRouter-specific: pass remaining models as server-side fallback
+              // @ts-ignore
+              models: models.slice(i),
+            },
+            { signal }
+          ) as any,
+        MODEL_TIMEOUT_MS
+      );
+      if (i > 0) console.log(`[OR] switched to ${model} (skipped ${i})`);
+      return stream as AsyncIterable<OpenAI.Chat.ChatCompletionChunk>;
     } catch (err: any) {
       if (isAuthError(err)) {
         throw new Error(
-          "AI authentication failed. Your OPENROUTER_API_KEY is invalid or expired. Please update it in the Render dashboard."
+          "AI authentication failed. Your OPENROUTER_API_KEY is invalid or expired. Please update it on Render."
         );
       }
-      if (isRateLimit(err)) {
-        // Rate limited — instantly move to next model, no waiting
-        console.warn(`[OR] ${model} busy (429), switching to next model instantly...`);
-      } else if (isServerError(err)) {
-        // Server error — instantly move to next model
-        console.warn(`[OR] ${model} server error (${err?.status}), switching to next model...`);
-      } else {
-        console.warn(`[OR] ${model} failed (${err?.status ?? "unknown"}), switching to next model...`);
-      }
+      const reason = isUnavailable(err)
+        ? "busy/rate-limited"
+        : `error (${err?.status ?? err?.name ?? "unknown"})`;
+      console.warn(`[OR] ${model} ${reason} → trying next`);
     }
   }
 
-  // All 26 models tried — wait 3 seconds then retry the top 5 models once more
-  console.warn("[OR] All models busy. Waiting 3s then retrying top 5 models...");
+  console.warn("[OR] All models tried. Pausing 3s then retrying top 5...");
   await sleep(3000);
-  for (const model of modelsToTry.slice(0, 5)) {
+  for (const model of models.slice(0, 5)) {
     try {
-      const result = await client.chat.completions.create({ ...params, model });
-      console.log(`[OR] Retry succeeded with: ${model}`);
-      return result;
-    } catch (_) {
-      // continue
-    }
+      const stream = await withTimeout(
+        (signal) =>
+          client.chat.completions.create(
+            { ...params, model, stream: true, /* @ts-ignore */ models },
+            { signal }
+          ) as any,
+        MODEL_TIMEOUT_MS
+      );
+      console.log(`[OR] retry succeeded: ${model}`);
+      return stream as AsyncIterable<OpenAI.Chat.ChatCompletionChunk>;
+    } catch (_) {}
   }
 
   throw new Error(
@@ -174,46 +187,50 @@ async function tryModelsNonStream(
   );
 }
 
-async function tryModelsStream(
+async function tryNonStream(
   client: OpenAI,
-  params: OpenAI.Chat.ChatCompletionCreateParamsStreaming,
-  modelsToTry: string[]
-): Promise<AsyncIterable<OpenAI.Chat.ChatCompletionChunk>> {
-  for (let i = 0; i < modelsToTry.length; i++) {
-    const model = modelsToTry[i];
+  params: OpenAI.Chat.ChatCompletionCreateParamsNonStreaming,
+  models: string[]
+): Promise<OpenAI.Chat.ChatCompletion> {
+  for (let i = 0; i < models.length; i++) {
+    const model = models[i];
     try {
-      const stream = await client.chat.completions.create({ ...params, model, stream: true });
-      if (i > 0) console.log(`[OR] Streaming with model: ${model} (after ${i} skipped)`);
-      return stream;
+      const result = await withTimeout(
+        (signal) =>
+          client.chat.completions.create(
+            { ...params, model, /* @ts-ignore */ models: models.slice(i) },
+            { signal }
+          ) as any,
+        MODEL_TIMEOUT_MS
+      );
+      if (i > 0) console.log(`[OR] switched to ${model} (skipped ${i})`);
+      return result as OpenAI.Chat.ChatCompletion;
     } catch (err: any) {
       if (isAuthError(err)) {
         throw new Error(
-          "AI authentication failed. Your OPENROUTER_API_KEY is invalid or expired. Please update it in the Render dashboard."
+          "AI authentication failed. Your OPENROUTER_API_KEY is invalid or expired. Please update it on Render."
         );
       }
-      if (isRateLimit(err)) {
-        // Rate limited — instantly move to next model, no waiting
-        console.warn(`[OR] ${model} busy (429), switching to next model instantly...`);
-      } else if (isServerError(err)) {
-        // Server error — instantly move to next model
-        console.warn(`[OR] ${model} server error (${err?.status}), switching to next model...`);
-      } else {
-        console.warn(`[OR] ${model} failed (${err?.status ?? "unknown"}), switching to next model...`);
-      }
+      const reason = isUnavailable(err)
+        ? "busy/rate-limited"
+        : `error (${err?.status ?? err?.name ?? "unknown"})`;
+      console.warn(`[OR] ${model} ${reason} → trying next`);
     }
   }
 
-  // All 26 models tried — wait 3 seconds then retry the top 5 models once more
-  console.warn("[OR] All models busy. Waiting 3s then retrying top 5 models...");
   await sleep(3000);
-  for (const model of modelsToTry.slice(0, 5)) {
+  for (const model of models.slice(0, 5)) {
     try {
-      const stream = await client.chat.completions.create({ ...params, model, stream: true });
-      console.log(`[OR] Retry succeeded with: ${model}`);
-      return stream;
-    } catch (_) {
-      // continue
-    }
+      const result = await withTimeout(
+        (signal) =>
+          client.chat.completions.create(
+            { ...params, model, /* @ts-ignore */ models },
+            { signal }
+          ) as any,
+        MODEL_TIMEOUT_MS
+      );
+      return result as OpenAI.Chat.ChatCompletion;
+    } catch (_) {}
   }
 
   throw new Error(
@@ -229,32 +246,24 @@ export async function createChatCompletion(
   params: OpenAI.Chat.ChatCompletionCreateParamsNonStreaming,
   preferredModel?: string
 ): Promise<OpenAI.Chat.ChatCompletion> {
-  const modelsToTry = buildFallbackList(preferredModel ?? (params.model as string | undefined));
   let client: OpenAI;
-  try {
-    client = getAIClient();
-  } catch {
-    throw new Error(
-      "AI service is not configured. The OPENROUTER_API_KEY environment variable is missing on Render."
-    );
+  try { client = getAIClient(); } catch {
+    throw new Error("AI service is not configured. OPENROUTER_API_KEY is missing on Render.");
   }
-  return tryModelsNonStream(client, params, modelsToTry);
+  const models = buildModelList(preferredModel ?? (params.model as string | undefined));
+  return tryNonStream(client, params, models);
 }
 
 export async function createChatCompletionStream(
   params: OpenAI.Chat.ChatCompletionCreateParamsStreaming,
   preferredModel?: string
 ): Promise<AsyncIterable<OpenAI.Chat.ChatCompletionChunk>> {
-  const modelsToTry = buildFallbackList(preferredModel ?? (params.model as string | undefined));
   let client: OpenAI;
-  try {
-    client = getAIClient();
-  } catch {
-    throw new Error(
-      "AI service is not configured. The OPENROUTER_API_KEY environment variable is missing on Render."
-    );
+  try { client = getAIClient(); } catch {
+    throw new Error("AI service is not configured. OPENROUTER_API_KEY is missing on Render.");
   }
-  return tryModelsStream(client, params, modelsToTry);
+  const models = buildModelList(preferredModel ?? (params.model as string | undefined));
+  return tryStream(client, params, models);
 }
 
 export async function createChatCompletionStreamFromList(
@@ -262,45 +271,45 @@ export async function createChatCompletionStreamFromList(
   modelList: string[]
 ): Promise<{ stream: AsyncIterable<OpenAI.Chat.ChatCompletionChunk>; model: string }> {
   let client: OpenAI;
-  try {
-    client = getAIClient();
-  } catch {
-    throw new Error(
-      "AI service is not configured. The OPENROUTER_API_KEY environment variable is missing on Render."
-    );
+  try { client = getAIClient(); } catch {
+    throw new Error("AI service is not configured. OPENROUTER_API_KEY is missing on Render.");
   }
 
   for (let i = 0; i < modelList.length; i++) {
     const model = modelList[i];
     try {
-      const stream = await client.chat.completions.create({ ...params, model, stream: true });
-      if (i > 0) console.log(`[AI] Using model: ${model} (after ${i} skipped)`);
-      return { stream, model };
+      const stream = await withTimeout(
+        (signal) =>
+          client.chat.completions.create(
+            { ...params, model, stream: true, /* @ts-ignore */ models: modelList.slice(i) },
+            { signal }
+          ) as any,
+        MODEL_TIMEOUT_MS
+      );
+      if (i > 0) console.log(`[AI] switched to ${model} (skipped ${i})`);
+      return { stream: stream as AsyncIterable<OpenAI.Chat.ChatCompletionChunk>, model };
     } catch (err: any) {
       if (isAuthError(err)) {
         throw new Error(
-          "AI authentication failed. Your OPENROUTER_API_KEY is invalid or expired. Please update it in the Render dashboard."
+          "AI authentication failed. Your OPENROUTER_API_KEY is invalid or expired. Please update it on Render."
         );
       }
-      if (isRateLimit(err)) {
-        // Rate limited — instantly switch to next model, no waiting
-        console.warn(`[agent] ${model} busy (429), switching to next model instantly...`);
-      } else if (isServerError(err)) {
-        console.warn(`[agent] ${model} server error (${err?.status}), switching to next model...`);
-      } else {
-        console.warn(`[agent] ${model} failed (${err?.status ?? "unknown"}), switching to next model...`);
-      }
+      console.warn(`[agent] ${model} ${isUnavailable(err) ? "busy" : `error(${err?.status ?? err?.name})`} → next`);
     }
   }
 
-  // All models tried — wait 3s then retry top 3
-  console.warn("[agent] All models busy. Waiting 3s then retrying top 3...");
   await sleep(3000);
   for (const model of modelList.slice(0, 3)) {
     try {
-      const stream = await client.chat.completions.create({ ...params, model, stream: true });
-      console.log(`[agent] Retry succeeded with: ${model}`);
-      return { stream, model };
+      const stream = await withTimeout(
+        (signal) =>
+          client.chat.completions.create(
+            { ...params, model, stream: true, /* @ts-ignore */ models: modelList },
+            { signal }
+          ) as any,
+        MODEL_TIMEOUT_MS
+      );
+      return { stream: stream as AsyncIterable<OpenAI.Chat.ChatCompletionChunk>, model };
     } catch (_) {}
   }
 
