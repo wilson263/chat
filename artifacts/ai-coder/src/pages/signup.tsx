@@ -4,7 +4,7 @@ import { register } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Eye, EyeOff, Code2, Check } from 'lucide-react';
+import { Loader2, Eye, EyeOff, Code2, Check, Clock, Mail } from 'lucide-react';
 
 const PERKS = [
   'Free access to 50+ AI models',
@@ -21,6 +21,8 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [pending, setPending] = useState(false);
+  const [submittedEmail, setSubmittedEmail] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,8 +30,13 @@ export default function SignupPage() {
     if (password.length < 6) { setError('Password must be at least 6 characters'); return; }
     setLoading(true);
     try {
-      await register(name, email, password);
-      setLocation('/');
+      const result = await register(name, email, password);
+      if ((result as any)?.pending) {
+        setSubmittedEmail(email);
+        setPending(true);
+      } else {
+        setLocation('/');
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -37,6 +44,63 @@ export default function SignupPage() {
     }
   };
 
+  // ── Pending approval screen ──────────────────────────────────────────────────
+  if (pending) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-6">
+        <div className="w-full max-w-md text-center animate-fade-up">
+          <div className="flex items-center justify-center gap-2 mb-10">
+            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-lg shadow-primary/30">
+              <Code2 className="w-4 h-4 text-white" />
+            </div>
+            <span className="font-bold text-lg tracking-tight">ZorvixAI</span>
+          </div>
+
+          <div className="w-16 h-16 rounded-full bg-amber-500/10 border border-amber-500/25 flex items-center justify-center mx-auto mb-6">
+            <Clock className="w-7 h-7 text-amber-400" />
+          </div>
+
+          <h1 className="text-2xl font-bold tracking-tight mb-3">Request submitted!</h1>
+          <p className="text-muted-foreground text-sm leading-relaxed mb-6">
+            Your account request has been sent to the admin for review. Once approved, you'll receive a confirmation email at:
+          </p>
+
+          <div className="inline-flex items-center gap-2 px-4 py-2.5 bg-surface-1 border border-border rounded-lg mb-8">
+            <Mail className="w-4 h-4 text-muted-foreground shrink-0" />
+            <span className="text-sm font-medium">{submittedEmail}</span>
+          </div>
+
+          <div className="space-y-3 text-left mb-8 p-4 bg-surface-1 border border-border rounded-xl">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">What happens next</p>
+            <div className="space-y-2">
+              {[
+                'Admin receives your registration request',
+                'Admin reviews and approves your account',
+                'You get an email with a link to sign in',
+              ].map((step, i) => (
+                <div key={i} className="flex items-start gap-2.5">
+                  <div className="w-5 h-5 rounded-full bg-primary/15 border border-primary/30 flex items-center justify-center shrink-0 mt-0.5">
+                    <span className="text-[10px] font-bold text-primary">{i + 1}</span>
+                  </div>
+                  <span className="text-sm text-muted-foreground">{step}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <Button
+            variant="outline"
+            className="w-full h-10 text-sm border-border"
+            onClick={() => setLocation('/login')}
+          >
+            Back to sign in
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Registration form ────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-background flex">
       {/* ── Left brand panel ── */}
@@ -97,7 +161,7 @@ export default function SignupPage() {
               <span className="font-bold">ZorvixAI</span>
             </div>
             <h1 className="text-2xl font-bold tracking-tight">Create your account</h1>
-            <p className="text-muted-foreground text-sm mt-1">Free to start — no card required</p>
+            <p className="text-muted-foreground text-sm mt-1">Accounts are activated after admin approval</p>
           </div>
 
           {error && (
@@ -168,12 +232,12 @@ export default function SignupPage() {
               disabled={loading}
             >
               {loading ? (
-                <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Creating account…</>
-              ) : 'Create account'}
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Submitting request…</>
+              ) : 'Request account'}
             </Button>
 
             <p className="text-center text-xs text-muted-foreground">
-              The first account created gets admin access.
+              The first account created gets instant admin access.
             </p>
           </form>
 
