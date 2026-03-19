@@ -195,7 +195,7 @@ Based on these search results, provide a comprehensive, accurate answer. Cite so
             { role: "system", content: systemPrompt },
             { role: "user", content: userPrompt },
           ],
-          max_completion_tokens: 60000,
+          max_completion_tokens: 100000,
         });
         for await (const chunk of stream) {
           const text = chunk.choices[0]?.delta?.content ?? "";
@@ -212,7 +212,7 @@ Based on these search results, provide a comprehensive, accurate answer. Cite so
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-        max_completion_tokens: 60000,
+        max_completion_tokens: 100000,
       });
 
       res.json({
@@ -266,7 +266,7 @@ Provide:
 (Which sources support your verdict)`,
         },
       ],
-      max_completion_tokens: 60000,
+      max_completion_tokens: 100000,
     });
 
     res.json({
@@ -333,7 +333,7 @@ Write a comprehensive research report:
 ## Sources Referenced`,
         },
       ],
-      max_completion_tokens: 60000,
+      max_completion_tokens: 100000,
     });
 
     res.json({
@@ -381,7 +381,7 @@ Provide:
 4. Links to relevant docs (from search results)`,
         },
       ],
-      max_completion_tokens: 60000,
+      max_completion_tokens: 100000,
     });
 
     res.json({
