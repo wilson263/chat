@@ -28,60 +28,66 @@ interface ChatRequest {
 }
 
 const MODEL_MAP: Record<string, string> = {
-  "meta-llama/llama-3.3-70b-instruct:free": "meta-llama/llama-3.3-70b-instruct:free",
-  "qwen/qwen3-coder-480b-a35b:free": "qwen/qwen3-coder-480b-a35b:free",
-  "openai/gpt-oss-120b:free": "openai/gpt-oss-120b:free",
-  "nvidia/llama-3.3-nemotron-super-49b-v1:free": "nvidia/llama-3.3-nemotron-super-49b-v1:free",
-  "mistralai/mistral-small-3.1-24b-instruct:free": "mistralai/mistral-small-3.1-24b-instruct:free",
-  "google/gemma-3-27b-it:free": "google/gemma-3-27b-it:free",
-  "nousresearch/hermes-3-llama-3.1-405b:free": "nousresearch/hermes-3-llama-3.1-405b:free",
-  "deepseek/deepseek-r1:free": "deepseek/deepseek-r1:free",
-  "deepseek/deepseek-v3-base:free": "deepseek/deepseek-v3-base:free",
-  "openai/gpt-oss-20b:free": "openai/gpt-oss-20b:free",
-  "qwen/qwen3-4b:free": "qwen/qwen3-4b:free",
-  "meta-llama/llama-3.2-3b-instruct:free": "meta-llama/llama-3.2-3b-instruct:free",
-  "google/gemma-3-12b-it:free": "google/gemma-3-12b-it:free",
-  "google/gemma-3-4b-it:free": "google/gemma-3-4b-it:free",
-  "google/gemma-3n-e4b-it:free": "google/gemma-3n-e4b-it:free",
-  "google/gemma-3n-e2b-it:free": "google/gemma-3n-e2b-it:free",
-  "nvidia/llama-3.3-nemotron-nano-8b-v1:free": "nvidia/llama-3.3-nemotron-nano-8b-v1:free",
-  "meta-llama/llama-3.1-8b-instruct:free": "meta-llama/llama-3.1-8b-instruct:free",
-  "arcee-ai/arcee-blitz:free": "arcee-ai/arcee-blitz:free",
-  "stepfun/step-3.5-flash:free": "stepfun/step-3.5-flash:free",
-  "minimax/minimax-m2.5-1.5t:free": "minimax/minimax-m2.5-1.5t:free",
-  "liquid/lfm2.5-1.2b:free": "liquid/lfm2.5-1.2b:free",
-  "google/gemma-2-9b-it:free": "google/gemma-2-9b-it:free",
-  "mixtral-8x7b-32768": "meta-llama/llama-3.3-70b-instruct:free",
-  "gemma2-9b-it": "meta-llama/llama-3.1-8b-instruct:free",
-  "deepseek-r1-distill-llama-70b": "deepseek/deepseek-r1:free",
-};
+    // ── Working OpenRouter free models (verified) ─────────────────────────
+    "stepfun/step-3.5-flash:free": "stepfun/step-3.5-flash:free",
+    "mistralai/mistral-small-3.1-24b-instruct:free": "mistralai/mistral-small-3.1-24b-instruct:free",
+    "arcee-ai/trinity-mini:free": "arcee-ai/trinity-mini:free",
+    "arcee-ai/trinity-large-preview:free": "arcee-ai/trinity-large-preview:free",
+    "z-ai/glm-4.5-air:free": "z-ai/glm-4.5-air:free",
+    "liquid/lfm-2.5-1.2b-instruct:free": "liquid/lfm-2.5-1.2b-instruct:free",
+    "liquid/lfm-2.5-1.2b-thinking:free": "liquid/lfm-2.5-1.2b-thinking:free",
+    "google/gemma-3-4b-it:free": "google/gemma-3-4b-it:free",
+    "google/gemma-3n-e4b-it:free": "google/gemma-3n-e4b-it:free",
+    "google/gemma-3n-e2b-it:free": "google/gemma-3n-e2b-it:free",
+    "google/gemma-3-12b-it:free": "google/gemma-3-12b-it:free",
+    "google/gemma-3-27b-it:free": "google/gemma-3-27b-it:free",
+    "meta-llama/llama-3.2-3b-instruct:free": "meta-llama/llama-3.2-3b-instruct:free",
+    "meta-llama/llama-3.3-70b-instruct:free": "meta-llama/llama-3.3-70b-instruct:free",
+    "nvidia/nemotron-3-nano-30b-a3b:free": "nvidia/nemotron-3-nano-30b-a3b:free",
+    "nvidia/nemotron-nano-9b-v2:free": "nvidia/nemotron-nano-9b-v2:free",
+    "nvidia/nemotron-nano-12b-v2-vl:free": "nvidia/nemotron-nano-12b-v2-vl:free",
+    "nvidia/nemotron-3-super-120b-a12b:free": "nvidia/nemotron-3-super-120b-a12b:free",
+    "minimax/minimax-m2.5:free": "minimax/minimax-m2.5:free",
+    "cognitivecomputations/dolphin-mistral-24b-venice-edition:free": "cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
+    "openai/gpt-oss-120b:free": "openai/gpt-oss-120b:free",
+    "openai/gpt-oss-20b:free": "openai/gpt-oss-20b:free",
+    "qwen/qwen3-coder:free": "qwen/qwen3-coder:free",
+    "qwen/qwen3-next-80b-a3b-instruct:free": "qwen/qwen3-next-80b-a3b-instruct:free",
+    "qwen/qwen3-4b:free": "qwen/qwen3-4b:free",
+    "nousresearch/hermes-3-llama-3.1-405b:free": "nousresearch/hermes-3-llama-3.1-405b:free",
+    // ── Legacy aliases (redirect old names to closest working model) ──────
+    "mixtral-8x7b-32768": "mistralai/mistral-small-3.1-24b-instruct:free",
+    "gemma2-9b-it": "google/gemma-3-12b-it:free",
+    "deepseek-r1-distill-llama-70b": "meta-llama/llama-3.3-70b-instruct:free",
+  };
 
 const CODING_MODELS = [
-  "qwen/qwen3-coder-480b-a35b:free",
-  "deepseek/deepseek-r1:free",
-  "openai/gpt-oss-120b:free",
-  "meta-llama/llama-3.3-70b-instruct:free",
-  "nvidia/llama-3.3-nemotron-super-49b-v1:free",
-  "nousresearch/hermes-3-llama-3.1-405b:free",
-  "mistralai/mistral-small-3.1-24b-instruct:free",
-];
+    "qwen/qwen3-coder:free",
+    "openai/gpt-oss-120b:free",
+    "nvidia/nemotron-3-super-120b-a12b:free",
+    "nousresearch/hermes-3-llama-3.1-405b:free",
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "qwen/qwen3-next-80b-a3b-instruct:free",
+    "mistralai/mistral-small-3.1-24b-instruct:free",
+  ];
 
 const REASONING_MODELS = [
-  "deepseek/deepseek-r1:free",
-  "openai/gpt-oss-120b:free",
-  "qwen/qwen3-coder-480b-a35b:free",
-  "meta-llama/llama-3.3-70b-instruct:free",
-  "nvidia/llama-3.3-nemotron-super-49b-v1:free",
-];
+    "openai/gpt-oss-120b:free",
+    "nvidia/nemotron-3-super-120b-a12b:free",
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "qwen/qwen3-next-80b-a3b-instruct:free",
+    "nousresearch/hermes-3-llama-3.1-405b:free",
+  ];
 
 const GENERAL_MODELS = [
-  "meta-llama/llama-3.3-70b-instruct:free",
-  "openai/gpt-oss-120b:free",
-  "mistralai/mistral-small-3.1-24b-instruct:free",
-  "nvidia/llama-3.3-nemotron-super-49b-v1:free",
-  "google/gemma-3-27b-it:free",
-  "nousresearch/hermes-3-llama-3.1-405b:free",
-];
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "openai/gpt-oss-120b:free",
+    "mistralai/mistral-small-3.1-24b-instruct:free",
+    "nvidia/nemotron-3-super-120b-a12b:free",
+    "qwen/qwen3-next-80b-a3b-instruct:free",
+    "arcee-ai/trinity-large-preview:free",
+    "nousresearch/hermes-3-llama-3.1-405b:free",
+  ];
 
 type TaskIntent = "build_app" | "fix_code" | "explain_code" | "reasoning" | "general";
 
