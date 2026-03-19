@@ -83,7 +83,7 @@ Provide:
     try {
       const stream = await createChatCompletionStream({
         messages: [{ role: "system", content: ASSISTANT_SYSTEM }, { role: "user", content: prompt }],
-        max_completion_tokens: 60000,
+        max_completion_tokens: 100000,
       });
       for await (const chunk of stream) {
         const text = chunk.choices[0]?.delta?.content ?? "";
@@ -98,7 +98,7 @@ Provide:
     try {
       const result = await createChatCompletion({
         messages: [{ role: "system", content: ASSISTANT_SYSTEM }, { role: "user", content: prompt }],
-        max_completion_tokens: 60000,
+        max_completion_tokens: 100000,
       });
       res.json({ plan: result.choices[0]?.message?.content ?? "" });
     } catch (err: any) {
@@ -152,7 +152,7 @@ ${detectedType === "code" || detectedType === "auto" ? "If this is code: explain
     try {
       const stream = await createChatCompletionStream({
         messages: [{ role: "system", content: ASSISTANT_SYSTEM }, { role: "user", content: prompt }],
-        max_completion_tokens: 60000,
+        max_completion_tokens: 100000,
       });
       for await (const chunk of stream) {
         const text = chunk.choices[0]?.delta?.content ?? "";
@@ -167,7 +167,7 @@ ${detectedType === "code" || detectedType === "auto" ? "If this is code: explain
     try {
       const result = await createChatCompletion({
         messages: [{ role: "system", content: ASSISTANT_SYSTEM }, { role: "user", content: prompt }],
-        max_completion_tokens: 60000,
+        max_completion_tokens: 100000,
       });
       res.json({ explanation: result.choices[0]?.message?.content ?? "" });
     } catch (err: any) {
@@ -217,7 +217,7 @@ Provide:
 (Optional improvements that go beyond the current scope)`,
         },
       ],
-      max_completion_tokens: 60000,
+      max_completion_tokens: 100000,
     });
     res.json({ result: result.choices[0]?.message?.content ?? "" });
   } catch (err: any) {
@@ -265,7 +265,7 @@ End with:
 (The 3 ideas most worth pursuing, with rationale)`,
         },
       ],
-      max_completion_tokens: 60000,
+      max_completion_tokens: 100000,
     });
     res.json({ ideas: result.choices[0]?.message?.content ?? "" });
   } catch (err: any) {
@@ -313,7 +313,7 @@ ${format === "structured" ? `Structure:
 ## What Was Left Out` : ""}`,
         },
       ],
-      max_completion_tokens: 60000,
+      max_completion_tokens: 100000,
     });
     res.json({ summary: result.choices[0]?.message?.content ?? "" });
   } catch (err: any) {
@@ -370,7 +370,7 @@ Rules for translation:
 (Idioms or patterns in ${toLanguage} that improve on the original)`,
         },
       ],
-      max_completion_tokens: 60000,
+      max_completion_tokens: 100000,
     });
     res.json({ translation: result.choices[0]?.message?.content ?? "" });
   } catch (err: any) {
@@ -416,7 +416,7 @@ Format as a JSON array:
 ]`,
         },
       ],
-      max_completion_tokens: 60000,
+      max_completion_tokens: 100000,
     });
 
     const raw = result.choices[0]?.message?.content ?? "[]";
@@ -488,7 +488,7 @@ Evaluate on: ${evaluationCriteria.join(", ")}
 (Rewrite one key section to demonstrate the improvements)`,
         },
       ],
-      max_completion_tokens: 60000,
+      max_completion_tokens: 100000,
     });
     res.json({ critique: result.choices[0]?.message?.content ?? "" });
   } catch (err: any) {
