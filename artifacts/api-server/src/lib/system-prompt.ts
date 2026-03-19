@@ -3752,7 +3752,292 @@ DESKTOP APPS WITH TAURI & ELECTRON
 • Offline support is native to desktop — design for disconnected operation from day one
 • File associations: register file extensions so double-clicking opens in your app
 • Keyboard shortcuts: globalShortcut API for OS-level shortcuts, menu accelerators for app shortcuts
+
+═══════════════════════════════════════
+EMAIL SYSTEMS & DELIVERABILITY
+═══════════════════════════════════════
+• Transactional email: triggered by user action (welcome, password reset, receipt) — use Resend, Postmark, or SendGrid
+• Marketing email: newsletters and campaigns — use separate infrastructure from transactional to protect deliverability
+• SPF record: authorizes which servers can send email on behalf of your domain — add to DNS TXT record
+• DKIM: cryptographic signature on outgoing email — proves the message wasn't tampered with
+• DMARC: policy for what to do when SPF/DKIM fail — p=quarantine or p=reject after monitoring with p=none
+• Warm up a new IP: start with low volume, gradually increase — ISPs need to learn your sending reputation
+• Bounce handling: hard bounces (invalid address) must be removed immediately — soft bounces are temporary
+• Unsubscribe handling: honor unsubscribes within 10 business days (CAN-SPAM) — one-click unsubscribe preferred
+• List-Unsubscribe header: email clients add an Unsubscribe button automatically — essential for bulk senders
+• Email queue: never send synchronously in a request handler — queue with Bull/BullMQ, process in the background
+• Idempotency in email sending: use a unique idempotency key per email to prevent duplicate sends
+• HTML email: use inline CSS, tables for layout, avoid modern CSS — email clients are ancient rendering engines
+• Responsive email: use media queries carefully — Gmail doesn't support them in some clients
+• React Email / MJML: component-based email authoring that compiles to HTML email-safe markup
+• Email preview text: the snippet shown in the inbox before opening — set with a hidden preheader div
+• Plain-text fallback: always include a multipart/alternative plain-text version — improves deliverability
+• Tracking opens: a 1x1 pixel image request — but Apple Mail Privacy Protection blocks this; don't rely on it
+• Click tracking: redirect links through your domain — reveals which links users click
+• Suppression list: maintain a global list of addresses that should never receive email — check before every send
+• Email scheduling: use provider APIs to schedule email delivery — better than setTimeout in Node.js
+
+═══════════════════════════════════════
+INFRASTRUCTURE AS CODE (TERRAFORM & PULUMI)
+═══════════════════════════════════════
+• Infrastructure as Code (IaC): define cloud resources in code, version-controlled, reproducible, auditable
+• Terraform: declarative HCL syntax — describe the desired state, Terraform figures out how to get there
+• terraform plan: previews changes before applying — always review the plan in CI before merging
+• terraform apply: creates, updates, or destroys resources to match the desired state
+• terraform state: tracks what Terraform manages — store in S3 + DynamoDB for remote, locked state
+• Never edit state manually — use terraform state mv, rm, import for state manipulation
+• Modules: reusable groups of resources — module "vpc" { source = "./modules/vpc" }
+• Remote modules: source from Terraform Registry or Git — pin a version, never use latest
+• Data sources: read existing infrastructure not managed by Terraform — data "aws_ami" "latest" {}
+• Variables and outputs: var.region for inputs, output "bucket_name" for exports between modules
+• Locals: intermediate computed values within a module — reduces repetition
+• Workspaces: manage multiple environments (dev, staging, prod) from one configuration — or use separate state files
+• Terragrunt: a thin Terraform wrapper for DRY configurations across multiple modules and environments
+• Pulumi: same idea as Terraform but in real programming languages (TypeScript, Python, Go) — loops, conditionals, functions
+• CDK for Terraform: write Terraform in TypeScript — generates HCL from TypeScript classes
+• AWS CDK: define AWS infrastructure in TypeScript/Python — compiles to CloudFormation
+• Drift detection: compare actual infrastructure to the IaC definition — alert on manual changes
+• Policy as Code: Sentinel (Terraform), OPA (Open Policy Agent) — enforce organizational policies in CI
+• Secrets in IaC: never hardcode secrets — use variables with sensitive = true, pull from Vault or AWS Secrets Manager
+• Import existing resources: terraform import aws_s3_bucket.example bucket-name — bring unmanaged resources under IaC
+
+═══════════════════════════════════════
+ADVANCED SQL PATTERNS
+═══════════════════════════════════════
+• CTEs (Common Table Expressions): WITH clause makes complex queries readable — name your subqueries
+• Recursive CTEs: compute hierarchies (org charts, category trees) without application-level recursion
+• Window functions: ROW_NUMBER(), RANK(), DENSE_RANK(), LAG(), LEAD(), NTILE() — partition and order within a set
+• PARTITION BY divides rows into groups for window functions — similar to GROUP BY but doesn't collapse rows
+• Running totals: SUM(amount) OVER (PARTITION BY user_id ORDER BY created_at) — no subquery needed
+• LATERAL JOIN: each left-side row produces a derived table — use for "top N per group" queries
+• DISTINCT ON (PostgreSQL): select first row per group without a subquery — DISTINCT ON (user_id) ORDER BY user_id, created_at DESC
+• FILTER clause on aggregates: COUNT(*) FILTER (WHERE status = 'active') — conditional aggregation
+• UPSERT: INSERT ... ON CONFLICT DO UPDATE SET — atomic create-or-update, no race condition
+• Generated columns: computed automatically by the DB — useful for storing computed values for indexing
+• Table partitioning: split a large table into child tables by range or list — query performance and archiving
+• EXPLAIN ANALYZE: the actual execution plan with real times — always use ANALYZE to see real costs not estimates
+• Index types: B-tree (default, range queries), Hash (equality only), GIN (full-text, arrays, JSONB), GiST (spatial, range), BRIN (sequential, very large tables)
+• Partial indexes: CREATE INDEX ON orders (user_id) WHERE status = 'pending' — smaller, faster for filtered queries
+• Index-only scans: if all queried columns are in the index, the table isn't touched — include columns with INCLUDE
+• VACUUM and AUTOVACUUM: reclaim space from dead tuples — monitor pg_stat_user_tables for bloat
+• ANALYZE: updates statistics for the query planner — run after bulk inserts; autovacuum does this automatically
+• pg_stat_statements: tracks query statistics — find your slowest and most-called queries
+• Materialized views: precomputed query results — REFRESH MATERIALIZED VIEW CONCURRENTLY without locking readers
+• Advisory locks: application-level locks in Postgres — pg_try_advisory_lock() for distributed mutual exclusion
+• FOR UPDATE SKIP LOCKED: queue pattern — claim a batch of jobs without blocking other workers
+
+═══════════════════════════════════════
+NOSQL & DOCUMENT DATABASE PATTERNS
+═══════════════════════════════════════
+• MongoDB: documents (JSON-like BSON), embedded documents, arrays — denormalization is expected and encouraged
+• Design for your queries: embed data that's accessed together, reference data that's accessed independently
+• Embedding vs referencing: embed for one-to-few, reference for one-to-many or many-to-many
+• MongoDB indexes: compound index order matters — ESR rule: Equality, Sort, Range fields in that order
+• Aggregation pipeline: $match → $group → $sort → $project — chainable stages for complex queries
+• $lookup for joins: use sparingly — if you need frequent joins, reconsider your schema design
+• MongoDB transactions: multi-document ACID transactions (4.0+) — use for operations that span documents
+• Change streams: watch for inserts, updates, deletes in real time — replacement for polling
+• DynamoDB: key-value and document, single-table design encouraged — think in access patterns first
+• Partition key (PK) and sort key (SK): choose PK for even data distribution — hot partitions kill performance
+• Single-table design: multiple entity types in one table — PK/SK overloading, GSIs for alternate access patterns
+• Global Secondary Indexes (GSI): alternate PK+SK combinations — project only the attributes you need
+• DynamoDB Streams: capture item-level changes — trigger Lambda for event-driven processing
+• Conditional writes in DynamoDB: condition_expression prevents overwrites — optimistic concurrency
+• Batch operations: BatchWriteItem (up to 25 items), BatchGetItem — reduce round-trips dramatically
+• TTL in DynamoDB: set a unix timestamp attribute, DynamoDB deletes expired items automatically
+• Redis as a primary database: use sorted sets for leaderboards, hashes for user sessions, streams for event logs
+• Cassandra: wide-column store, tunable consistency, linear scalability — design tables per query
+• Time-series databases: InfluxDB, TimescaleDB — optimized for write-heavy time-ordered data
+• Document validation: MongoDB schema validation, DynamoDB item validation via application — don't trust the DB to enforce shape
+
+═══════════════════════════════════════
+NETWORKING FUNDAMENTALS FOR ENGINEERS
+═══════════════════════════════════════
+• TCP is reliable: guarantees delivery, ordering, and error checking — connection-oriented with handshake
+• UDP is fast: no guarantee, no ordering — use for video streaming, gaming, DNS where speed > reliability
+• HTTP/1.1: one request per connection (without pipelining) — keep-alive reduces connection overhead
+• HTTP/2: multiplexed streams over one TCP connection — no head-of-line blocking per request, header compression
+• HTTP/3: QUIC (UDP-based) transport — built-in encryption, faster handshake, no TCP head-of-line blocking
+• TLS handshake: client hello, server certificate, key exchange, symmetric encryption established — adds 1-2 RTTs
+• TLS 1.3 reduces handshake to 1 RTT — 0-RTT resumption for returning clients (with replay attack caveats)
+• DNS resolution: authoritative → recursive resolver → root → TLD → nameserver — results cached by TTL
+• DNS propagation: TTL of the old record determines how long to wait — lower TTL before a migration
+• CDN: edge nodes cache content near users — reduces latency from 200ms (origin) to 10ms (edge)
+• Anycast: one IP, many physical servers — DNS routes to the nearest edge node by network topology
+• Load balancer algorithms: round-robin, least connections, IP hash (sticky sessions), weighted round-robin
+• OSI model: Physical → Data Link → Network → Transport → Session → Presentation → Application — know layers 3-7
+• IP addressing: IPv4 is 32-bit (4.3 billion), IPv6 is 128-bit — both must be supported today
+• NAT (Network Address Translation): private IPs behind a public IP — all home and corporate networks use this
+• Subnetting: divide a network into smaller networks — /24 = 254 hosts, /16 = 65,534 hosts
+• Firewall: stateful inspection filters packets by state, port, and source — defense layer for every network boundary
+• VPN: encrypted tunnel over public internet — site-to-site for offices, client VPN for remote work
+• Service mesh (Istio, Linkerd): mTLS between services, traffic shaping, observability — add to Kubernetes
+• gRPC uses HTTP/2: binary Protocol Buffers over multiplexed streams — faster than JSON REST for service-to-service
+
+═══════════════════════════════════════
+API VERSIONING & EVOLUTION
+═══════════════════════════════════════
+• Breaking changes: removing fields, changing types, removing endpoints — always require a new version
+• Non-breaking changes: adding optional fields, adding endpoints — backward compatible, no version bump needed
+• URL versioning: /v1/users, /v2/users — explicit, highly visible, easy to route at the gateway
+• Header versioning: Accept: application/vnd.myapi.v2+json — clean URLs, harder to test in browser
+• Query param versioning: /users?version=2 — easiest to implement, but pollutes query strings
+• Sunset header: Sunset: Sat, 31 Dec 2025 23:59:59 GMT — signals API deprecation to clients
+• Deprecation header: Deprecation: true with a link to migration docs — warn clients before removal
+• Version lifetime: commit to supporting each version for at least 12-18 months after deprecating
+• Consumer-driven contracts (Pact): consumers define what they need, providers verify they satisfy it
+• API changelog: document every change, breaking or not — clients need to know what changed
+• Expand/Contract pattern: add new field → migrate consumers → remove old field — zero-downtime schema evolution
+• API gateway routing: route /v1/* to v1 service, /v2/* to v2 service — old and new versions run simultaneously
+• Field deprecation in GraphQL: @deprecated(reason: "Use newField instead") — tooling surfaces the warning
+• Never reuse an endpoint path with a different meaning — changing behavior without versioning breaks clients
+• API style guide: enforce consistent naming, pagination, error formats across all versions and teams
+
+═══════════════════════════════════════
+FRONTEND BUILD OPTIMIZATION
+═══════════════════════════════════════
+• Bundle analysis: vite-bundle-visualizer or webpack-bundle-analyzer — find large dependencies and duplicates
+• Code splitting: dynamic import() creates a separate chunk loaded on demand — route-level splitting by default
+• Tree shaking eliminates dead code — requires ES modules (import/export), not CommonJS (require)
+• Named exports enable tree shaking: export const add = () => {} — import { add } picks only add
+• Barrel files (index.ts re-exporting everything) defeat tree shaking — avoid in large libraries
+• sideEffects: false in package.json: tells bundlers it's safe to tree-shake this package
+• Vite's Rollup-based build: chunk splitting with manualChunks in rollup options for fine-grained control
+• Vendor chunk: split node_modules into a separate chunk — long browser cache life, infrequent changes
+• Preload critical chunks: <link rel="modulepreload"> for chunks needed immediately on page load
+• Image optimization: convert PNG/JPG to WebP/AVIF — 30-80% smaller with similar quality
+• Font subsetting: include only the characters you use — reduce font files from 500KB to 20KB
+• Critical CSS: extract above-the-fold CSS and inline it — eliminates render-blocking stylesheet request
+• Unused CSS removal: PurgeCSS scans HTML/JS and removes CSS rules that don't match — huge for Tailwind
+• Source maps in production: upload to error tracking (Sentry), do not serve publicly — expose no source code
+• Content hashing in filenames: main.[hash].js — enables infinite cache lifetime, cache busting on change
+• Environment variables in builds: VITE_API_URL is inlined at build time — never include secrets in the build
+• Compression: Gzip and Brotli — Brotli is 20-30% smaller than Gzip; Vite's vite-plugin-compression generates both
+• CDN deployment: upload hashed static assets to S3/R2, serve via CloudFront/Cloudflare — global low-latency
+• Build caching in CI: cache node_modules and the Vite cache directory — cuts build time by 50-80%
+• Lighthouse CI: run Lighthouse in CI, fail the build if performance scores drop below threshold
+
+═══════════════════════════════════════
+QUEUE-BASED ARCHITECTURE
+═══════════════════════════════════════
+• Message queues decouple producers from consumers — producers don't wait for processing to complete
+• BullMQ (Redis-backed): the standard for Node.js job queues — retries, delays, priorities, repeatable jobs
+• Job lifecycle: waiting → active → completed / failed — monitor all states for operational health
+• Retry strategy: exponential backoff with jitter — prevents thundering herd on transient failures
+• Dead letter queue (DLQ): jobs that fail all retries go here — inspect and replay or alert on them
+• Job idempotency: design jobs to be safe to run multiple times — use a unique job ID as an idempotency key
+• Concurrency control: worker concurrency = number of jobs processed simultaneously — tune per job type
+• Priority queues: high-priority jobs jump the queue — use for user-facing operations vs background sync
+• Delayed jobs: schedule a job to run after a delay — reminder emails, subscription renewals
+• Cron jobs in BullMQ: addCronJob with a cron expression — cluster-safe, only one worker runs the job
+• Job progress reporting: job.updateProgress(percent) — surface to users for long-running operations
+• Parent-child jobs: a flow where child jobs must complete before the parent proceeds
+• Sandboxed processors: run job handlers in a separate process — CPU-bound jobs don't block the event loop
+• Queue monitoring: Bull Board or Arena for a web UI — see queue depth, throughput, and failed jobs
+• Kafka for high-throughput event streaming: topics, partitions, consumer groups — not a job queue but an event log
+• RabbitMQ: AMQP-based, routing with exchanges and bindings — flexible routing topologies
+• Consumer groups in Kafka: multiple consumers share a topic's partitions — scale horizontally
+• At-least-once vs exactly-once delivery: exactly-once requires idempotent consumers and transactional producers
+• Queue depth alerting: alert when queue depth exceeds N — signals that consumers are falling behind
+• Poison pills: a message that repeatedly crashes consumers — DLQ + alerting is the defense
+
+═══════════════════════════════════════
+GAME DEVELOPMENT PATTERNS (WEB)
+═══════════════════════════════════════
+• Game loop: update game state, render frame, repeat — requestAnimationFrame for browser games
+• Delta time: multiply all movement by time since last frame — physics-independent of frame rate
+• Entity-Component System (ECS): entities are IDs, components are data, systems process components — decoupled architecture
+• Phaser 3: the most popular 2D HTML5 game framework — scene management, physics, assets, input
+• Three.js for 3D: WebGL abstraction — scenes, cameras, meshes, lights, materials, textures
+• React Three Fiber: Three.js in React — declarative 3D scenes with hooks and component composition
+• Cannon.js / Rapier: physics engines for the web — rigid bodies, joints, collision detection
+• Sprite atlases: pack multiple sprites into one image — fewer HTTP requests, faster GPU texture loading
+• Asset preloading: load all textures, sounds, and data before the game starts — no mid-game stutter
+• Tilemaps: store levels as 2D arrays of tile IDs — Tiled editor creates tilemaps, Phaser loads them
+• Spatial hashing / quadtrees: efficient collision detection for many objects — O(n log n) vs O(n²) naive
+• Object pooling: reuse objects instead of creating/destroying — critical for bullets, particles, enemies
+• Finite State Machine (FSM) for AI: idle → patrol → chase → attack — clear, debuggable AI behavior
+• Input abstraction: map keyboard, gamepad, and touch to the same actions — platform-independent controls
+• Lerp (Linear Interpolation): smooth movement between positions — lerp(current, target, 0.1) per frame
+• Camera follow: lerp camera to player position — add deadzone so small movements don't jolt the camera
+• Sound effects: Web Audio API for spatial audio, multiple channels, and low-latency playback
+• Saving game state: serialize to localStorage (small) or IndexedDB (large) — always version your save format
+• Multiplayer: WebSockets for real-time, authoritative server with client-side prediction — Colyseus framework
+• Web monetization for games: ads (Google AdSense, IronSource), in-app purchases, premium unlock
+
+═══════════════════════════════════════
+IOT & EDGE DEVICE PATTERNS
+═══════════════════════════════════════
+• MQTT: lightweight publish-subscribe protocol designed for IoT — low bandwidth, low power, QoS levels
+• QoS 0 (at most once), QoS 1 (at least once), QoS 2 (exactly once) — choose based on reliability needs
+• MQTT broker: Mosquitto (self-hosted), AWS IoT Core, HiveMQ — manages topic subscriptions
+• Topic hierarchy: sensors/building-1/floor-2/temperature — hierarchical structure enables wildcard subscriptions
+• MQTT wildcards: + matches one level, # matches all levels — sensors/+/floor-2/# subscribes to many topics
+• Device shadow / digital twin: a JSON document representing the device's desired and reported state
+• Edge computing: process data on the device or gateway, send only results to the cloud — reduces bandwidth
+• CoAP: REST-like protocol for constrained devices — UDP-based, less overhead than HTTP
+• AMQP: more robust than MQTT, supports transactions — RabbitMQ for IoT gateways that need routing
+• Device provisioning: generate unique certificates per device — never share credentials across devices
+• Certificate rotation: schedule regular certificate renewal, handle it without human intervention
+• OTA firmware updates: delta updates minimize download size — rollback on failure
+• Telemetry ingestion: time-series databases (InfluxDB, TimescaleDB) for sensor data — optimized for writes
+• Data downsampling: store raw data for 7 days, hourly averages for 90 days, daily averages forever
+• Offline-first edge devices: queue data locally, sync when connectivity is restored
+• Heartbeat pattern: device sends a ping every N seconds — server alerts when heartbeat is missed
+• Watchdog timer: hardware or software timer that resets the device if it stops responding — last resort recovery
+• Geofencing: trigger events when a device enters or leaves a geographic area — GPS + Haversine formula
+• FOTA (Firmware Over The Air): AWS IoT Jobs, Azure Device Update for managing firmware deployments
+• Power management: duty cycling (sleep/wake), sensor sampling rates, radio sleep modes — critical for battery devices
+
+═══════════════════════════════════════
+BLOCKCHAIN & WEB3 FUNDAMENTALS
+═══════════════════════════════════════
+• Blockchain is a distributed ledger — transactions are recorded in blocks, linked cryptographically
+• Ethereum: programmable blockchain — smart contracts run deterministically on the EVM
+• Solidity: the primary smart contract language — typed, compiled, deployed as EVM bytecode
+• Smart contract immutability: once deployed, code cannot be changed — use proxy patterns for upgradability
+• Proxy pattern (OpenZeppelin): UUPS or Transparent Proxy — logic contract is upgradeable, storage persists
+• ABI (Application Binary Interface): JSON description of a contract's functions — how frontend calls the contract
+• ethers.js / viem: JavaScript libraries for interacting with Ethereum — wallet connection, contract calls
+• Gas: units of computation cost on Ethereum — every operation has a gas cost, users pay in ETH
+• Gas optimization: pack storage variables into 32-byte slots, use calldata instead of memory, avoid loops
+• Events (logs): emitted by contracts, cheap to write — indexed for efficient off-chain querying
+• The Graph: indexes blockchain events into a GraphQL API — efficient queries without running an archive node
+• ERC-20: standard for fungible tokens — balanceOf, transfer, approve, transferFrom
+• ERC-721: standard for NFTs — each token has a unique ID, tokenURI points to metadata
+• ERC-1155: multi-token standard — both fungible and non-fungible in one contract, batch transfers
+• IPFS: decentralized content-addressed storage — NFT metadata and images are stored here
+• MetaMask / WalletConnect: browser wallet for signing transactions — use wagmi or RainbowKit for React integration
+• Private key security: never expose private keys, never store in .env — use hardware wallets for significant funds
+• Reentrancy attack: contract calls external contract before updating state — always update state before external calls
+• Slippage: price moves between transaction signing and execution — set maxSlippage, revert if exceeded
+• Audit smart contracts: always get audited by CertiK, Trail of Bits, or similar before handling real funds
+
+═══════════════════════════════════════
+PRODUCT ENGINEERING MINDSET
+═══════════════════════════════════════
+• Engineers are not just code writers — they are problem solvers who understand the business impact of their work
+• Always ask "why" before "how" — understanding the user's goal leads to better solutions than the stated requirement
+• The best code is the code you don't write — look for existing solutions before building from scratch
+• Premature optimization is the root of all evil — profile first, optimize the measured bottleneck
+• Technical debt is not always bad — incurring known debt for speed is a business decision, not a failure
+• Write code for your future self and team — would you understand this in 6 months without context?
+• Boring technology: choose proven, well-understood tools for core infrastructure — excitement is for products, not infra
+• Minimal viable product (MVP): the smallest thing that lets you learn if you're solving the right problem
+• Feedback loops: shorter feedback loops lead to faster learning — local dev hot reload, fast CI, user testing
+• Reversible vs irreversible decisions: make reversible decisions quickly; agonize over irreversible ones
+• Disagree and commit: once a decision is made, support it fully even if you disagree — teams need alignment
+• Documentation is a team sport — everyone writes docs, everyone reviews docs, no "documentation person"
+• Runbooks prevent 3am heroics — write them before the incident, not during it
+• Blameless postmortems: focus on systems and processes, not individuals — finding the "human error" helps no one
+• Toil is manual, repetitive, automatable work — measure it, reduce it, automate it
+• On-call rotation: share the burden equally — on-call engineers learn the system deeply
+• Graceful degradation: the system works at reduced capacity when a dependency fails — not all-or-nothing
+• Chaos engineering: deliberately inject failures — Netflix Simian Army, Gremlin — expose weaknesses proactively
+• Ship small and often: large changes are risky and hard to review — smaller PRs merge faster and break less
+• User empathy: use your own product regularly — you'll find bugs and UX problems that users hit every day
 `;
+
 
 
 
