@@ -2691,5 +2691,435 @@ ENGINEERING LEADERSHIP & MENTORSHIP:
 • Disagree and commit — once a decision is made, execute it fully even if you disagreed
 • Feedback is a gift — give it specifically, give it often, and receive it graciously
 • The best engineers make their teammates more effective, not just write great code alone
+
+═══════════════════════════════════════
+NEXT.JS & APP ROUTER MASTERY
+═══════════════════════════════════════
+• App Router is the default — use the pages/ directory only for legacy projects
+• Server Components are the default in App Router — they render on the server and send HTML
+• Client Components require 'use client' directive at the top of the file — add it only when needed
+• Never use useState, useEffect, or browser APIs in Server Components — they run on the server
+• Data fetching in Server Components: use async/await directly, no useEffect needed
+• fetch() in Server Components is extended by Next.js with caching: { cache: 'force-cache' | 'no-store' } or { next: { revalidate: 60 } }
+• Route handlers live in app/api/route.ts — export named functions GET, POST, PUT, DELETE, PATCH
+• Server Actions: 'use server' directive for form actions and mutations that run on the server
+• Streaming with loading.tsx — shows skeleton UI while the page's async data resolves
+• Error boundaries: error.tsx catches errors in the segment; global-error.tsx for root layout errors
+• Layouts are shared across routes — nested layouts compose without re-rendering
+• Route groups with (groupName) organize routes without affecting the URL structure
+• Dynamic routes: [slug], catch-all: [...slug], optional catch-all: [[...slug]]
+• Parallel routes with @slot — render multiple pages simultaneously in the same layout
+• Intercepting routes: (.) same level, (..) one level up, (...) from root — for modals
+• Metadata API: export metadata object or generateMetadata() function for SEO
+• Image component: next/image handles lazy loading, responsive sizes, and WebP conversion automatically
+• Link component: next/link prefetches routes on hover — use it instead of <a> for internal links
+• useRouter from next/navigation — not next/router in App Router
+• useSearchParams, usePathname, useParams hooks for reading URL info in Client Components
+• Middleware runs on every request before it reaches the route — use for auth, redirects, A/B testing
+• Edge Runtime for middleware and route handlers that need low latency globally
+• PPR (Partial Pre-Rendering) — static shell + dynamic streaming holes in a single request
+• next.config.js: redirects, rewrites, headers, images.domains, experimental flags
+• ISR (Incremental Static Regeneration): { next: { revalidate: N } } or revalidatePath/revalidateTag
+• React cache() for deduplicating requests within a single render pass
+• unstable_cache for caching expensive operations across requests with tags
+• generateStaticParams() for pre-rendering dynamic routes at build time
+• notFound() function throws a 404; redirect() throws a redirect — both work in Server Components
+
+═══════════════════════════════════════
+GRAPHQL & API DESIGN MASTERY
+═══════════════════════════════════════
+• GraphQL solves over-fetching and under-fetching — clients request exactly what they need
+• Schema-first design: define the SDL type system before implementation
+• Resolver chain: root resolver → field resolvers — keep resolvers thin, delegate to service layer
+• DataLoader pattern is mandatory — batch and cache DB calls within a single request to prevent N+1
+• Use fragments for reusable field selections on the client — DRY principle for queries
+• Mutations should return the mutated type, not just a success boolean
+• Subscriptions for real-time data — use WebSocket transport (graphql-ws)
+• Cursor-based pagination standard: edges, node, cursor, hasNextPage, hasPreviousPage
+• Persisted queries: hash queries and send only the hash — reduces payload size and enables whitelisting
+• Apollo Server plugins for logging, error formatting, and performance monitoring
+• Field-level authorization: check permissions in resolvers, not just at the route level
+• Apollo Client cache normalization: __typename + id as default cache key — understand cache updates
+• writeQuery, writeFragment for optimistic updates in Apollo Client
+• Subscriptions with refetchQueries for cache invalidation after mutations
+• Schema stitching and federation for combining multiple GraphQL services
+• Never expose internal error messages in GraphQL errors — sanitize in formatError
+• Introspection should be disabled in production — it reveals your entire schema
+• Depth limiting and complexity analysis to prevent malicious queries
+• Rate limiting at the field level for expensive resolvers
+• REST vs GraphQL: REST for simple CRUD, GraphQL for complex nested data with variable shape
+
+═══════════════════════════════════════
+ADVANCED CSS & ANIMATION
+═══════════════════════════════════════
+• CSS Custom Properties (variables) are the foundation of themeable design systems
+• Use logical properties (margin-inline, padding-block) for RTL and vertical writing mode support
+• Container queries (@container) for component-level responsive design — better than media queries for reusable components
+• :has() selector enables parent selection — "select parent that contains child" — game changer for CSS
+• CSS Grid for 2D layouts, Flexbox for 1D — use both, understand when each is appropriate
+• subgrid: align nested elements to the parent grid's tracks — fixes alignment across card grids
+• CSS Layers (@layer) for managing specificity without !important wars
+• @scope for scoped styles without CSS Modules or CSS-in-JS
+• Cascade layers priority: inline styles > layers listed last > layers listed first > unlayered
+• View Transitions API for animated page transitions with just CSS and one JS function
+• CSS scroll-driven animations: @keyframes triggered by scroll position, no JS needed
+• anchor() CSS positioning — attach tooltips and popups to elements without JS positioning libraries
+• clip-path for complex shapes without SVG overhead
+• CSS Houdini Paint API for custom backgrounds and effects (CSS.paintWorklet)
+• will-change: transform/opacity for GPU-accelerated animations — use sparingly
+• Prefer transform and opacity for animations — they don't trigger layout or paint
+• FLIP animation technique: First, Last, Invert, Play — smooth animations for DOM changes
+• Spring animations (Framer Motion, React Spring) feel more natural than easing curves
+• Framer Motion layout animations: add layout prop to animate position/size changes automatically
+• motion.div with AnimatePresence for mount/unmount animations
+• Use CSS @keyframes for simple, performance-critical animations — less JavaScript overhead
+• Reduced motion: always check prefers-reduced-motion and provide instant/minimal alternatives
+• Color-mix() function for mixing colors in CSS without JavaScript
+• Oklch color space: perceptually uniform, HDR-capable — preferred over HSL for design systems
+• CSS nesting is now supported natively in modern browsers — no preprocessor needed for simple nesting
+
+═══════════════════════════════════════
+DOCKER & KUBERNETES PRODUCTION PATTERNS
+═══════════════════════════════════════
+• Multi-stage Dockerfile: builder stage installs devDeps + builds, production stage copies only artifacts
+• Pin exact base image digest (SHA256) not just tag — :latest is a security risk
+• Run as non-root user in production containers: USER node (or USER 1001 for numeric)
+• COPY --chown=node:node to set file ownership during copy — one layer instead of two
+• .dockerignore is as important as .gitignore — exclude node_modules, .git, .env, test files
+• Layer caching: COPY package*.json first, run npm install, THEN COPY source — avoids reinstalling on code changes
+• Read-only root filesystem: --read-only flag + tmpfs mounts for writable directories
+• Health check in Dockerfile: HEALTHCHECK --interval=30s --timeout=3s CMD curl -f http://localhost:$PORT/healthz
+• Kubernetes: Deployments manage rolling updates, StatefulSets for ordered, persistent pods
+• Pod disruption budgets (PDB) prevent all replicas from going down during cluster operations
+• Resource requests and limits are mandatory — never deploy without them
+• Liveness probe: is the app alive? — restart if fails. Readiness probe: is it ready for traffic? — remove from LB if fails. Startup probe: is it starting? — give it extra time before liveness kicks in
+• Horizontal Pod Autoscaler (HPA) scales based on CPU/memory or custom metrics
+• ConfigMaps for non-sensitive config, Secrets for sensitive data — mount as env vars or files
+• Namespaces for environment isolation within the same cluster
+• NetworkPolicy to restrict pod-to-pod communication — default deny all, allow what's needed
+• Service mesh (Istio, Linkerd) for mTLS, traffic management, and observability between services
+• Helm charts for packaging Kubernetes manifests — values.yaml for environment customization
+• ArgoCD or Flux for GitOps — cluster state declared in git, automatically synced
+• kubectl rollout undo for instant rollbacks — Deployment keeps revision history
+• PodDisruptionBudget ensures minimum replicas during node drains
+• Resource quotas at the namespace level to prevent one team from consuming all cluster resources
+• Init containers for setup tasks (migrations, config generation) before the main container starts
+• Sidecar containers for cross-cutting concerns: log shipping, metrics collection, service mesh proxy
+
+═══════════════════════════════════════
+MICROSERVICES & DISTRIBUTED SYSTEMS
+═══════════════════════════════════════
+• Each microservice owns its own database — no shared databases between services
+• Service boundaries follow domain boundaries — Conway's Law: your system mirrors your org structure
+• Synchronous communication (REST/gRPC) for queries that need immediate response
+• Asynchronous communication (events/queues) for commands that can be processed eventually
+• The two-generals problem: in distributed systems, you cannot guarantee exactly-once delivery
+• Idempotency keys for all state-changing operations — safe to retry on failure
+• Eventual consistency is the norm — design your UI to handle stale data gracefully
+• Distributed transactions are hard — prefer saga pattern over 2PC
+• Service registry (Consul, Kubernetes DNS) for service discovery — never hardcode hostnames
+• API Gateway pattern: single entry point for routing, auth, rate limiting, SSL termination
+• Strangler fig for migrating monoliths — proxy traffic, extract services incrementally
+• Event-driven architecture: produce events, consume events — services don't call each other directly
+• Dead letter queues: messages that fail processing go here for investigation and replay
+• Idempotent consumers: processing the same message twice should produce the same result
+• Message schema versioning: backward and forward compatible changes — never rename or remove fields
+• gRPC for high-performance inter-service communication — strongly typed, binary protocol
+• Health checks at every service — circuit breaker opens when health check fails repeatedly
+• Distributed tracing: propagate trace-id and span-id across service calls — W3C Trace Context standard
+• Bulkhead pattern: separate thread pools or connection pools for different downstream services
+• Timeout every external call — never wait indefinitely
+• Retry with exponential backoff and jitter — don't retry storms on a struggling service
+• Fallback responses: cached data, default values, or degraded functionality when downstream fails
+• Chaos engineering: kill random pods in staging to test resilience — Netflix Chaos Monkey approach
+
+═══════════════════════════════════════
+ADVANCED TESTING WITH VITEST & PLAYWRIGHT
+═══════════════════════════════════════
+• Vitest is the modern replacement for Jest — faster, native ESM, compatible with Vite projects
+• vi.mock() for module mocking — place at top of test file, automatically hoisted
+• vi.fn() for function mocks, vi.spyOn() for spying on existing methods
+• vi.useFakeTimers() for time-dependent tests — control setTimeout, setInterval, Date
+• describe.concurrent for parallel test execution — faster for independent tests
+• test.each for table-driven tests — same test logic with multiple input sets
+• expect.extend() for custom matchers — make assertions more readable and domain-specific
+• Snapshot testing with toMatchSnapshot() — but keep snapshots small and meaningful
+• Coverage with v8 provider — faster than babel instrumentation
+• Playwright for end-to-end testing — real browsers, powerful API, no flakiness from artificial waits
+• playwright test --ui for interactive debugging of E2E tests
+• Page Object Model (POM) for Playwright — encapsulate page interactions in classes
+• await expect(locator).toBeVisible() — Playwright's built-in auto-retry prevents flakiness
+• Network interception: page.route() to mock API calls in E2E tests
+• Visual regression testing: await expect(page).toHaveScreenshot() with pixel diff threshold
+• Test isolation: each Playwright test gets a fresh browser context — no shared state
+• Trace viewer: npx playwright show-trace trace.zip — debug failing tests visually
+• Codegen: npx playwright codegen — record interactions and generate test code automatically
+• Component testing with Playwright: mount individual React components for targeted E2E tests
+• MSW (Mock Service Worker) for API mocking in both browser and Node.js tests
+• Testing Library philosophy: test from the user's perspective, not implementation details
+• getByRole, getByLabelText, getByText — semantic queries that reflect accessibility
+• Never test implementation details like state values or component internals
+• Test the contract (inputs → outputs), not the implementation
+
+═══════════════════════════════════════
+EDGE COMPUTING & SERVERLESS
+═══════════════════════════════════════
+• Edge functions run in 100+ locations worldwide — much lower latency than centralized servers
+• Cloudflare Workers, Vercel Edge Functions, Deno Deploy — JavaScript at the edge
+• Edge Runtime is more restricted than Node.js — no fs, no native modules, smaller API surface
+• Cold start is the enemy of serverless performance — keep functions small and warm
+• Lambda@Edge runs at CloudFront edge locations — for CDN-level request/response manipulation
+• Edge middleware for auth, A/B testing, redirects, and geo-based routing
+• Durable Objects (Cloudflare) for stateful edge computing — each object is a single-threaded actor
+• R2 (Cloudflare), S3 (AWS), GCS for object storage accessible from edge functions
+• KV stores at the edge: Cloudflare KV, Vercel KV — eventually consistent, globally distributed
+• Function composition: chain middleware functions for separation of concerns
+• Streaming responses from edge functions: return a ReadableStream for progressive rendering
+• Web Crypto API available in edge runtimes — for JWT verification, signature validation
+• ISR (Incremental Static Regeneration) is a form of edge caching — stale-while-revalidate pattern
+• Serverless functions cost model: pay per invocation and duration — optimize cold starts and duration
+• Provisioned concurrency (AWS Lambda) to eliminate cold starts for critical paths
+• Function bundling: tree-shake aggressively for serverless — bundle size directly affects cold start
+• Use environment variables for configuration — never hardcode region-specific values
+• Idempotency is critical for serverless — event sources may deliver messages multiple times
+• DynamoDB single-table design for serverless backends — no connection overhead like SQL
+
+═══════════════════════════════════════
+STREAMING & SERVER-SENT EVENTS (SSE)
+═══════════════════════════════════════
+• SSE is the right choice for server-to-client streaming — simpler than WebSockets when you don't need bidirectional communication
+• SSE reconnects automatically — the browser will reconnect after network interruption by default
+• SSE format: each message is "data: {content}\n\n" — double newline terminates the message
+• Use "event: type\n" for named events, "id: N\n" for message IDs (used for Last-Event-ID header on reconnect)
+• Set Content-Type: text/event-stream, Cache-Control: no-cache, Connection: keep-alive headers
+• Disable NGINX proxy buffering for SSE: X-Accel-Buffering: no header
+• Node.js SSE: write to res directly, don't call res.end() until stream is done
+• ReadableStream for SSE in edge/serverless environments — compatible with Response constructor
+• React Suspense + streaming: Next.js App Router streams HTML chunks as they resolve
+• Vercel AI SDK: useChat and useCompletion hooks — handle SSE streaming with built-in state
+• OpenAI streaming: createChatCompletionStream returns an async iterable — for...await over chunks
+• Backpressure: if the client can't keep up, pause the stream — don't buffer unbounded data
+• Heartbeat messages every 20-30s prevent proxies from closing idle SSE connections
+• Close the connection gracefully: send a final "data: [DONE]\n\n" marker then end the response
+• Error handling: write an error event before closing — client can display a user-friendly message
+• SSE vs WebSockets: SSE for AI chat and live feeds; WebSockets for games and collaborative editing
+
+═══════════════════════════════════════
+STATE MANAGEMENT PATTERNS
+═══════════════════════════════════════
+• Server state and client state are fundamentally different — use different tools for each
+• Server state: React Query / SWR / tRPC — handles caching, revalidation, background refetch
+• Client state: Zustand, Jotai, or useState — for local UI state that doesn't come from a server
+• URL state: useSearchParams — searchable, shareable, bookmarkable state
+• Form state: React Hook Form or Zod-validated forms — not useState for each field
+• Zustand: minimal boilerplate, no Provider, great for global client state
+• Jotai: atomic state model — individual atoms compose into derived state
+• XState: for complex UI state machines with many states and transitions
+• Context API for dependency injection, not for high-frequency state updates
+• Avoid prop drilling beyond 2 levels — use Context or state management instead
+• Optimistic updates: update UI immediately, rollback on server error — use React Query's onMutate
+• Pessimistic updates: wait for server confirmation — use for irreversible or critical actions
+• Cache invalidation: invalidateQueries by key after mutations — keeps UI in sync with server
+• Prefetching: queryClient.prefetchQuery for routes the user is likely to navigate to
+• staleTime vs cacheTime: stale = background refetch triggered, cache = data removed from memory
+• Derived state with useMemo — compute from existing state, don't store duplicated derived state
+• Atomic state updates: batch related state changes to prevent intermediate re-renders
+• State lifting: when multiple siblings need the same state, lift to lowest common ancestor
+• State colocation: keep state as close to where it's used as possible — don't over-lift
+• Avoid global state for everything — most state should be local or URL-based
+
+═══════════════════════════════════════
+ERROR HANDLING PATTERNS
+═══════════════════════════════════════
+• Error handling is first-class, not an afterthought — design for failure from the start
+• Result type pattern (Either monad): return { ok: true, data } or { ok: false, error } instead of throwing
+• Never throw inside async functions without a try/catch at the boundary
+• Error boundaries in React catch render errors — every major section should have one
+• Typed errors: create specific error classes (NetworkError, ValidationError, AuthError) — catch selectively
+• Error codes alongside messages: { message: "Not found", code: "RESOURCE_NOT_FOUND", statusCode: 404 }
+• Never swallow errors: if you catch an error you can't handle, rethrow it or log it
+• Log errors with full context: stack trace, user ID, request ID, input that caused the error
+• User-facing error messages must be human-readable — never show stack traces to users
+• Retry on transient errors (network timeout, 503) — don't retry on permanent errors (400, 404)
+• Circuit breaker: after N failures, stop trying and return cached/default data
+• Graceful degradation: feature X fails → show fallback, don't break the whole page
+• Zod's safeParse() returns a result object instead of throwing — prefer it in error-sensitive code
+• Async error boundaries: Suspense + ErrorBoundary for async Server Components in Next.js
+• Global unhandled promise rejection handler: process.on('unhandledRejection') in Node.js
+• Window.onerror and window.addEventListener('unhandledrejection') for frontend error catching
+• Sentry.captureException for automatic error reporting with context
+• Error telemetry should include: error message, stack, user agent, URL, userId, timestamp, breadcrumbs
+• Distinguish between operational errors (expected, handleable) and programmer errors (bugs, crash the process)
+• Never catch errors just to console.log them and continue — that hides bugs
+
+═══════════════════════════════════════
+ADVANCED REACT PATTERNS
+═══════════════════════════════════════
+• Compound components: parent + children share implicit state via Context — Tabs, Accordion, Select
+• Render props: pass a function as a child or prop — enables inversion of control
+• Higher-order components (HOC): wrapper functions that add behavior — use hooks instead when possible
+• Controlled vs uncontrolled components: controlled owns the value, uncontrolled uses refs
+• Headless components: logic without UI — Radix UI, Headless UI, React Aria — bring your own styles
+• Portals: render children outside the parent DOM hierarchy — modals, tooltips, toasts
+• useImperativeHandle with forwardRef: expose specific methods to parent via ref — not the whole DOM node
+• useDeferredValue: defer expensive re-renders while keeping the input responsive
+• useTransition: mark state updates as non-urgent — UI stays responsive during heavy computation
+• React.memo with custom comparison: areEqual(prevProps, nextProps) — prevent unnecessary re-renders
+• Virtualization: react-window or TanStack Virtual for lists with 100+ items
+• Concurrent features: startTransition, useDeferredValue, Suspense work together for responsive UIs
+• Code splitting with React.lazy at the route level — every route is a separate chunk
+• Custom hooks encapsulate stateful logic — name them useXxx, return what the component needs
+• Event delegation: attach one listener to the parent, not one per child — React does this automatically
+• Avoid anonymous functions in JSX for stable references — useCallback when passing to memoized children
+• Batching: React 18 batches all state updates automatically — even inside setTimeout and async functions
+• Strict Mode double-invokes renders and effects in development to catch side effects
+• useId: generate stable, unique IDs for accessibility — replaces uuid for DOM IDs
+• useSyncExternalStore: subscribe to external stores safely — for integrating non-React state managers
+
+═══════════════════════════════════════
+PRISMA & DRIZZLE ORM MASTERY
+═══════════════════════════════════════
+• Prisma schema is the single source of truth — run prisma generate after every schema change
+• Prisma migrations: prisma migrate dev in development, prisma migrate deploy in production
+• Prisma Client is auto-generated — never modify the generated client files
+• Prisma select to prevent over-fetching — only include fields you'll use
+• Prisma include for eager loading relations — prevents N+1 queries
+• Prisma transaction: prisma.$transaction([...]) for atomic multi-table operations
+• Prisma middleware for soft delete, audit logs, and tenant isolation
+• Drizzle is "SQL-first" — queries are just TypeScript-wrapped SQL
+• Drizzle schemas map directly to SQL tables — no magic, no hidden queries
+• Drizzle relations for type-safe JOINs without breaking the SQL mental model
+• Drizzle-kit push for development (no migration files), drizzle-kit migrate for production
+• drizzle-zod: createInsertSchema and createSelectSchema for automatic Zod validation from Drizzle tables
+• Connection pooling with Drizzle: use pg.Pool or @neondatabase/serverless for serverless environments
+• Drizzle's $with (CTEs) for complex queries that reference intermediate results
+• Drizzle's onConflictDoUpdate for upsert operations — insert or update on unique constraint violation
+• Never load entire tables into memory — always use limit/offset or cursor pagination
+• Use database transactions for financial operations — never allow partial updates
+• Prepared statements: db.execute(sql\`...\`) for raw SQL when the ORM doesn't express the query cleanly
+• Drizzle with RLS (Row Level Security): configure Postgres policies for multi-tenant data isolation
+• Schema versioning: always have a migration history — never alter production schema manually
+
+═══════════════════════════════════════
+TAILWIND CSS EXPERT PATTERNS
+═══════════════════════════════════════
+• Tailwind is utility-first, not utility-only — extract components when you repeat the same group of utilities
+• @apply is a code smell — if you find yourself using it often, reconsider your component abstraction
+• tailwind.config.ts: extend the theme, don't replace it — use extend.colors, extend.spacing
+• Design tokens: use CSS custom properties for values that change between themes (light/dark, brand colors)
+• cn() utility (clsx + tailwind-merge): merge class names and resolve Tailwind conflicts
+• tailwind-merge resolves conflicts: "px-4 px-6" → "px-6" (last wins) — essential for component overrides
+• Arbitrary values: bg-[#ff0000], w-[calc(100%-2rem)] — for one-off values not in the design system
+• Arbitrary properties: [mask-type:alpha] for CSS properties Tailwind doesn't have a utility for
+• Group modifier: group + group-hover:... — style children based on parent hover state
+• Peer modifier: peer + peer-checked:... — style siblings based on peer state (e.g., checkbox label)
+• Has modifier: has-[input:checked]:... — parent style based on descendant state (CSS :has())
+• Container queries: @container + @md:... for component-level responsive design
+• Dark mode with class strategy: add 'dark' class to html element — toggle with JavaScript
+• Responsive design: mobile-first, use sm:, md:, lg:, xl:, 2xl: prefixes to add at breakpoints
+• line-clamp-{n}: truncate text to N lines with an ellipsis — no custom CSS needed
+• prose class from @tailwindcss/typography: beautiful default styles for user-generated HTML content
+• aspect-ratio utilities: aspect-video (16/9), aspect-square (1/1) for intrinsic sizing
+• Safelist patterns in config for dynamically generated class names that won't be in source files
+• CVA (Class Variance Authority): define component variants in a type-safe, readable way
+• shadcn/ui is built on Radix UI + Tailwind + CVA — the ideal foundation for design systems
+
+═══════════════════════════════════════
+API SECURITY & AUTHENTICATION
+═══════════════════════════════════════
+• OAuth 2.0 Authorization Code + PKCE is the correct flow for SPAs and mobile apps — never Implicit Flow
+• Access tokens should be short-lived (15 minutes) — use refresh tokens for new access tokens
+• Refresh token rotation: issue a new refresh token with every use, invalidate the old one
+• Store tokens in memory (not localStorage) to prevent XSS token theft — HttpOnly cookies for refresh tokens
+• Silent refresh: use a hidden iframe or background request to get new access tokens before expiry
+• PKCE (Proof Key for Code Exchange): code_verifier + code_challenge prevents auth code interception
+• JWT structure: header.payload.signature — verify the signature, never trust the payload alone
+• Always validate JWT expiry (exp), issuer (iss), audience (aud), and algorithm (alg)
+• Never use algorithm:none — reject tokens that specify no algorithm
+• Use RS256 (asymmetric) for JWTs between services — private key signs, public key verifies
+• Session tokens in HttpOnly, Secure, SameSite=Strict cookies — most secure for web apps
+• API key authentication: prefix the key (sk_live_, pk_test_), hash it before storing in DB
+• Webhook signatures: HMAC-SHA256 of the request body with a shared secret — verify before processing
+• CORS preflight requests must be handled — OPTIONS method returns correct Access-Control headers
+• Request signing (AWS SigV4 style) for machine-to-machine API calls — time-bounded, tampering detectable
+• Mutual TLS (mTLS) for service-to-service communication — both sides present certificates
+• SSO with SAML 2.0 or OIDC for enterprise customers — support both standards
+• MFA: TOTP (Google Authenticator) is preferred over SMS — SMS is vulnerable to SIM swapping
+• Account lockout after N failed attempts — but implement progressive delay, not hard lockout (prevents DoS)
+• Breach detection: check against Have I Been Pwned API on signup and password change
+
+═══════════════════════════════════════
+DATA STRUCTURES & ALGORITHMS APPLIED
+═══════════════════════════════════════
+• Hash maps (plain objects, Map) for O(1) lookup — use when you search by key frequently
+• Sets for uniqueness and O(1) membership testing — preferred over arrays.includes() for large collections
+• Arrays for ordered data, stacks (push/pop), and queues (push/shift or a proper queue class)
+• Linked lists: use when you need O(1) insertion/deletion at the head — rarely needed in JavaScript
+• Trees: DOM, file system, organizational hierarchies — recursive traversal or BFS/DFS
+• Graphs: networks, dependencies, routing — adjacency list (Map<node, Set<neighbor>>) in JavaScript
+• Binary search: O(log n) lookup in sorted arrays — use when data is sorted and you search often
+• Two-pointer technique: find pairs, subarrays, palindromes — O(n) instead of O(n²)
+• Sliding window: maximum/minimum subarray of size k — avoids nested loops
+• Prefix sums: precompute cumulative sums for O(1) range sum queries
+• Memoization: cache function results by input — turn exponential recursion into linear time
+• Dynamic programming: optimal substructure + overlapping subproblems — build from base cases up
+• Trie data structure: autocomplete, spell checking, prefix matching — O(m) where m is string length
+• Priority queue (min-heap): Dijkstra's algorithm, scheduling, top-K elements
+• LRU cache: doubly linked list + hash map — O(1) get and put — common in caching systems
+• Union-Find: connected components, cycle detection in undirected graphs
+• Bloom filter: probabilistic set membership — may say "maybe in set", never lies about "not in set"
+• Big-O complexity guide: O(1) > O(log n) > O(n) > O(n log n) > O(n²) — target O(n log n) or better
+• Space-time tradeoff: use more memory (memoization, indexes) to reduce time complexity
+• Algorithm selection: sorted? → binary search; graph? → BFS/DFS; optimization? → DP or greedy
+
+═══════════════════════════════════════
+PROMPT ENGINEERING & AI PRODUCT DESIGN
+═══════════════════════════════════════
+• System prompt sets the stage — persona, capabilities, constraints, output format go here
+• Few-shot examples in the system prompt dramatically improve output consistency and format
+• Chain-of-thought (CoT): "Think step by step" — improves reasoning on multi-step problems
+• Zero-shot CoT: just adding "Let's think step by step" before the answer space works for many models
+• Tree-of-thought (ToT): generate multiple reasoning paths, evaluate and select the best
+• ReAct pattern: Reason + Act in a loop — model thinks, uses a tool, observes result, repeats
+• Constitutional AI: define a set of principles and have the model self-critique against them
+• Prompt injection defense: delimit user input clearly, use XML tags or clear separators
+• Structured output: ask for JSON and provide a schema — use json_mode or function calling
+• Role playing prompts: "You are a senior SQL engineer" focuses the model's knowledge domain
+• Temperature guidance: 0.0 for classification/extraction, 0.3 for code, 0.7 for creative writing
+• Max tokens must match expected output length — truncated responses break structured parsing
+• Context window management: summarize old messages to stay within limits
+• Model selection: GPT-4 for complex reasoning, Claude for long context, smaller models for classification
+• Embeddings-based semantic search: chunk documents, embed chunks, store in vector DB, retrieve relevant chunks
+• Retrieval-Augmented Generation (RAG): retrieve → augment prompt → generate — grounds responses in facts
+• Evaluation framework: define metrics (accuracy, coherence, groundedness) and test on a benchmark set
+• Human-in-the-loop: flag low-confidence responses for human review
+• Prompt versioning: treat prompts as code — version, test, and deploy them through a proper pipeline
+• Cost estimation: count tokens before sending, estimate cost, implement user-level rate limits
+• Streaming for perceived performance — users can start reading before the full response is ready
+
+═══════════════════════════════════════
+PAYMENT & BILLING SYSTEMS
+═══════════════════════════════════════
+• Never store raw card numbers — PCI DSS compliance is required; use Stripe Elements or similar
+• Stripe Checkout: hosted page — fastest to integrate, highest conversion, PCI compliant out of the box
+• Stripe Payment Intents: create server-side, confirm client-side — handles 3D Secure automatically
+• Webhook verification: verify Stripe-Signature header with your webhook secret — reject unverified events
+• Process webhooks idempotently — use the event ID to prevent double-processing
+• Subscription states: incomplete, incomplete_expired, trialing, active, past_due, canceled, unpaid
+• Handle payment failures: notify the user, retry logic (dunning), grace period before cancellation
+• Proration: Stripe calculates it automatically when changing subscription plans
+• Usage-based billing: report usage via Stripe Metered Billing API before invoice is finalized
+• Metered billing cutoff: usage must be reported before the billing period closes
+• Tax calculation: Stripe Tax or TaxJar for automatic sales tax — required in most jurisdictions
+• Refunds: issue via API or dashboard — always issue refunds, never just cancel subscriptions
+• Invoice line items: provide clear, itemized descriptions — reduces chargebacks
+• Dunning management: email sequence for failed payments — day 1, 3, 7, then cancel
+• Customer portal: Stripe Billing Portal lets customers manage subscriptions without custom UI
+• Free trials: set trial_end on the subscription — Stripe sends a trial_will_end webhook 3 days before
+• Coupons and promotions: promotion codes for marketing campaigns, coupons for bulk discounts
+• Connect: Stripe Connect for marketplace payments — platform takes a fee, pays out to sellers
+• Disputes/chargebacks: respond with evidence via Stripe Dashboard — prepare evidence package
+• Store customer.id, subscription.id, and payment_method.id in your DB — never store card details
 `;
+
 

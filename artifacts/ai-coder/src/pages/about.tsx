@@ -15,6 +15,8 @@ import {
   Command, ArrowUp, ArrowDown, Folder, Image, Keyboard, Layout, Compass,
   Network, Server, Activity, ShieldCheck, FlaskConical, Workflow,
   DatabaseZap, CloudUpload, TestTube, Gauge, BookOpen, Lightbulb,
+  CreditCard, Container, Sigma, Layers3, Globe2, Braces, MousePointer2,
+  SquareCode, Repeat2, SlidersHorizontal,
 } from 'lucide-react';
 import { OPENROUTER_MODELS } from '@/components/model-selector';
 
@@ -164,7 +166,22 @@ export default function AboutPage() {
     { icon: Lightbulb, title: 'Engineering Mentorship Mode', desc: 'Explains every decision with the WHY behind it, points out ADR-worthy choices, celebrates good engineering, and teaches production-grade patterns as it builds.', color: 'bg-amber-500/10 text-amber-400', badge: 'CORE' },
   ];
 
-  const totalFeatures = playgroundFeatures.length + workspaceFeatures.length + chatFeatures.length + powerFeatures.length + promptGeneratorFeatures.length + exploreFeatures.length + aiIntelligenceFeatures.length;
+  const aiUpgradeV2Features = [
+    { icon: SquareCode, title: 'Next.js App Router Expert', desc: 'Full mastery of Server Components, Client Components, Server Actions, streaming, loading.tsx, error.tsx, parallel routes, intercepting routes, and Partial Pre-Rendering (PPR).', color: 'bg-black/10 text-foreground', badge: 'NEW' },
+    { icon: Braces, title: 'GraphQL & Apollo Mastery', desc: 'Schema-first design, DataLoader for N+1 prevention, cursor pagination, persisted queries, Apollo Client cache normalization, optimistic updates, and schema federation.', color: 'bg-pink-500/10 text-pink-400', badge: 'NEW' },
+    { icon: Palette, title: 'Advanced CSS & Animation', desc: 'Container queries, :has() selector, CSS Layers, View Transitions API, scroll-driven animations, FLIP technique, Framer Motion spring animations, and Oklch color space.', color: 'bg-violet-500/10 text-violet-400', badge: 'NEW' },
+    { icon: Container, title: 'Docker & Kubernetes Production', desc: 'Multi-stage builds, non-root users, liveness/readiness/startup probes, HPA, PodDisruptionBudget, Helm charts, ArgoCD GitOps, and service mesh (Istio/Linkerd).', color: 'bg-blue-500/10 text-blue-400', badge: 'NEW' },
+    { icon: Network, title: 'Microservices & Distributed Systems', desc: 'Service boundaries, async messaging, dead letter queues, idempotent consumers, message schema versioning, distributed tracing, bulkhead and retry patterns.', color: 'bg-emerald-500/10 text-emerald-400', badge: 'NEW' },
+    { icon: TestTube, title: 'Vitest & Playwright Expert', desc: 'vi.mock, vi.useFakeTimers, test.each, MSW for API mocking, Playwright Page Object Model, visual regression testing, trace viewer, and codegen.', color: 'bg-teal-500/10 text-teal-400', badge: 'NEW' },
+    { icon: Globe2, title: 'Edge Computing & Serverless', desc: 'Cloudflare Workers, Vercel Edge Functions, Durable Objects, KV stores, streaming from the edge, cold start optimization, and DynamoDB single-table design.', color: 'bg-orange-500/10 text-orange-400', badge: 'NEW' },
+    { icon: Repeat2, title: 'SSE & Streaming Patterns', desc: 'Server-Sent Events format, heartbeat messages, backpressure handling, ReadableStream for edge environments, Vercel AI SDK, and OpenAI streaming integration.', color: 'bg-cyan-500/10 text-cyan-400', badge: 'NEW' },
+    { icon: SlidersHorizontal, title: 'State Management Deep Dive', desc: 'Zustand, Jotai, XState, URL state, form state with React Hook Form, optimistic vs pessimistic updates, cache invalidation, and atomic state patterns.', color: 'bg-amber-500/10 text-amber-400', badge: 'NEW' },
+    { icon: MousePointer2, title: 'Advanced React Patterns', desc: 'Compound components, headless UI, portals, useDeferredValue, useTransition, React.memo with custom comparison, virtualization, useSyncExternalStore, and Concurrent Features.', color: 'bg-indigo-500/10 text-indigo-400', badge: 'NEW' },
+    { icon: DatabaseZap, title: 'Prisma & Drizzle ORM Expert', desc: 'Prisma migrations, transactions, middleware, Drizzle SQL-first queries, drizzle-zod integration, upserts, CTEs, and Row Level Security for multi-tenant apps.', color: 'bg-rose-500/10 text-rose-400', badge: 'NEW' },
+    { icon: CreditCard, title: 'Payments & Billing Systems', desc: 'Stripe Payment Intents, webhook verification, subscription states, dunning management, usage-based billing, Stripe Tax, Stripe Connect for marketplaces, and chargeback defense.', color: 'bg-green-500/10 text-green-400', badge: 'NEW' },
+  ];
+
+  const totalFeatures = playgroundFeatures.length + workspaceFeatures.length + chatFeatures.length + powerFeatures.length + promptGeneratorFeatures.length + exploreFeatures.length + aiIntelligenceFeatures.length + aiUpgradeV2Features.length;
 
   return (
     <PageLayout crumbs={[{ label: 'About' }]} backHref="/" withMeshBg>
@@ -503,6 +520,72 @@ export default function AboutPage() {
           <div className="mt-4 flex justify-center">
             <Button onClick={() => setLocation('/')} className="gap-2 shadow-lg shadow-primary/20">
               <Brain className="w-4 h-4" />Try Upgraded AI
+            </Button>
+          </div>
+        </section>
+
+        {/* AI Upgrade V2 Section */}
+        <section className="mb-14">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-9 h-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
+              <Layers3 className="w-4 h-4 text-indigo-400" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold">AI Knowledge Update v2</h2>
+              <p className="text-sm text-muted-foreground">500+ more expert instructions: Next.js App Router, GraphQL, Docker/K8s, Edge Computing, Payments, Advanced Patterns</p>
+            </div>
+            <Badge className="ml-auto bg-indigo-500/20 text-indigo-400 border-indigo-500/30">500+ NEW</Badge>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {aiUpgradeV2Features.map(f => (
+              <div key={f.title} className="bg-card border border-border/50 rounded-xl p-5 hover:border-indigo-500/20 transition-colors">
+                <div className="flex items-start gap-3 mb-3">
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${f.color}`}><f.icon className="w-4 h-4" /></div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <h3 className="font-semibold text-sm">{f.title}</h3>
+                      <Badge variant="outline" className="text-xs py-0 h-4 border-indigo-500/40 text-indigo-400">{f.badge}</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">{f.desc}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* V2 domains quick reference */}
+          <div className="mt-6 bg-muted/30 border border-border/50 rounded-xl p-5">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">New v2 Expert Knowledge Domains</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              {[
+                { label: 'Next.js App Router', icon: '▲' },
+                { label: 'GraphQL & Apollo', icon: '◆' },
+                { label: 'Advanced CSS/Animation', icon: '🎨' },
+                { label: 'Docker & Kubernetes', icon: '🐳' },
+                { label: 'Microservices', icon: '🔗' },
+                { label: 'Vitest & Playwright', icon: '🧪' },
+                { label: 'Edge & Serverless', icon: '⚡' },
+                { label: 'SSE & Streaming', icon: '📡' },
+                { label: 'State Management', icon: '🔄' },
+                { label: 'Error Handling', icon: '🛡️' },
+                { label: 'Prisma & Drizzle', icon: '🗄️' },
+                { label: 'Payments & Billing', icon: '💳' },
+                { label: 'Prompt Engineering', icon: '🧠' },
+                { label: 'Data Structures & Algos', icon: '📐' },
+                { label: 'Auth & OAuth 2.0', icon: '🔐' },
+                { label: 'Tailwind CSS Expert', icon: '🎯' },
+              ].map(d => (
+                <div key={d.label} className="flex items-center gap-2 px-3 py-2 bg-card border border-border/50 rounded-lg">
+                  <span>{d.icon}</span>
+                  <p className="text-xs text-muted-foreground">{d.label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-4 flex justify-center">
+            <Button onClick={() => setLocation('/')} className="gap-2 shadow-lg shadow-indigo-500/20 bg-indigo-600 hover:bg-indigo-700">
+              <Sigma className="w-4 h-4" />Chat with Upgraded AI
             </Button>
           </div>
         </section>
