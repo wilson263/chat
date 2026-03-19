@@ -242,7 +242,125 @@ export default function AboutPage() {
     { icon: Activity, title: '100 Elite Instructions Total', desc: 'All 100 new Replit Max Core instructions span agent behavior, full-stack codegen, TypeScript mastery, React 19, deployment, LLM engineering, agent orchestration, security, and performance.', color: 'bg-teal-500/10 text-teal-400', badge: 'CORE' },
   ];
 
-  const totalFeatures = playgroundFeatures.length + workspaceFeatures.length + chatFeatures.length + powerFeatures.length + promptGeneratorFeatures.length + exploreFeatures.length + aiIntelligenceFeatures.length + aiUpgradeV2Features.length + aiUpgradeV3Features.length + aiUpgradeV4Features.length + aiUpgradeV5Features.length + aiUpgradeCoreFeatures.length;
+  const aiElite500Features = [
+    { icon: Cpu, title: 'WASM Near-Native Speed', desc: 'Run C, Rust, Go compiled code in browser at near-native performance.', cat: 'WebAssembly' },
+    { icon: Zap, title: 'wasm-pack + wasm-bindgen', desc: 'Publish Rust-to-WASM npm packages with automatic JS type bridges.', cat: 'WebAssembly' },
+    { icon: Globe, title: 'WASM SIMD Instructions', desc: '128-bit SIMD for 4× speedup on image filters, ML inference, audio.', cat: 'WebAssembly' },
+    { icon: Server, title: 'WASI Runtime Sandbox', desc: 'Run WASM outside the browser with filesystem, sockets, env vars.', cat: 'WebAssembly' },
+    { icon: Code2, title: 'Streaming WASM Compile', desc: 'instantiateStreaming starts compiling before full .wasm downloads.', cat: 'WebAssembly' },
+    { icon: Activity, title: 'SharedArrayBuffer Threads', desc: 'Multi-threaded WASM via Web Workers with Atomics and SAB.', cat: 'WebAssembly' },
+    { icon: Database, title: 'SQLite-in-Browser (WASM)', desc: 'wa-sqlite / sql.js: full relational DB in browser, persisted via OPFS.', cat: 'WebAssembly' },
+    { icon: Package, title: 'wasm-opt Compression', desc: 'Binaryen wasm-opt shrinks bundles — target <500KB gzipped for web.', cat: 'WebAssembly' },
+    { icon: Globe2, title: 'WebGPU Compute Shaders', desc: 'General-purpose GPU programs for ML inference and physics in browser.', cat: 'WebGL / GPU' },
+    { icon: Layers, title: 'WebGL 2 Rendering Pipeline', desc: 'Vertex + fragment shaders, VBOs, uniforms, textures, framebuffers.', cat: 'WebGL / GPU' },
+    { icon: Palette, title: 'Instanced Rendering', desc: 'Draw thousands of identical objects in one draw call with InstancedMesh.', cat: 'WebGL / GPU' },
+    { icon: Cpu, title: 'GPU Particle Systems', desc: 'Store particle state in textures, update in shaders — millions at 60fps.', cat: 'WebGL / GPU' },
+    { icon: Eye, title: 'Ping-Pong Framebuffers', desc: 'Two framebuffers alternating for GPGPU simulation steps.', cat: 'WebGL / GPU' },
+    { icon: Activity, title: 'WGSL Shader Language', desc: "WebGPU's Rust-inspired typed shader language — replaces GLSL.", cat: 'WebGL / GPU' },
+    { icon: Sparkles, title: 'PWA Web App Manifest', desc: 'Icons, theme colors, display: standalone, start_url for installability.', cat: 'PWA' },
+    { icon: Zap, title: 'Service Worker Lifecycle', desc: 'Install → Activate → Fetch — cache assets, clean old caches, serve offline.', cat: 'PWA' },
+    { icon: Database, title: 'Workbox Precaching', desc: 'InjectManifest plugin injects build manifest into custom service worker.', cat: 'PWA' },
+    { icon: RefreshCw, title: 'Background Sync API', desc: 'Queue failed requests and retry when connectivity is restored.', cat: 'PWA' },
+    { icon: Mail, title: 'Web Push Notifications', desc: 'VAPID-signed push messages wake service worker — no app open needed.', cat: 'PWA' },
+    { icon: Monitor, title: 'beforeinstallprompt', desc: 'Defer install prompt, show custom in-app install button at the right moment.', cat: 'PWA' },
+    { icon: HardDrive, title: 'OPFS File Storage', desc: 'Origin Private File System — fast private file I/O without blocking main thread.', cat: 'PWA' },
+    { icon: Share2, title: 'Web Share + File Handling', desc: 'Native share dialog and open files double-clicked on the OS desktop.', cat: 'PWA' },
+    { icon: Activity, title: 'OTel Distributed Traces', desc: 'Spans, trace IDs, W3C TraceContext propagation across all services.', cat: 'Observability' },
+    { icon: Network, title: 'OpenTelemetry SDK', desc: '@opentelemetry/sdk-node auto-instruments HTTP, Express, pg, Redis.', cat: 'Observability' },
+    { icon: BarChart, title: 'OTLP Export Protocol', desc: 'Vendor-neutral format for Jaeger, Tempo, Datadog, Honeycomb.', cat: 'Observability' },
+    { icon: Gauge, title: 'OTel Metrics + Exemplars', desc: 'Counter, Gauge, Histogram — link trace IDs to metric spikes.', cat: 'Observability' },
+    { icon: Eye, title: 'Tail-Based Sampling', desc: 'Sample after trace completion — keep 100% of error traces.', cat: 'Observability' },
+    { icon: BookOpen, title: 'Baggage Propagation', desc: 'Carry user ID, tenant, and feature flags across all downstream spans.', cat: 'Observability' },
+    { icon: Brain, title: 'DDD Ubiquitous Language', desc: 'Shared vocabulary between developers and domain experts in the code.', cat: 'DDD' },
+    { icon: Layers3, title: 'Bounded Contexts', desc: 'Domain model boundary — different contexts use different models.', cat: 'DDD' },
+    { icon: Network, title: 'Aggregates & Invariants', desc: 'Aggregate Root enforces all invariants; no direct child entity access.', cat: 'DDD' },
+    { icon: Braces, title: 'Value Objects', desc: 'Immutable, identity-less objects compared by value: Money, Email, Address.', cat: 'DDD' },
+    { icon: Zap, title: 'Domain Events', desc: 'Past-tense facts (OrderPlaced, PaymentFailed) — trigger side effects elsewhere.', cat: 'DDD' },
+    { icon: GitBranch, title: 'Anti-Corruption Layer', desc: 'Translate between your domain model and external systems — no leakage.', cat: 'DDD' },
+    { icon: Workflow, title: 'Event Storming', desc: 'Collaborative domain mapping with sticky notes before writing any code.', cat: 'DDD' },
+    { icon: Repeat2, title: 'Saga / Process Manager', desc: 'Coordinate multi-step business processes across aggregates.', cat: 'DDD' },
+    { icon: Activity, title: 'CloudEvents Standard', desc: 'Vendor-neutral event metadata (id, source, type, time) for interoperability.', cat: 'EDA' },
+    { icon: Database, title: 'Schema Registry', desc: 'Confluent Registry enforces Avro/Protobuf backward compatibility.', cat: 'EDA' },
+    { icon: Zap, title: 'Outbox Pattern', desc: 'Write domain events to DB in same transaction — reliably publish after.', cat: 'EDA' },
+    { icon: RefreshCw, title: 'Event Replay', desc: 'Reprocess historical events to build new projections or fix bugs.', cat: 'EDA' },
+    { icon: Shield, title: 'Idempotent Consumers', desc: 'Handle at-least-once delivery — use idempotency keys to deduplicate.', cat: 'EDA' },
+    { icon: GitCommit, title: 'Dead Letter Queue', desc: 'Events failing N retries go to DLQ — inspect, fix, replay manually.', cat: 'EDA' },
+    { icon: Network, title: 'GraphQL Federation v2', desc: '@key, @external, @requires, @provides — compose subgraphs into supergraph.', cat: 'GraphQL Fed' },
+    { icon: Layers, title: 'Apollo Router (Rust)', desc: 'Rust-based GraphQL gateway — computes query plans, parallel fetches.', cat: 'GraphQL Fed' },
+    { icon: Eye, title: '@defer Streaming', desc: 'Stream expensive fields lazily — render critical UI first.', cat: 'GraphQL Fed' },
+    { icon: GitPullRequest, title: 'Schema Checks (Rover)', desc: 'Catch breaking schema changes in CI before merging to main.', cat: 'GraphQL Fed' },
+    { icon: SquareCode, title: 'Contract Schemas', desc: 'Filtered supergraph views for public vs internal API consumers.', cat: 'GraphQL Fed' },
+    { icon: Activity, title: 'EXPLAIN ANALYZE Mastery', desc: 'Read query plans: Seq Scan vs Index Scan, Hash Join, cost vs actual rows.', cat: 'DB Optimization' },
+    { icon: Database, title: 'GIN + BRIN Indexes', desc: 'GIN for JSONB/full-text; BRIN for time-ordered append-only tables.', cat: 'DB Optimization' },
+    { icon: Zap, title: 'Covering Indexes (INCLUDE)', desc: 'Satisfy queries entirely from index — zero heap fetches.', cat: 'DB Optimization' },
+    { icon: Search, title: 'Partial + Expression Indexes', desc: 'Index only matching rows or function results — smaller, faster.', cat: 'DB Optimization' },
+    { icon: BarChart, title: 'pg_stat_statements', desc: 'Query-level profiling — find top N by total_exec_time and mean time.', cat: 'DB Optimization' },
+    { icon: Clock, title: 'Cursor-Based Pagination', desc: 'WHERE id > last_id avoids OFFSET O(n) cost on large tables.', cat: 'DB Optimization' },
+    { icon: GitMerge, title: 'Table Partitioning', desc: 'Range/list/hash partitioning — prune irrelevant partitions at query time.', cat: 'DB Optimization' },
+    { icon: Layers3, title: 'dbt SQL Transforms', desc: 'Version-controlled, tested SQL transformations — models, tests, docs.', cat: 'Data Engineering' },
+    { icon: RefreshCw, title: 'Incremental dbt Models', desc: 'Process only new/changed rows — skip full table recomputation.', cat: 'Data Engineering' },
+    { icon: Database, title: 'DuckDB + Polars', desc: 'Analytical SQL on Parquet/CSV in-process; Rust DataFrames — no Spark.', cat: 'Data Engineering' },
+    { icon: Activity, title: 'Medallion Architecture', desc: 'Bronze (raw) → Silver (cleaned) → Gold (aggregated) data quality layers.', cat: 'Data Engineering' },
+    { icon: Zap, title: 'CDC with Debezium', desc: 'Capture PostgreSQL WAL changes, publish to Kafka — real-time replication.', cat: 'Data Engineering' },
+    { icon: Shield, title: 'Great Expectations', desc: 'Data quality validation gate — completeness, freshness, distribution checks.', cat: 'Data Engineering' },
+    { icon: Star, title: 'Star Schema Design', desc: 'Fact tables + dimension tables — optimized for aggregation queries.', cat: 'Data Engineering' },
+    { icon: GitCommit, title: 'Data Contracts', desc: 'Formal schema agreements between producers and consumers — reject invalid data.', cat: 'Data Engineering' },
+    { icon: Network, title: 'API Gateway Auth', desc: 'Validate JWT at the edge — pass identity downstream, zero re-auth per service.', cat: 'API Gateway' },
+    { icon: Shield, title: 'Circuit Breaker at Edge', desc: 'Stop routing to degraded backends automatically — return cached or error.', cat: 'API Gateway' },
+    { icon: Server, title: 'Service Mesh mTLS', desc: 'Istio/Linkerd sidecars enforce encrypted auth for all east-west traffic.', cat: 'Service Mesh' },
+    { icon: BarChart, title: 'Mesh Observability', desc: 'Automatic traces, per-service latency, and error rates — zero code changes.', cat: 'Service Mesh' },
+    { icon: SlidersHorizontal, title: 'Weighted Traffic Routing', desc: 'Canary deployments and A/B routing configured in mesh without code.', cat: 'Service Mesh' },
+    { icon: Code2, title: 'GoF Design Patterns', desc: 'Singleton, Factory, Builder, Adapter, Decorator, Strategy — all 23 applied.', cat: 'Design Patterns' },
+    { icon: Layers, title: 'Null Object Pattern', desc: 'Default no-op objects instead of null checks — eliminates null exceptions.', cat: 'Design Patterns' },
+    { icon: Repeat2, title: 'Chain of Responsibility', desc: 'Express middleware chain, pipeline processors — handlers in sequence.', cat: 'Design Patterns' },
+    { icon: Braces, title: 'Specification Pattern', desc: 'Business rules as composable objects — isSatisfiedBy() returns boolean.', cat: 'Design Patterns' },
+    { icon: Search, title: 'Elasticsearch Mappings', desc: 'text vs keyword, analyzers, GIN, edge_ngram — explicit types, no dynamic mapping.', cat: 'Search' },
+    { icon: Zap, title: 'Vector kNN Search', desc: 'dense_vector + cosine similarity — semantic search alongside keyword.', cat: 'Search' },
+    { icon: BarChart, title: 'Faceted Aggregations', desc: 'Terms, range, date_histogram aggs — sidebar filters with live counts.', cat: 'Search' },
+    { icon: Eye, title: 'Relevance Tuning', desc: 'Field boosting, function_score for popularity/recency, BM25 tweaks.', cat: 'Search' },
+    { icon: GitBranch, title: 'Zero-Downtime Reindex', desc: 'Index alias + swap pattern — reindex with new mapping, flip alias atomically.', cat: 'Search' },
+    { icon: Layers3, title: 'Turborepo Remote Cache', desc: 'Share build artifacts across CI and laptops — cache hit skips entire task.', cat: 'Monorepo' },
+    { icon: Network, title: 'Nx Affected Commands', desc: 'Run tasks only for changed packages since last commit — fast CI at scale.', cat: 'Monorepo' },
+    { icon: Package, title: 'Changesets Versioning', desc: 'Automated version bumps and CHANGELOGs from PR-level change entries.', cat: 'Monorepo' },
+    { icon: Shield, title: 'Module Boundary Linting', desc: 'Nx ESLint rules enforce which packages can import from which — clean arch.', cat: 'Monorepo' },
+    { icon: Cpu, title: 'Container Queries', desc: '@container styles components based on their own size — truly reusable.', cat: 'Responsive' },
+    { icon: Palette, title: 'clamp() Fluid Typography', desc: 'clamp(1rem, 2.5vw, 1.5rem) — font scales proportionally, no breakpoints.', cat: 'Responsive' },
+    { icon: Monitor, title: '100dvh Mobile Viewport', desc: 'Dynamic viewport height accounts for collapsing mobile browser chrome.', cat: 'Responsive' },
+    { icon: Compass, title: 'Safe Area Insets', desc: 'env(safe-area-inset-bottom) for notches and home indicators on mobile.', cat: 'Responsive' },
+    { icon: ToggleLeft, title: 'Thumb Zone Design', desc: 'Place primary actions in lower-center — the easiest thumb-reach zone.', cat: 'Responsive' },
+    { icon: BookOpen, title: 'Sanity GROQ Queries', desc: 'Graph-Relational Object Queries — filtering, joining, projections in Sanity.', cat: 'CMS' },
+    { icon: Eye, title: 'Preview / Draft Mode', desc: 'Fetch unpublished CMS content — Next.js draft mode, Nuxt preview mode.', cat: 'CMS' },
+    { icon: Zap, title: 'Webhook ISR Revalidation', desc: 'CMS change triggers Next.js on-demand revalidation — instant propagation.', cat: 'CMS' },
+    { icon: Globe, title: 'Portable Text Rendering', desc: 'Serialize Sanity/Contentful rich text to React, HTML, or any target.', cat: 'CMS' },
+    { icon: Code2, title: 'devcontainers', desc: 'Reproducible dev environment in Docker — VS Code and Codespaces support.', cat: 'Developer DX' },
+    { icon: Terminal, title: 'direnv + mise', desc: 'Auto-load env vars per directory; manage Node, Python, Go versions.', cat: 'Developer DX' },
+    { icon: GitCommit, title: 'Lefthook + commitlint', desc: 'Fast Git hooks for lint/format; enforce Conventional Commits format.', cat: 'Developer DX' },
+    { icon: Lock, title: 'mkcert Local HTTPS', desc: 'Locally-trusted SSL certificate — test HTTPS features without cloud.', cat: 'Developer DX' },
+    { icon: Globe2, title: 'Cloudflare Tunnel / Ngrok', desc: 'Expose localhost to internet — test webhooks and OAuth flows locally.', cat: 'Developer DX' },
+    { icon: Shield, title: 'PII Masking in Logs', desc: 'Never log names, emails, IPs in plaintext — mask or hash at the logger.', cat: 'AI Safety' },
+    { icon: Brain, title: 'Hallucination Mitigation', desc: 'RAG grounds AI in factual documents — always cite sources for accuracy.', cat: 'AI Safety' },
+    { icon: Lock, title: 'Prompt Injection Defense', desc: 'Sanitize user input before including in prompts — never trust user fragments.', cat: 'AI Safety' },
+    { icon: Eye, title: 'AI Output Validation', desc: 'Verify AI-generated code compiles and passes tests before accepting.', cat: 'AI Safety' },
+    { icon: ShieldCheck, title: 'Bias Detection & Fairness', desc: 'Test AI features across demographic groups — measure outcome disparities.', cat: 'AI Safety' },
+    { icon: BookOpen, title: 'Diátaxis Documentation', desc: 'Tutorial, How-To, Reference, Explanation — four distinct doc types.', cat: 'Documentation' },
+    { icon: GitCommit, title: 'Architecture Decision Records', desc: 'Context + decision + consequences — stored as Markdown in /docs/adr/.', cat: 'Documentation' },
+    { icon: Code2, title: 'Diagram as Code', desc: 'Mermaid/PlantUML version-controlled diagrams alongside code they describe.', cat: 'Documentation' },
+    { icon: Layers, title: 'C4 Model Architecture', desc: 'Context → Container → Component → Code — four audience-appropriate levels.', cat: 'Documentation' },
+    { icon: Globe, title: 'Lambda Cold Start Opt.', desc: 'Reduce bundle size, init clients outside handler, use ES modules + tree-shaking.', cat: 'Serverless' },
+    { icon: Zap, title: 'Cloudflare Workers <1ms', desc: 'V8 isolate model — sub-millisecond cold starts at 200+ edge locations.', cat: 'Serverless' },
+    { icon: Database, title: 'Durable Objects State', desc: 'Single-instance stateful serverless — rate limiting, sessions, game state.', cat: 'Serverless' },
+    { icon: Server, title: 'Step Functions Workflows', desc: 'Orchestrate multi-step processes with catch/retry, parallel, wait for approval.', cat: 'Serverless' },
+    { icon: Activity, title: 'ClickHouse Real-Time OLAP', desc: 'Sub-second aggregations on billions of rows — Kafka-native ingestion.', cat: 'Streaming Analytics' },
+    { icon: Network, title: 'Apache Flink Streaming', desc: 'Stateful stream processing — windowed aggregations, exactly-once semantics.', cat: 'Streaming Analytics' },
+    { icon: BarChart, title: 'ksqlDB SQL on Kafka', desc: 'Write streaming queries in SQL — materialize as Kafka topics or tables.', cat: 'Streaming Analytics' },
+    { icon: Zap, title: 'Watermarks & Late Events', desc: 'Flink watermarks advance event time — handle late arrivals within a window.', cat: 'Streaming Analytics' },
+    { icon: Eye, title: 'Storybook Stories (CSF)', desc: 'One file, many stories (Default, Loading, Error, Empty) — interactive controls.', cat: 'Component-Driven' },
+    { icon: TestTube, title: 'Play Functions + axe-core', desc: 'Simulate clicks, test a11y violations automatically — same code in tests.', cat: 'Component-Driven' },
+    { icon: Palette, title: 'Chromatic Visual Regression', desc: 'Screenshot every story in CI — flag visual diffs before merging PRs.', cat: 'Component-Driven' },
+    { icon: Layers3, title: 'Storybook Composition', desc: 'Reference stories from multiple team repos in one Storybook portal.', cat: 'Component-Driven' },
+  ];
+
+  const totalFeatures = playgroundFeatures.length + workspaceFeatures.length + chatFeatures.length + powerFeatures.length + promptGeneratorFeatures.length + exploreFeatures.length + aiIntelligenceFeatures.length + aiUpgradeV2Features.length + aiUpgradeV3Features.length + aiUpgradeV4Features.length + aiUpgradeV5Features.length + aiUpgradeCoreFeatures.length + aiElite500Features.length;
 
   return (
     <PageLayout crumbs={[{ label: 'About' }]} backHref="/" withMeshBg>
@@ -1037,6 +1155,47 @@ export default function AboutPage() {
                 </button>
               ))}
             </div>
+          </div>
+        </section>
+
+        {/* 500 Elite Instructions — 100 AI Features */}
+        <section className="mb-14">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center shrink-0">
+              <Cpu className="w-5 h-5 text-violet-400" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-xl font-bold">500 Elite AI Instructions</h2>
+                <Badge className="bg-violet-500/15 text-violet-400 border-violet-500/30 text-[10px] font-bold tracking-wider px-2">500 NEW</Badge>
+                <Badge className="bg-fuchsia-500/15 text-fuchsia-400 border-fuchsia-500/30 text-[10px] font-bold tracking-wider px-2">100 FEATURES</Badge>
+              </div>
+              <p className="text-sm text-muted-foreground mt-0.5">22 advanced engineering domains — the deepest knowledge tier in ZorvixAI</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3 mt-6">
+            {aiElite500Features.map((f, i) => (
+              <div key={i} className="bg-card border border-border/50 rounded-xl p-3.5 hover:border-violet-500/30 transition-colors group">
+                <div className="flex items-start gap-2.5">
+                  <div className="w-7 h-7 rounded-lg bg-violet-500/10 flex items-center justify-center shrink-0 group-hover:bg-violet-500/20 transition-colors mt-0.5">
+                    <f.icon className="w-3.5 h-3.5 text-violet-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold leading-tight mb-0.5">{f.title}</p>
+                    <p className="text-[11px] text-muted-foreground leading-snug">{f.desc}</p>
+                    <span className="inline-block mt-1.5 text-[9px] font-semibold uppercase tracking-wider text-violet-400/70 bg-violet-500/10 rounded px-1.5 py-0.5">{f.cat}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-5 bg-violet-500/5 border border-violet-500/20 rounded-xl px-5 py-4 flex items-center gap-3">
+            <Sparkles className="w-5 h-5 text-violet-400 shrink-0" />
+            <p className="text-sm text-muted-foreground">
+              These <strong className="text-foreground">500 instructions</strong> span WebAssembly, WebGPU, PWA, OpenTelemetry, DDD, Event-Driven Architecture, GraphQL Federation, DB Optimization, Data Engineering, Service Mesh, Design Patterns, Search Engineering, Monorepo Tooling, Mobile-First Design, CMS/Headless, Developer DX, AI Safety, Code Documentation, Browser Extensions, Serverless, Real-Time Analytics, and Component-Driven Development.
+            </p>
           </div>
         </section>
 
