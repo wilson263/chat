@@ -23,6 +23,7 @@ import PlaygroundPage from "@/pages/playground";
 import TemplatesPage from "@/pages/templates";
 import PromptGeneratorPage from "@/pages/prompt-generator";
 import ExplorePage from "@/pages/explore";
+import CodeRunnerPage from "@/pages/code-runner";
 import { OnboardingTour } from "@/components/onboarding-tour";
 import { ZorvixIntro } from "@/components/zorvix-intro";
 import { Loader2 } from "lucide-react";
@@ -36,7 +37,7 @@ const queryClient = new QueryClient({
   },
 });
 
-const PUBLIC_ROUTES = ["/login", "/signup", "/about", "/contact", "/our-apps", "/developer", "/analytics", "/compare", "/playground", "/templates", "/prompt-generator", "/explore"];
+const PUBLIC_ROUTES = ["/login", "/signup", "/about", "/contact", "/our-apps", "/developer", "/analytics", "/compare", "/playground", "/templates", "/prompt-generator", "/explore", "/code-runner"];
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -80,6 +81,7 @@ function Router() {
       <Route path="/templates" component={TemplatesPage} />
       <Route path="/prompt-generator" component={PromptGeneratorPage} />
       <Route path="/explore" component={ExplorePage} />
+      <Route path="/code-runner" component={CodeRunnerPage} />
       <Route component={NotFound} />
     </Switch>
   );
