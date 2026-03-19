@@ -1307,6 +1307,7 @@ export default function ChatPage() {
                 { icon: Wand2, label: 'Prompt Gen', path: '/prompt-generator', color: 'hover:text-violet-400' },
                 { icon: Globe, label: 'Explore', path: '/explore', color: 'hover:text-teal-400' },
                 { icon: Play, label: 'Playground', path: '/playground', color: 'hover:text-green-400' },
+                { icon: Terminal, label: 'Code Runner', path: '/code-runner', color: 'hover:text-green-300' },
                 { icon: LayoutTemplate, label: 'Templates', path: '/templates', color: 'hover:text-yellow-400' },
                 { icon: GitCompare, label: 'Compare', path: '/compare', color: 'hover:text-pink-400' },
                 { icon: BarChart3, label: 'Analytics', path: '/analytics', color: 'hover:text-cyan-400' },
