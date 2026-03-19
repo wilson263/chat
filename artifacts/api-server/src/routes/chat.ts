@@ -344,7 +344,7 @@ async function streamReplitAI(
     model,
     messages: messages as any,
     stream: true,
-    max_tokens: 32768,
+    max_tokens: 100000,
     temperature: temperature ?? 0.25,
   } as any);
 
