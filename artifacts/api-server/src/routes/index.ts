@@ -23,6 +23,13 @@ import playgroundGenerateRouter from "./playground-generate";
 import codeReviewRouter from "./code-review";
 import aiDebugRouter from "./ai-debug";
 import aiMemoryRouter from "./ai-memory";
+import multiAgentRouter from "./multi-agent";
+import aiArchitectRouter from "./ai-architect";
+import aiTeacherRouter from "./ai-teacher";
+import aiRefactorRouter from "./ai-refactor";
+import aiPipelineRouter from "./ai-pipeline";
+import aiAssistantRouter from "./ai-assistant";
+import aiWebSearchRouter from "./ai-websearch";
 
 const router: IRouter = Router();
 
@@ -50,5 +57,12 @@ router.use(playgroundGenerateRouter);
 router.use(codeReviewRouter);
 router.use(aiDebugRouter);
 router.use(aiMemoryRouter);
+router.use(multiAgentRouter);
+router.use(aiArchitectRouter);
+router.use(aiTeacherRouter);
+router.use(aiRefactorRouter);
+router.use(aiPipelineRouter);
+router.use(aiAssistantRouter);
+router.use(aiWebSearchRouter);
 
 export default router;
