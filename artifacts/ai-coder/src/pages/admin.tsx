@@ -9,7 +9,7 @@ import { useAuth } from '@/hooks/use-auth';
 import {
   ArrowLeft, Users, MessageSquare, FolderKanban, FileCode2,
   BarChart3, Search, Shield, Trash2, Loader2, RefreshCw,
-  CheckCircle, XCircle, Calendar, Activity,
+  CheckCircle, XCircle, Calendar, Activity, Clock, UserCheck, UserX,
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
@@ -18,9 +18,17 @@ interface AdminUser {
   name: string;
   email: string;
   isAdmin: boolean;
+  status: string;
   createdAt: string;
   messageCount?: number;
   projectCount?: number;
+}
+
+interface PendingUser {
+  id: number;
+  name: string;
+  email: string;
+  createdAt: string;
 }
 
 interface AdminStats {
@@ -55,18 +63,28 @@ export default function AdminPage() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const [stats, setStats] = useState<AdminStats | null>(null);
+  const [pendingUsers, setPendingUsers] = useState<PendingUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [promoting, setPromoting] = useState<number | null>(null);
+  const [processingRequest, setProcessingRequest] = useState<number | null>(null);
 
   const fetchStats = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/admin/stats', { credentials: 'include' });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to fetch admin stats');
+      const [statsRes, pendingRes] = await Promise.all([
+        fetch('/api/admin/stats', { credentials: 'include' }),
+        fetch('/api/admin/registration-requests', { credentials: 'include' }),
+      ]);
+      const data = await statsRes.json();
+      if (!statsRes.ok) throw new Error(data.error || 'Failed to fetch admin stats');
       setStats(data);
+
+      if (pendingRes.ok) {
+        const pending = await pendingRes.json();
+        setPendingUsers(pending);
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -82,6 +100,37 @@ export default function AdminPage() {
     }
     fetchStats();
   }, [user]);
+
+  const approveUser = async (userId: number) => {
+    setProcessingRequest(userId);
+    try {
+      const res = await fetch(`/api/admin/registration-requests/${userId}/approve`, {
+        method: 'PUT',
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error('Failed to approve user');
+      await fetchStats();
+    } catch {
+    } finally {
+      setProcessingRequest(null);
+    }
+  };
+
+  const rejectUser = async (userId: number) => {
+    if (!confirm('Are you sure you want to reject this registration request? This will delete the account.')) return;
+    setProcessingRequest(userId);
+    try {
+      const res = await fetch(`/api/admin/registration-requests/${userId}/reject`, {
+        method: 'PUT',
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error('Failed to reject user');
+      await fetchStats();
+    } catch {
+    } finally {
+      setProcessingRequest(null);
+    }
+  };
 
   const toggleAdmin = async (userId: number, makeAdmin: boolean) => {
     setPromoting(userId);
@@ -113,8 +162,9 @@ export default function AdminPage() {
   };
 
   const filteredUsers = stats?.users.filter(u =>
-    u.name.toLowerCase().includes(search.toLowerCase()) ||
-    u.email.toLowerCase().includes(search.toLowerCase())
+    (u.status === 'approved' || !u.status) &&
+    (u.name.toLowerCase().includes(search.toLowerCase()) ||
+    u.email.toLowerCase().includes(search.toLowerCase()))
   ) ?? [];
 
   if (!user?.isAdmin) {
@@ -141,6 +191,11 @@ export default function AdminPage() {
         <h1 className="text-lg font-semibold flex items-center gap-2">
           <Shield className="w-5 h-5 text-primary" /> Admin Dashboard
         </h1>
+        {pendingUsers.length > 0 && (
+          <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/25 text-xs">
+            {pendingUsers.length} pending
+          </Badge>
+        )}
         <div className="ml-auto">
           <Button variant="ghost" size="sm" onClick={fetchStats} disabled={loading} className="gap-2">
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
@@ -156,6 +211,81 @@ export default function AdminPage() {
         )}
 
         {error && <div className="text-center text-destructive py-12">{error}</div>}
+
+        {/* ── Registration Requests ── */}
+        {!loading && (
+          <Card className={pendingUsers.length > 0 ? 'border-amber-500/30 bg-amber-500/3' : ''}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Clock className="w-4 h-4 text-amber-400" />
+                Registration Requests
+                {pendingUsers.length > 0 && (
+                  <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/25 text-xs ml-1">
+                    {pendingUsers.length} pending
+                  </Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {pendingUsers.length === 0 ? (
+                <div className="flex items-center gap-3 py-6 justify-center text-muted-foreground">
+                  <UserCheck className="w-5 h-5 opacity-40" />
+                  <span className="text-sm">No pending registration requests</span>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {pendingUsers.map(u => (
+                    <div
+                      key={u.id}
+                      className="flex items-center gap-3 p-3 rounded-lg border border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/8 transition-colors"
+                    >
+                      <div className="w-9 h-9 rounded-full bg-amber-500/15 flex items-center justify-center text-amber-400 font-bold text-sm shrink-0">
+                        {u.name[0]?.toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium truncate">{u.name}</span>
+                          <Badge variant="outline" className="text-[10px] h-4 px-1.5 text-amber-400 border-amber-500/30">Pending</Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground truncate">{u.email}</p>
+                        <p className="text-[10px] text-muted-foreground/60 flex items-center gap-1 mt-0.5">
+                          <Calendar className="w-2.5 h-2.5" />
+                          Requested {new Date(u.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 gap-1"
+                          disabled={processingRequest === u.id}
+                          onClick={() => approveUser(u.id)}
+                        >
+                          {processingRequest === u.id
+                            ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            : <UserCheck className="w-3.5 h-3.5" />}
+                          Approve
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs text-destructive hover:text-destructive hover:bg-destructive/10 gap-1"
+                          disabled={processingRequest === u.id}
+                          onClick={() => rejectUser(u.id)}
+                        >
+                          {processingRequest === u.id
+                            ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            : <UserX className="w-3.5 h-3.5" />}
+                          Reject
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {stats && (
           <>
