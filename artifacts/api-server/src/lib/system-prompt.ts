@@ -6105,6 +6105,909 @@ LANGUAGE SELECTION GUIDE:
 → Enterprise Java shop: Kotlin + Spring Boot
 → Blockchain / smart contracts: Solidity (EVM) or Rust (Solana)
 → Scientific computing / academia: Python (numpy, scipy, jupyter)
+
+═══════════════════════════════════════
+ADVANCED CSS & ANIMATION MASTERY
+═══════════════════════════════════════
+CSS ARCHITECTURE:
+• BEM (Block Element Modifier): .card, .card__header, .card--featured — clear hierarchy, no specificity wars
+• CUBE CSS: Composition, Utility, Block, Exception — combines utility-first with component thinking
+• CSS Modules: locally scoped class names — no global namespace pollution, works with Vite and webpack
+• Tailwind CSS utility-first: atomic classes composing into components — fast, consistent, zero unused CSS in prod
+• CSS-in-JS (Styled Components, Emotion): dynamic styles based on props — great DX, runtime cost
+• Vanilla Extract: zero-runtime CSS-in-JS — type-safe, compiled to static CSS at build time
+• Open Props: design token system as CSS custom properties — community-maintained system
+
+LAYOUT SYSTEMS:
+• CSS Grid: two-dimensional layouts — use for page-level structure, card grids, complex UI regions
+• Flexbox: one-dimensional layouts — use for component-level alignment, navigation bars, form rows
+• Subgrid: child elements participate in parent grid — enables aligned columns across cards
+• container queries: @container — style components based on their container size, not the viewport
+• :has() selector: style a parent based on its children — the "parent selector" CSS finally has
+• aspect-ratio: maintain proportions without padding hack — aspect-ratio: 16/9
+• min(), max(), clamp(): responsive values without media queries — clamp(1rem, 2.5vw, 2rem)
+
+CSS CUSTOM PROPERTIES (VARIABLES):
+• Scope variables to components: .card { --card-bg: white; } — no global conflicts
+• Fallback values: var(--color-primary, #3b82f6) — safe defaults when variable is unset
+• JavaScript can set custom properties: element.style.setProperty('--progress', value)
+• Use variables for: colors, spacing, border-radius, shadows, transitions — not for structural values
+• Dark mode with variables: :root { --bg: white } @media (prefers-color-scheme: dark) { :root { --bg: #1a1a1a } }
+• Variables are inherited: set on :root for global, override on component for local
+
+ANIMATION DEEP DIVE:
+• @keyframes: define animation stages — from/to or 0%/50%/100% with any CSS properties
+• animation shorthand: name duration easing delay iteration-count direction fill-mode
+• Transform functions: translate(), rotate(), scale(), skew() — composable, GPU-accelerated
+• will-change: transform — hint to browser to promote element to its own compositor layer (use sparingly)
+• animation-timeline: scroll() — scroll-driven animations without JavaScript (new, well-supported)
+• View Transitions API: document.startViewTransition(() => update()) — animated page transitions natively
+• CSS spring animations: linear() easing function with many stops — approximate spring physics
+• Web Animations API (WAAPI): Element.animate() — JavaScript control over CSS animations, better than requestAnimationFrame for many cases
+• Framer Motion: declarative React animations — layout animations, presence animations, drag, scroll
+• GSAP: the professional animation library — timelines, ScrollTrigger, morphing, 3D — nothing else comes close for complex animations
+• Lottie: play After Effects animations as JSON — designers export, developers play — format: .lottie or .json
+
+RESPONSIVE DESIGN MODERN APPROACH:
+• Mobile-first: write base styles for mobile, add complexity for larger screens
+• Fluid typography: font-size: clamp(1rem, 2.5vw, 1.5rem) — scales smoothly between breakpoints
+• Fluid spacing: gap: clamp(1rem, 3vw, 3rem) — removes most breakpoint-specific rules
+• Intrinsic web design: let content determine layout, not pixel breakpoints
+• Logical properties: margin-inline, padding-block, border-inline-start — RTL-aware layout
+• Modern breakpoints: sm (640), md (768), lg (1024), xl (1280), 2xl (1536) — Tailwind defaults are good
+• No magic pixel breakpoints: add breakpoints where the design breaks, not at device sizes
+
+═══════════════════════════════════════
+WEBPACK & BUILD TOOLS DEEP DIVE
+═══════════════════════════════════════
+VITE INTERNALS:
+• Dev server: Vite serves ES modules natively — no bundling, instant start regardless of project size
+• HMR (Hot Module Replacement): replaces modules in-place without full reload — preserves component state
+• Pre-bundling: Vite uses esbuild to pre-bundle node_modules — CJS → ESM, combines small modules
+• Production: Rollup for production bundling — tree-shaking, code splitting, chunk optimization
+• vite.config.ts: server.host, server.port, resolve.alias, build.rollupOptions.output.manualChunks
+• manualChunks: split vendor chunks explicitly — vendor chunk cached across deploys
+• Dynamic import hints: /* @vite-ignore */ to skip analysis, /* @vite-chunk-name: "myChunk" */ for naming
+• Vite plugins: transformIndex, configureServer, buildStart hooks — extend Vite behavior
+• Environment variables: import.meta.env.VITE_* for client-side env vars — never expose secrets
+
+WEBPACK:
+• Entry points: multiple entries for MPA — each produces a separate bundle
+• Loaders: transform non-JS files (CSS, images, TypeScript) — babel-loader, css-loader, ts-loader
+• Plugins: HtmlWebpackPlugin, MiniCssExtractPlugin, DefinePlugin — modify the output
+• Optimization: splitChunks — split vendor from app code, split by route
+• Module federation: share code between micro-frontends at runtime — no npm publish required
+• Tree shaking: mark packages as side-effect-free in package.json — enables dead code elimination
+• Source maps: devtool: 'source-map' for production debugging, 'eval-source-map' for development
+• Cache: filesystem cache in webpack 5 — dramatically speeds up rebuilds (webpack.config.cache)
+
+ESBUILD & SWC:
+• esbuild: 10-100x faster than webpack — written in Go, parallel by default — use for server bundles
+• SWC: Rust-based JS/TS transpiler — replaces Babel in Next.js and Vite — same transforms, much faster
+• Rollup: the best for libraries — tree-shaking, multiple output formats (ESM, CJS, IIFE) in one build
+• Turbopack: Rust-based webpack replacement (Vercel) — incremental bundling, used in Next.js dev server
+• Bun: JavaScript runtime + bundler + package manager — fastest all-in-one, drop-in Node.js alternative
+
+TREE SHAKING RULES:
+• Use named exports, not default exports for tree-shakeable libraries
+• Avoid side effects in module scope — they prevent dead code elimination
+• Mark packages as pure in package.json: "sideEffects": false or list specific files with side effects
+• Avoid re-exporting everything from an index: export * from './all' — makes tree-shaking impossible for bundlers
+• Dynamic imports are always separate chunks — they can't be tree-shaken into the main bundle
+
+═══════════════════════════════════════
+REACT QUERY / TANSTACK QUERY MASTERY
+═══════════════════════════════════════
+CORE CONCEPTS:
+• Server state ≠ UI state: server state is async, stale, shared — manage it separately from local UI state
+• Query keys: ['todos', userId, { filter }] — array of primitives, objects that uniquely identify the query
+• Automatic caching: queries are cached by key — refetch when stale, background update when window refocuses
+• staleTime: how long data is considered fresh (no refetch) — default 0ms, set higher for stable data
+• gcTime (formerly cacheTime): how long inactive queries stay in cache — default 5 minutes
+• Query invalidation: queryClient.invalidateQueries({ queryKey: ['todos'] }) — force refetch after mutations
+• Optimistic updates: update cache immediately, revert on mutation error — instant perceived performance
+
+QUERY PATTERNS:
+• Dependent queries: enabled: !!userId — don't fetch until prerequisite data is available
+• Parallel queries: useQueries([{queryKey, queryFn}, ...]) — fire multiple queries simultaneously
+• Infinite queries: useInfiniteQuery — paginate and accumulate data, getNextPageParam extracts cursor
+• Prefetching: queryClient.prefetchQuery on hover/focus — preload data before user navigates
+• Query selectors: select: (data) => transform(data) — transform/filter data without re-rendering on unchanged derived value
+• Placeholder data: placeholderData: previousData — show previous page data while new page loads (no loading flash)
+• Initial data: initialData from SSR/cache — show immediately without loading state
+
+MUTATION PATTERNS:
+• useMutation: for CUD operations — mutate(variables), onSuccess, onError, onSettled callbacks
+• Mutation state: isPending, isSuccess, isError, data, error — drive UI feedback
+• onSuccess invalidation: invalidate related queries on success — keep cache consistent
+• Retry: mutations don't retry by default (unlike queries) — configure retry: false for UX consistency
+• Mutation queuing: mutations are not queued — calling mutate multiple times fires multiple requests
+• Global error handling: QueryClient defaultOptions.mutations.onError — catch all mutation errors centrally
+
+PERFORMANCE:
+• Context.Consumer renders on every state change — QueryClientProvider at root is fine, it's stable
+• notifyOnChangeProps: only re-render when specific query properties change
+• Structural sharing: TanStack Query deep-compares results — no re-render if data is deeply equal
+• Suspense mode: suspense: true — use with React Suspense for declarative loading states
+
+═══════════════════════════════════════
+ZUSTAND & CLIENT STATE MANAGEMENT
+═══════════════════════════════════════
+ZUSTAND PATTERNS:
+• Create stores with create(): const useStore = create((set, get) => ({ count: 0, increment: () => set(s => ({ count: s.count + 1 })) }))
+• Slice pattern: split large stores into slices, combine with spread — keeps files manageable
+• Persist middleware: persist(store, { name: 'storage-key' }) — localStorage/sessionStorage persistence
+• Immer middleware: produce(state, draft => { draft.nested.value = 42 }) — mutable-style immutable updates
+• Subscribe: useStore.subscribe(selector, callback) — side effects outside React without re-rendering
+• getState(): zustand.getState() — read state outside components (in event listeners, utils)
+• Devtools middleware: devtools(store) — Redux DevTools integration, time-travel debugging
+• Atomic selectors: const count = useStore(s => s.count) — subscribe only to what you use, not entire store
+
+JOTAI PATTERNS:
+• Atoms are the unit: atom(initialValue) — primitive state building block
+• Derived atoms: atom(get => get(countAtom) * 2) — synchronous or async derived state
+• Async atoms: atom(async get => await fetch(...)) — Suspense-compatible async state
+• atomFamily: parameterize atoms — atomFamily((id) => atom(null)) for per-entity state
+• Write-only atoms: atom(null, (get, set, payload) => {...}) — action atoms
+• Jotai DevTools: integrate with Redux DevTools — inspect atom values
+
+WHEN TO USE WHAT:
+→ Local component state: useState (simplest, always start here)
+→ Shared state between siblings: lift to common parent
+→ Widely shared UI state (theme, modal open): useContext or Zustand
+→ Complex derived state: Jotai or Zustand with selectors
+→ Server/async state: TanStack Query (never manage loading/error manually)
+→ Form state: React Hook Form (never useState for forms)
+→ URL state: search params via useSearchParams (shareable, bookmarkable)
+
+═══════════════════════════════════════
+REACT HOOK FORM MASTERY
+═══════════════════════════════════════
+CORE CONCEPTS:
+• RHF uses uncontrolled inputs by default — no re-render per keystroke, massive performance improvement
+• register: connects input to form — {...register('email', { required: true, pattern: /.../ })}
+• handleSubmit: wraps submit handler — validates before calling your function, prevents double-submit
+• formState: { errors, isSubmitting, isDirty, isValid, touchedFields } — all form state in one object
+• watch: subscribe to field values — use sparingly, triggers re-renders on change
+• setValue: programmatically set field value — useful for controlled external UI components
+• reset: reset form to default values — after submit, or when loading external data
+
+VALIDATION PATTERNS:
+• Built-in rules: required, min, max, minLength, maxLength, pattern, validate
+• Custom validate: validate: { positive: v => v > 0 || 'Must be positive' } — multiple validators
+• Zod integration: @hookform/resolvers/zod — zodResolver(schema) — single source of truth for types + validation
+• Yup/Joi also supported: swap resolver without changing form code
+• Async validation: validate: async (v) => await checkEmailExists(v) — server-side uniqueness check
+• Trigger: trigger('fieldName') — programmatically run validation on demand
+
+ADVANCED PATTERNS:
+• useFieldArray: dynamic lists of fields — append, remove, move, insert with proper key management
+• Controller: wrap external controlled components (Select, DatePicker, custom UI) — bridges RHF with controlled components
+• useFormContext: share form context without prop drilling — wrap with FormProvider
+• Form composition: split complex forms into sections, each as a separate component using useFormContext
+• Nested objects: register('address.street') — RHF handles dot-notation nesting automatically
+• Array fields: register('tags.0.name') — index-based access in arrays
+
+═══════════════════════════════════════
+GRAPHQL CLIENT PATTERNS
+═══════════════════════════════════════
+APOLLO CLIENT:
+• InMemoryCache: normalized cache — entities stored by __typename:id, automatic deduplication
+• Queries: useQuery(GET_TODOS) — loading, error, data — automatically cached and deduplicated
+• Mutations: useMutation(CREATE_TODO) — returns [mutate, { loading, error, data }]
+• Cache updates after mutation: update option or refetchQueries — keep UI consistent
+• Optimistic response: optimisticResponse field — show predicted result before server confirms
+• Fragments: reusable field selections — collocate data requirements with components
+• Apollo DevTools: inspect cache, run queries, view active queries — essential for debugging
+• Polling: pollInterval: 5000 — refetch every 5 seconds for quasi-real-time data
+
+URQL:
+• Lighter than Apollo — document caching (simpler) or normalized caching with @urql/exchange-graphcache
+• Exchanges: composable middleware — auth, retry, subscriptions — like Express middleware for GraphQL
+• useQuery, useMutation, useSubscription — same patterns as Apollo with less boilerplate
+• Better for smaller bundles — Apollo Client is ~30KB, urql ~7KB
+
+CODE GENERATION:
+• @graphql-codegen/cli: generate types and hooks from schema + operations — type-safe queries
+• graphql.config.yaml: schema URL, documents glob pattern, generates section
+• Generated hooks: useGetTodosQuery() with fully typed data — no manual type writing
+• Fragment colocation: generate fragment types alongside components that define them
+• Watch mode: --watch flag — regenerate on schema or operation changes during development
+
+═══════════════════════════════════════
+WEB PERFORMANCE TESTING
+═══════════════════════════════════════
+LIGHTHOUSE & CORE WEB VITALS:
+• Run Lighthouse in CI: lighthouse-ci — fail PRs that regress performance scores
+• Field data vs lab data: Lighthouse is lab data — Chrome User Experience Report (CrUX) is field data
+• PageSpeed Insights: combines Lighthouse lab + CrUX field data — the most complete view
+• Core Web Vitals in Search Console: real-user data per URL — identify pages needing work
+• web-vitals npm package: measure CWV in JavaScript, send to analytics
+
+PERFORMANCE BUDGETS:
+• Set budgets per metric: LCP < 2.5s, INP < 200ms, CLS < 0.1, bundle < 200KB gzipped
+• Enforce in CI: Lighthouse CI budget.json, webpack performance hints, bundlesize
+• Regression alerts: if a metric degrades, fail the build — never ship a performance regression silently
+• Synthetic monitoring: Calibre, SpeedCurve — automated Lighthouse runs on schedule, trend graphs
+
+PROFILING TOOLS:
+• Chrome DevTools Performance tab: record and analyze runtime performance — flame chart, memory, layers
+• React DevTools Profiler: identify which components re-render and why — look for unexpected re-renders
+• Why Did You Render (wdyr): logs unexpected React re-renders during development
+• PerformanceObserver API: measure custom metrics — mark start, measure end, send to analytics
+• User Timing API: performance.mark() / performance.measure() — instrument custom code paths
+• Long Tasks API: PerformanceObserver entry type 'longtask' — detect tasks blocking the main thread > 50ms
+
+LOAD TESTING:
+• k6: modern load testing in JavaScript — write test scenarios, run in CI or cloud
+• Artillery: YAML-based load testing — good for HTTP and WebSocket testing
+• Locust: Python-based distributed load testing — define user behavior as Python classes
+• Apache JMeter: GUI and CLI load testing — the enterprise standard, steep learning curve
+• Realistic scenarios: test with production-like data, realistic user flows — not just GET /
+• Ramp-up profiles: start low, increase to target, sustain — find the breaking point gradually
+• Monitor during load test: watch server metrics, DB query times, error rates in real time
+
+═══════════════════════════════════════
+SERVERLESS & EDGE FUNCTIONS DEEP DIVE
+═══════════════════════════════════════
+AWS LAMBDA ADVANCED:
+• Lambda function URLs: HTTPS endpoint without API Gateway — simpler for single-function APIs
+• Lambda extensions: run monitoring agents alongside your function code (Datadog, New Relic)
+• Provisioned concurrency: keep N instances warm — eliminates cold starts for latency-sensitive functions
+• Lambda layers: shared code and dependencies — referenced across functions, reduces deployment size
+• SnapStart (Java): snapshot initialized Lambda — near-zero cold start for Java functions
+• Lambda@Edge: run at CloudFront edge locations — latency < 1ms for redirects and auth checks
+• Event source mapping: Lambda triggered by SQS, Kinesis, DynamoDB streams — batch processing
+• Destinations: on success/failure route to SQS, SNS, Lambda, EventBridge — event-driven pipelines
+• Concurrency limits: account-level and per-function — reserve concurrency to protect downstream
+• Cost: charged per 1ms of execution + per invocation — optimize memory allocation (more RAM = faster = cheaper)
+
+CLOUDFLARE WORKERS:
+• V8 isolates: no containers, no cold starts — starts in < 1ms
+• Service Bindings: call another Worker as a function — zero-latency, no HTTP overhead
+• KV: eventually consistent key-value store — reads from nearest PoP, writes propagate globally in ~60s
+• R2: S3-compatible object storage at the edge — zero egress fees
+• Durable Objects: strongly consistent stateful edge objects — WebSocket server, rate limiter, CRDT
+• D1: SQLite at the edge — run SQL queries in your Worker — not for high write throughput
+• Queues: reliable message queue — Worker producers, Worker consumers, guaranteed delivery
+• Worker Cron Triggers: scheduled Workers — replace Lambda scheduled events at the edge
+• wrangler: CLI for deploying, testing locally (miniflare), tailing logs
+
+VERCEL EDGE RUNTIME:
+• Edge Middleware: intercept and rewrite requests before the page renders — auth, redirects, A/B testing
+• Edge Functions: deployed globally, < 1ms startup — limited Node.js compatibility (subset of Web APIs)
+• Edge Config: ultra-low latency configuration reads — < 1ms for feature flags, A/B assignments
+• Fluid Compute: serverless functions that can stream responses — eliminates cold start perception
+• ISR at the edge: stale-while-revalidate served from 100+ edge locations — global cache invalidation
+
+═══════════════════════════════════════
+POSTGRESQL ADVANCED
+═══════════════════════════════════════
+ADVANCED INDEXING:
+• Expression indexes: CREATE INDEX ON users (LOWER(email)) — index on computed values
+• Partial indexes: CREATE INDEX ON orders (created_at) WHERE status = 'pending' — index subset of rows
+• Covering indexes with INCLUDE: avoid heap fetch for covered queries
+• Index-only scans: all needed columns in index — fastest possible read, no table access
+• Multi-column indexes: column order matters — left-prefix rule, most selective column first
+• BRIN indexes: Block Range INdex — extremely small index for naturally ordered data (timestamps)
+• GIN indexes: for arrays, JSONB, full-text search — inverted index structure
+• Concurrent index creation: CREATE INDEX CONCURRENTLY — no table lock, takes longer but zero downtime
+
+JSONB POWER USER:
+• Store semi-structured data: attributes, metadata, settings — without schema migrations for every new field
+• Index JSONB paths: CREATE INDEX ON products USING GIN (attributes) — fast searches into JSONB
+• Operators: -> (JSON), ->> (text), #> (path), #>> (path as text), @> (contains), <@ (contained by)
+• jsonb_set: update nested keys without replacing entire document
+• jsonb_agg: aggregate rows into a JSON array — for nested result sets
+• Row to JSON: row_to_json(t) or jsonb_build_object('key', value) — construct JSON in SQL
+• JSONB vs JSON: always use JSONB — stored binary, indexed, faster for everything except insertion order
+
+PARTITIONING:
+• Range partitioning: by date range — partition per month/year — time-series data, logs, events
+• List partitioning: by discrete values — partition per region, per status
+• Hash partitioning: by hash of key — even distribution when no natural partition column
+• Declarative partitioning (Postgres 10+): CREATE TABLE orders PARTITION BY RANGE (created_at)
+• Partition pruning: WHERE created_at > '2025-01-01' — query planner skips older partitions automatically
+• Attach/Detach partitions: zero-downtime archival — detach old partition, archive to cold storage, drop
+• Indexes on partitioned tables: created on parent, automatically apply to all partitions
+
+REPLICATION & HIGH AVAILABILITY:
+• Streaming replication: primary sends WAL to standbys in real time — synchronous or asynchronous
+• Logical replication: replicate specific tables — for cross-version upgrades, partial replication
+• Patroni: HA manager for PostgreSQL — automatic failover using etcd/consul/ZooKeeper
+• PgBouncer: connection pooler — transaction mode for stateless apps, session mode for prepared statements
+• pg_stat_statements: track slow queries — install extension, query pg_stat_statements view
+• Autovacuum tuning: increase autovacuum_vacuum_scale_factor for high-write tables — prevent table bloat
+• WAL archiving: continuous archival to S3 — enables point-in-time recovery (PITR)
+
+═══════════════════════════════════════
+SYSTEM DESIGN DEEP PATTERNS
+═══════════════════════════════════════
+URL SHORTENER (CLASSIC):
+• Hash function: take long URL, generate 7-char base62 string — bijective encoding of auto-increment ID
+• Redirect: 301 (permanent, browser caches) vs 302 (temporary, count every click) — choose based on analytics need
+• Scale read: cache URL → long URL mapping in Redis — 99% cache hit rate expected
+• Scale write: single DB is fine — URL creation is rare vs reads
+• Custom aliases: user provides slug — check uniqueness, store with flag
+• Analytics: log redirect events to Kafka → ClickHouse for click counts, geographic distribution, referrers
+• Expiry: store TTL, background job or DB trigger to clean up expired URLs
+
+RATE LIMITER DESIGN:
+• Token bucket: most common — tokens refill at rate R, max B tokens — burst-friendly
+• Fixed window: simplest — INCR key:window, EXPIRE — has burst at boundary problem
+• Sliding window log: store timestamps in sorted set — accurate, O(n) memory
+• Sliding window counter: blend fixed windows — approximation with low memory
+• Distributed: Redis for state — Lua script for atomic check-and-decrement
+• Response headers: X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset, Retry-After
+• Tiers: different limits per user tier — free (100/min), paid (10000/min)
+
+NOTIFICATION SYSTEM DESIGN:
+• Fanout on write: when user posts, write to all followers' feeds — fast read, slow write — for celebrities with many followers this is impractical
+• Fanout on read: compute feed at read time — slow read, fast write — for high-follower accounts
+• Hybrid: fanout on write for normal users, fanout on read for celebrities (>10k followers)
+• Message queue: decouple notification generation from delivery — Kafka or SQS
+• Delivery workers: per-channel workers (email, push, SMS, in-app) — scale independently
+• User preferences: respect notification preferences before sending — filter at generation time
+• Deduplication: idempotency key per notification — prevent duplicate sends on retry
+
+TYPEAHEAD / AUTOCOMPLETE:
+• Trie structure: prefix tree — O(m) search where m is prefix length
+• Trie in Redis: sorted sets per prefix — ZADD prefix:he "hello" → ZRANGE to get completions
+• Top-K: store only top 10 suggestions per prefix — precomputed from query logs
+• Personalization: blend global popular with user's recent history
+• Typo tolerance: Elasticsearch fuzzy matching or edit distance computation
+• Debounce: 150-300ms on frontend — don't fire on every keystroke
+• Cache: prefix → suggestions is highly cacheable — TTL of minutes is fine
+
+CHAT SYSTEM DESIGN:
+• WebSocket: persistent bidirectional connection — required for real-time messaging
+• Chat service: manages WebSocket connections, routes messages to recipients
+• Message storage: append-only table — never update or delete messages (soft delete with flag)
+• Fan-out: when A sends to B, find B's connection server, push via WebSocket
+• Group chat: find all members, fan out to each member's connection server
+• Online presence: Redis HSET with heartbeat — expire key = offline
+• Message ordering: Snowflake ID (timestamp + machine ID + sequence) — globally sortable unique IDs
+• Message delivery guarantee: persist to DB first, then push WebSocket — no lost messages
+
+═══════════════════════════════════════
+KUBERNETES ADVANCED
+═══════════════════════════════════════
+WORKLOAD RESOURCES:
+• Deployment: stateless apps — rolling updates, rollback, replica management
+• StatefulSet: stateful apps (databases) — stable network identity, ordered pod management, persistent volumes
+• DaemonSet: one pod per node — log collectors, monitoring agents, node-level services
+• Job: run-to-completion tasks — batch processing, DB migrations
+• CronJob: scheduled Jobs — reports, cleanup, maintenance tasks
+• ReplicaSet: low-level (don't use directly — use Deployments instead)
+
+NETWORKING:
+• Service types: ClusterIP (internal only), NodePort (external via node IP), LoadBalancer (cloud LB), ExternalName (DNS alias)
+• Ingress: HTTP routing rules — path-based or host-based routing to Services
+• Ingress controllers: nginx-ingress, Traefik, AWS ALB Ingress — the controller implements Ingress resources
+• Network Policies: whitelist-based pod-to-pod communication — deny all by default, allow specific
+• Service Mesh (Istio): mTLS between all services, traffic policies, observability — adds sidecar proxy to every pod
+• CoreDNS: cluster DNS — resolves service names to ClusterIP — service.namespace.svc.cluster.local
+
+STORAGE:
+• PersistentVolume (PV): cluster-level storage resource — provisioned by admin or dynamically
+• PersistentVolumeClaim (PVC): pod requests for storage — bound to a PV
+• StorageClass: defines the provisioner — AWS EBS, GCP Persistent Disk, NFS
+• volumeClaimTemplates in StatefulSet: each pod gets its own PVC — essential for DB pods
+• ConfigMap as volume: mount configuration files into pods — update ConfigMap, pods get new config on restart
+• Secret as volume: mount secrets as files — more secure than environment variables (no env inspection)
+
+RESOURCE MANAGEMENT:
+• requests: minimum guaranteed resources — pod won't be scheduled if not available
+• limits: maximum allowed resources — exceeded = OOMKilled (memory) or throttled (CPU)
+• QoS classes: Guaranteed (req = limit), Burstable (req < limit), BestEffort (no req/limit) — eviction order reversed
+• LimitRange: default requests/limits per namespace — prevent pods without resource specs
+• ResourceQuota: total resource cap per namespace — prevent one team from consuming all cluster resources
+• Vertical Pod Autoscaler (VPA): automatically adjusts requests/limits based on usage — can't change while pod runs
+• Cluster Autoscaler: add/remove nodes based on pending pods — works with cloud provider node groups
+
+SECURITY:
+• Pod Security Admission: enforce security standards (restricted, baseline, privileged) per namespace
+• ServiceAccount: identity for pods — create dedicated SA per app, not default
+• RBAC: Role (namespace-scoped) and ClusterRole — bind to ServiceAccounts, Users, Groups
+• Secrets encryption at rest: encrypt etcd with KMS — default etcd is unencrypted
+• Image scanning: Trivy in CI — block vulnerable base images before they reach production
+• Falco: runtime security — detect unexpected syscalls, privilege escalation, suspicious behavior in pods
+
+═══════════════════════════════════════
+TERRAFORM ADVANCED
+═══════════════════════════════════════
+MODULES:
+• Modules are reusable units: module "vpc" { source = "./modules/vpc" } — DRY infrastructure
+• Input variables: variable "instance_type" { type = string, default = "t3.micro" }
+• Output values: output "vpc_id" { value = aws_vpc.main.id } — expose values to parent module
+• Module versioning: source = "terraform-aws-modules/vpc/aws" version = "~> 5.0" — pin module versions
+• Private registries: GitLab, Terraform Cloud — host internal modules
+• Module composition: build complex infrastructure by composing simple modules
+
+WORKSPACES & ENVIRONMENTS:
+• Workspaces: terraform workspace new staging — separate state per environment in same config
+• Variable files: terraform apply -var-file="prod.tfvars" — environment-specific values
+• Remote state: backend "s3" — state in S3 + DynamoDB locking — never local state in teams
+• State isolation: separate state files per environment — staging change can't corrupt prod state
+• Terragrunt: DRY wrapper for Terraform — keeps DRY across multiple modules and environments
+
+ADVANCED PATTERNS:
+• Data sources: data "aws_ami" "ubuntu" — read existing resources without managing them
+• Dynamic blocks: dynamic "ingress" { for_each = var.ports content {...} } — generate repeated blocks from lists
+• count vs for_each: use for_each with maps for stable resource addresses — count causes index shifting on deletion
+• depends_on: explicit dependency when Terraform can't infer from references
+• lifecycle: create_before_destroy, prevent_destroy, ignore_changes — fine-tune resource management
+• Moved blocks: moved { from = aws_s3_bucket.old to = aws_s3_bucket.new } — rename without destroy/recreate
+• Checks and assertions: check { assert { condition = ... error_message = "..." } } — validate infrastructure invariants
+
+═══════════════════════════════════════
+OBSERVABILITY DEEP DIVE
+═══════════════════════════════════════
+OPENTELEMETRY:
+• The standard for observability instrumentation — vendor-neutral, replaces proprietary SDKs
+• Three signals: traces (distributed requests), metrics (numeric measurements), logs (events)
+• Collector: OTel Collector receives, processes, and exports signals to any backend
+• Auto-instrumentation: Node.js require('@opentelemetry/auto-instrumentations-node/register') — instruments express, pg, redis automatically
+• Manual spans: tracer.startActiveSpan('db.query', span => { ... span.end() })
+• Span attributes: span.setAttributes({ 'db.query': sql, 'user.id': userId }) — rich context for debugging
+• Baggage: propagate key-value pairs across service boundaries — pass request ID through all services
+• Sampling: trace 10% of requests in production — tail-based sampling keeps 100% of error traces
+
+METRICS WITH PROMETHEUS:
+• Metric types: Counter (monotonically increasing), Gauge (up/down), Histogram (distribution), Summary
+• Labels: http_requests_total{method="GET", status="200"} — high cardinality labels kill performance
+• Cardinality: never use user IDs or request IDs as labels — use aggregatable dimensions only
+• Recording rules: precompute expensive queries — rate(http_requests_total[5m]) as a recording rule
+• Alerting rules: alert when rate > threshold — PrometheusRule CRD in kubernetes
+• Grafana dashboards: visualize Prometheus metrics — USE/RED dashboards as starting templates
+• Remote write: Prometheus → Grafana Cloud / Thanos / Cortex — long-term storage and multi-region
+
+DISTRIBUTED TRACING:
+• Trace: end-to-end record of a request across all services
+• Span: a single unit of work within a trace — has parent span ID, start/end time, attributes
+• Context propagation: W3C Trace Context headers (traceparent, tracestate) — carried across HTTP and messaging
+• Jaeger / Zipkin: open-source trace storage and visualization
+• Grafana Tempo: scalable trace backend — integrates with Grafana, no indexes = very cheap storage
+• Trace sampling: 100% in dev, 1-10% in prod — use tail-based sampling for error/slow traces
+• Correlation: log trace ID with every log line — jump from log to trace instantly
+
+LOG MANAGEMENT:
+• Structured logging everywhere: JSON lines, machine-parseable — no free-text log parsing
+• Log levels: debug (dev only), info (business events), warn (recoverable), error (needs attention), fatal (process dies)
+• Context propagation in logs: always include requestId, userId, traceId, spanId
+• Centralized logging: Elastic Stack (ELK), Grafana Loki, Datadog, Splunk — don't SSH into servers to read logs
+• Log aggregation: Fluentd, Fluent Bit, Vector — collect from pods/containers, ship to backend
+• Retention policy: 30-90 days hot, archive to cold storage — logs are expensive at volume
+• Never log PII: email, phone, card numbers, SSN — compliance requires it, breach risk enforces it
+• Sampling logs: log 1% of DEBUG lines in production — reduce cost without losing visibility
+
+═══════════════════════════════════════
+ADVANCED TESTING PATTERNS
+═══════════════════════════════════════
+CONTRACT TESTING:
+• Pact: consumer-driven contract testing — consumer defines expected request/response, provider verifies
+• Consumer writes the pact: defines what it needs from the provider — no coordination required
+• Provider verifies: runs pact against real implementation — fails if it doesn't match consumer's expectations
+• Pact Broker: store and version pacts — providers pull latest pacts, verify on every deploy
+• Can-I-Deploy: Pact Broker tool — check if a version is compatible with all consumers before deploying
+• Replaces: mocking third-party services — instead, verify the contract against the real service
+
+MUTATION TESTING:
+• Stryker Mutator: changes your code (flips && to ||, changes > to >=) — tests should fail for each mutation
+• Mutation score: percentage of mutations caught — 80%+ is good, below means your tests aren't asserting enough
+• Surviving mutations: mutations your tests don't catch — reveal missing assertions or untested paths
+• Use on critical modules: authentication, payment, business rules — not every file
+
+FUZZ TESTING:
+• Fuzzing: generate random inputs and look for crashes, exceptions, or wrong behavior
+• Fast-Check: property-based testing for JavaScript — generate arbitrary inputs, verify invariants
+• Hypothesis: Python property-based testing — same concept
+• AFL++, LibFuzzer: C/C++/Rust fuzzing — feed random bytes to functions, find memory bugs
+• What to fuzz: parsers, serializers, validators, cryptographic functions — anything that processes external input
+• Corpus: seed inputs that are known-good — fuzzer mutates them to find edge cases
+
+VISUAL REGRESSION TESTING:
+• Storybook + Chromatic: capture screenshots of stories, compare against baseline — pixel-level diffs
+• Playwright screenshots: page.screenshot() — compare with expect(page).toHaveScreenshot()
+• Percy: cloud visual testing — integrates with any test framework, manages baselines
+• When to approve diffs: intentional design changes — update baseline; unintentional = fix the bug
+• Flakiness: dynamic content (dates, random IDs) causes false positives — mock time, use deterministic data
+
+PERFORMANCE TESTING WITH PLAYWRIGHT:
+• page.metrics(): Chrome DevTools metrics — JS heap size, DOM node count, layout duration
+• Coverage: page.coverage.startJSCoverage() — measure which JS lines ran during a test
+• Performance API: page.evaluate(() => performance.getEntriesByType('navigation')) — LCP, FCP, TTFB
+• Trace viewer: playwright show-trace trace.zip — frame-by-frame rendering analysis
+
+═══════════════════════════════════════
+REAL-TIME SYSTEMS DEEP DIVE
+═══════════════════════════════════════
+WEBSOCKET SERVER ARCHITECTURE:
+• Sticky sessions: users must reconnect to the same server — or use Redis Pub/Sub to fan out
+• Redis Pub/Sub for multi-server: server A receives message, publishes to Redis, all servers subscribe and push to their connected clients
+• Socket.IO: WebSocket + fallback (long polling), rooms, namespaces — the default choice for Node.js real-time
+• ws library: raw WebSocket in Node.js — minimal, use when Socket.IO overhead isn't justified
+• uWebSockets.js: 10x faster than ws — C++ binding, production-grade, used by Discord
+• Connection lifecycle: upgrade HTTP → WebSocket → authenticate → join rooms → handle messages → heartbeat → disconnect
+
+COLLABORATION FEATURES (CRDT):
+• CRDTs (Conflict-free Replicated Data Types): data structures that merge without conflicts
+• Yjs: the most popular JS CRDT — collaborative text editing, shared state, offline-first
+• Quill + Yjs: collaborative rich text editor — used by many "Notion-like" apps
+• Monaco Editor + Yjs: collaborative code editor — VS Code-like with real-time collaboration
+• Automerge: another CRDT library — simpler API, slightly different performance profile
+• Operational Transformation (OT): older approach (Google Docs, Etherpad) — requires a server to serialize operations
+• Awareness: Yjs awareness protocol — share ephemeral state (cursor position, online presence) across peers
+
+SERVER-SENT EVENTS (SSE) DEEP DIVE:
+• Content-Type: text/event-stream — the only required header
+• Event format: data: {json}\n\nevent: typeName\nid: 123\nretry: 3000\n\n
+• Last-Event-ID: browser sends this header on reconnect — server replays missed events
+• Keep-alive: send comment lines (: keep-alive\n\n) every 15s — prevent proxy timeouts
+• SSE vs WebSocket: SSE is one-way (server → client), simpler, works over HTTP/2 multiplexing
+• When to use SSE: notifications, live feeds, AI streaming — when client doesn't need to send data
+
+LONG POLLING (FALLBACK):
+• Client sends request → server holds open until data available or timeout → client immediately reconnects
+• Timeout: server sends empty response after 30s — client reconnects and waits again
+• Last-received ID: client sends last ID in each request — server sends only new events
+• Advantages: works everywhere, no WebSocket support needed — use only as fallback
+
+CONFLICT RESOLUTION PATTERNS:
+• Last-Write-Wins (LWW): last timestamp wins — simplest, loses data in concurrent edits
+• Multi-Version Concurrency Control (MVCC): keep all versions, let user resolve
+• Operational Transform: transform operations relative to concurrent ops — complex, correct
+• CRDT: mathematically guaranteed to merge — the modern approach
+• Versioning: optimistic locking with version number — detect conflicts, return 409, let client resolve
+
+═══════════════════════════════════════
+CACHING ARCHITECTURE PATTERNS
+═══════════════════════════════════════
+MULTI-LAYER CACHING:
+• L1: in-process cache (Node.js Map, Python dict) — nanoseconds, limited to one process
+• L2: shared cache (Redis) — microseconds, shared across processes and servers
+• L3: CDN cache — milliseconds, globally distributed, served before hitting your server
+• L4: browser cache — zero latency, no server involved at all
+• Cache hierarchy: check L1 → miss → check L2 → miss → check L3 → miss → origin
+
+CACHE INVALIDATION STRATEGIES:
+• TTL-based: set expiry, let it expire naturally — simplest, eventual consistency
+• Event-driven: on write, delete/update cached entries — strong consistency, complex dependencies
+• Tag-based: tag cache entries with related IDs (user:123, product:456) — invalidate all tagged entries at once
+• Write-through: update cache on every write — consistent, doubles write cost
+• Write-around: bypass cache on write — cache only populated on read misses
+• Read-through: cache layer fetches from DB on miss — transparent to application code
+
+CACHE STAMPEDE PREVENTION:
+• Probabilistic early expiry: occasionally refresh before TTL expires — spread load
+• Mutex / distributed lock: only one process fetches on miss, others wait — prevents dog-pile
+• Stale-while-revalidate: serve stale content immediately, refresh in background — best UX
+• Cache warming: pre-populate cache on deploy — no cold start for users
+
+CDN CACHING ADVANCED:
+• Surrogate keys / cache tags: Cloudflare Cache Tags, Fastly surrogate keys — purge groups of entries
+• Vary header: Vary: Accept-Encoding, Accept-Language — CDN caches separate versions per variation
+• Edge Side Includes (ESI): compose pages from cached fragments at the CDN edge
+• Prefetch: rel=prefetch hints to CDN — pre-warm cache for next-page navigation
+• Shielding: all CDN edge nodes check one "shield" node before going to origin — reduces origin load dramatically
+
+DATABASE QUERY CACHING:
+• Result set caching: cache entire query result in Redis — fast, easy to implement, hard to invalidate precisely
+• Row-level caching: cache individual rows by ID — fine-grained invalidation on row update
+• Computed value caching: cache expensive aggregate queries — invalidate when underlying data changes
+• Query plan caching: PostgreSQL caches query plans for prepared statements — huge savings for repeated queries
+• ORM-level caching: Hibernate L2 cache, Doctrine cache — application-level, transparent
+
+═══════════════════════════════════════
+FRONTEND ARCHITECTURE PATTERNS
+═══════════════════════════════════════
+MICRO-FRONTENDS:
+• Motivation: independent deployment of frontend features by separate teams
+• Module Federation: Webpack 5 — load remote components at runtime from different deployments
+• iFrame composition: strict isolation — legacy apps, third-party embeds — maximum isolation
+• Single-SPA: framework-agnostic micro-frontend orchestrator — mount/unmount apps based on route
+• Web Components: framework-agnostic — share UI components across micro-frontends
+• Shared state challenge: each micro-frontend has its own state — use CustomEvents or shared Redux store on window
+• Routing: single router for all micro-frontends — consistent back/forward behavior
+• Design system: shared component library in a separate package — consistent UX across teams
+• When NOT to use: small teams, single-product — complexity outweighs benefits
+
+ISLAND ARCHITECTURE:
+• Most of the page is static HTML — only interactive "islands" hydrate with JavaScript
+• Astro: the best framework for island architecture — zero JS by default, opt-in per component
+• Partial hydration: hydrate only interactive components — not the entire page
+• Client directives (Astro): client:load, client:idle, client:visible — when to hydrate each island
+• Performance: dramatically less JavaScript sent to the browser — better initial load, LCP
+• Progressive enhancement: page works without JavaScript — interactive features layer on top
+
+MONOREPO FRONTEND PATTERNS:
+• Shared design system: published to internal npm registry — versioned, changelogs
+• Colocate stories with components: MyComponent.tsx + MyComponent.stories.tsx + MyComponent.test.tsx
+• Shared i18n: translation strings in shared package — single source of truth
+• Build caching: Turborepo or Nx — only rebuild affected packages — CI in seconds not minutes
+• Strict package boundaries: apps can't import from other apps — only from shared lib packages
+• Dependency constraints: lint rules enforce import restrictions — no accidental coupling
+
+DATA FETCHING PATTERNS:
+• Waterfall prevention: fetch data in parallel — Promise.all, parallel route loaders
+• Render-as-you-fetch: start fetch during render, show Suspense fallback, resolve inline
+• Prefetch on intent: fetch on hover, on focus, on mousedown — data ready before click
+• Background refetch: update stale data while serving from cache — TanStack Query staleTime
+• Optimistic UI: show expected result before confirmation — revert on error
+• Streaming SSR: flush HTML progressively — first byte reaches browser before entire page renders
+
+═══════════════════════════════════════
+API SECURITY DEEP DIVE
+═══════════════════════════════════════
+OWASP API SECURITY TOP 10:
+• API1 Broken Object Level Authorization: verify user owns the resource on every request — not just at login
+• API2 Broken Authentication: short-lived tokens, rotate refresh tokens, MFA for sensitive actions
+• API3 Broken Object Property Level Authorization: don't expose fields the user shouldn't see — explicit allowlists
+• API4 Unrestricted Resource Consumption: rate limit, pagination, max page size, timeout all requests
+• API5 Broken Function Level Authorization: separate admin endpoints, verify role on each endpoint
+• API6 Unrestricted Access to Sensitive Business Flows: step-up auth for payments, OTP for account deletion
+• API7 Server Side Request Forgery: validate and allowlist URLs before making server-side HTTP requests
+• API8 Security Misconfiguration: disable debug endpoints in prod, remove unused routes, enforce HTTPS
+• API9 Improper Inventory Management: document all APIs, version and deprecate properly, audit regularly
+• API10 Unsafe API Consumption: validate and sanitize data from third-party APIs — treat as untrusted
+
+RATE LIMITING PER ENDPOINT:
+• Auth endpoints: strictest limits — 5 login attempts per 15 minutes per IP — lockout with CAPTCHA
+• Password reset: 3 per hour per email — prevent enumeration and abuse
+• API key creation: 10 per day per user — prevent automated key generation
+• Expensive operations (search, export): lower limits — protect backend resources
+• Implement at reverse proxy (nginx, Cloudflare) AND application layer — defense in depth
+• Distributed rate limiting: Redis-based — consistent across multiple app servers
+
+REQUEST VALIDATION DEFENSE IN DEPTH:
+• Schema validation: JSON Schema or Zod at the route level — reject malformed requests early
+• Content-Type validation: reject requests without correct Content-Type — prevents content sniffing
+• Size limits: max body size (10MB default), max array length, max string length — prevent DoS
+• Prototype pollution: Object.freeze(Object.prototype) or use Object.create(null) for user-supplied maps
+• Path traversal: normalize and validate file paths — reject ../ sequences
+• Command injection: never shell.exec(userInput) — use spawn with argument arrays
+• XXE (XML External Entity): disable external entity processing in XML parsers
+• ReDoS: validate regex complexity, use timeout for regex evaluation
+
+SENSITIVE DATA EXPOSURE:
+• PII masking in logs: mask email to u***@example.com, card to ****1234 before logging
+• Field-level encryption: encrypt PII columns in DB — decrypt only when needed
+• Data minimization: collect only what's needed — GDPR requires it, less data = less breach risk
+• Response filtering: never return internal IDs, DB row IDs, server paths in API responses
+• Error messages: generic errors to clients — detailed errors to logs only (with correlation ID)
+• Audit logging: who accessed sensitive data, when, from where — required for compliance
+
+═══════════════════════════════════════
+ADVANCED DESIGN PATTERNS
+═══════════════════════════════════════
+DOMAIN-DRIVEN DESIGN (DDD):
+• Ubiquitous language: same terms in code and business conversations — no translation layer
+• Bounded context: a model is only valid within its context — Order in Sales context ≠ Order in Fulfillment context
+• Aggregate: cluster of objects treated as a unit — Order with OrderItems — only the root is accessed from outside
+• Repository: interface for aggregate persistence — OrderRepository.findById, OrderRepository.save
+• Domain events: Order.OrderPlaced, Payment.PaymentProcessed — decouple bounded contexts
+• Value objects: immutable, equality by value — Money(100, 'USD'), Address, EmailAddress
+• Entities: equality by identity — User, Order, Product — have lifecycle, can change state
+• Anti-corruption layer: translate between bounded contexts — prevent foreign model from leaking in
+
+CLEAN ARCHITECTURE (HEXAGONAL):
+• Dependency rule: source code dependencies point inward — inner layers know nothing about outer layers
+• Entities (innermost): business objects and rules — no framework dependencies
+• Use Cases: application business rules — orchestrate entities to achieve a goal
+• Interface Adapters: convert between use case format and external format (controllers, presenters, gateways)
+• Frameworks & Drivers (outermost): Express, PostgreSQL, React — details, easily swappable
+• Dependency Injection: inject dependencies from outer to inner layers — testable without infrastructure
+• Ports and Adapters: port = interface, adapter = implementation — UserRepository port, PostgresUserRepository adapter
+
+EVENT-DRIVEN ARCHITECTURE:
+• Events as facts: "OrderPlaced" happened at a point in time — immutable, append-only
+• Event producers: publish events without knowing consumers — decoupled by design
+• Event consumers: subscribe to events and react — can be added without changing producers
+• Event schema registry: Confluent Schema Registry — enforce schema compatibility
+• Event versioning: add fields (backward compatible), never remove required fields
+• Event sourcing: the event log IS the state — replay events to reconstruct any point-in-time state
+• Snapshots: periodic snapshots of aggregate state — don't replay from the beginning every time
+• Projection: build read models from the event log — different projections for different query patterns
+
+SAGA PATTERN DEEP DIVE:
+• Choreography-based saga: each service publishes events, others react — loose coupling, hard to trace
+• Orchestration-based saga: saga orchestrator tells services what to do — easier to trace, coupling to orchestrator
+• Compensating transactions: undo already-completed steps on failure — cancel order if payment fails
+• Idempotency: saga steps must be safely retryable — check if already done before doing
+• Saga state: persist saga state — resume on orchestrator crash
+• Dead letter queue: failed sagas go to DLQ — manual intervention or automated retry with alerts
+
+CQRS PATTERN:
+• Command: intent to change state — CreateOrderCommand, PlacePaymentCommand
+• Query: request for data — GetOrderQuery, ListOrdersQuery
+• Command handler: validates command, applies to aggregate, publishes events
+• Query handler: reads from read model (denormalized, optimized for reading)
+• Write model: normalized, consistent — optimized for writes
+• Read model: denormalized, pre-computed — optimized for specific query patterns
+• Synchronization: events from write model update read model — eventual consistency
+• Benefits: independently scale reads and writes, optimize each separately
+
+═══════════════════════════════════════
+DEVELOPER PRODUCTIVITY & WORKFLOW
+═══════════════════════════════════════
+GIT ADVANCED:
+• Interactive rebase: git rebase -i HEAD~5 — squash, reword, reorder commits before merging
+• Git bisect: git bisect start; git bisect bad HEAD; git bisect good v1.0 — binary search for regressions
+• Git stash: git stash push -m "WIP: feature" — save unfinished work, stash list to review
+• Worktrees: git worktree add ../feature-branch feature/my-feature — multiple branches checked out simultaneously
+• Reflog: git reflog — find lost commits — git never deletes until GC (30-day grace period)
+• Cherry-pick: git cherry-pick <sha> — apply specific commit to current branch
+• Sparse checkout: git sparse-checkout set src/frontend — checkout only specific directories in monorepos
+• Git hooks: .git/hooks/pre-commit — run linting, tests before every commit; husky manages these in npm projects
+• Conventional commits: commitlint enforces commit message format in CI — enables automated changelogs
+
+PRODUCTIVITY TOOLS:
+• zsh + oh-my-zsh or fish shell: autocomplete, history, plugins — massive terminal productivity
+• fzf: fuzzy finder for shell — CTRL+R for history search, CTRL+T for file search, git checkout with preview
+• ripgrep (rg): faster than grep — use for codebase search in terminal
+• bat: cat with syntax highlighting — replace cat with bat for reading files
+• exa/eza: ls with color, icons, git status — replace ls
+• delta: side-by-side diff with syntax highlighting — replace git diff
+• lazygit: TUI for git — visual staging, commit, branch management in the terminal
+• GitHub CLI (gh): create PRs, review, check CI status from the terminal — no browser needed
+• tmux: terminal multiplexer — sessions survive SSH disconnect, split panes, windows
+
+CODE QUALITY AUTOMATION:
+• Pre-commit hooks: lint-staged + husky — run ESLint/Prettier only on staged files — fast
+• Commitizen: guided commit message creation — ensures conventional commits
+• Danger.js: PR automation — fail if PR is too large, missing tests, missing changelog entry
+• Renovate Bot / Dependabot: automatic dependency update PRs — keep dependencies fresh
+• CodeClimate / SonarQube: continuous code quality metrics — technical debt tracking, duplication detection
+• Snyk: security scanning for dependencies and Docker images — integrates with GitHub Actions
+• GitHub Actions: the default CI for GitHub-hosted repos — extensive marketplace of actions
+
+DEBUGGING MASTERY:
+• console.log with label: console.log('userObj:', { userId, email, role }) — structured, scannable
+• console.table(array): renders arrays/objects as tables in DevTools — much more readable than log
+• debugger statement: drops to DevTools debugger — better than console.log for complex state
+• Conditional breakpoints: right-click breakpoint → edit condition — only breaks when userId === 123
+• Logpoints: right-click line → Add Logpoint — logs without modifying source code
+• Chrome DevTools Network tab: copy as cURL, replay requests, throttle network, inspect WebSockets
+• Chrome DevTools Sources tab: pretty-print minified code, set breakpoints in production (with source maps)
+• Node.js inspector: node --inspect app.js → chrome://inspect — debug server code in Chrome DevTools
+• VS Code debugger: launch.json configurations for Node, React, Python — step through server and client code
+
+═══════════════════════════════════════
+PRODUCT ANALYTICS & EXPERIMENTATION
+═══════════════════════════════════════
+ANALYTICS IMPLEMENTATION:
+• Event tracking: track user actions, not just page views — buttonClicked, formSubmitted, checkoutCompleted
+• Event schema: { event: string, userId: string, properties: object, timestamp: ISO8601, sessionId: string }
+• Segment: customer data platform — collect once, send to any analytics tool (Amplitude, Mixpanel, BigQuery)
+• Amplitude: product analytics — funnels, retention, user paths, cohort analysis
+• Mixpanel: event-based analytics — flexible querying, group analytics for B2B
+• PostHog: open-source product analytics — self-hostable, session recording, feature flags, A/B testing in one tool
+• Google Analytics 4: free, event-based — good for marketing attribution, less powerful for product analytics
+• Privacy: GDPR/CCPA compliance — get consent before tracking, honor opt-out, anonymize IPs
+
+A/B TESTING:
+• Hypothesis: clear "if we do X, we expect Y because Z" — falsifiable, measurable
+• Control and treatment: random assignment, maintain consistency per user (sticky assignment)
+• Statistical significance: p-value < 0.05, power > 80% — calculate sample size before starting
+• Primary metric: one metric to optimize — conversion rate, revenue, retention
+• Guardrail metrics: metrics that must not regress — session length, error rate, load time
+• Minimum detectable effect (MDE): smallest change worth detecting — determines test duration
+• Sequential testing: check results continuously — stops early when significant without inflating p-values (Optimizely, GrowthBook)
+• Segment analysis: check results by user segment — overall winner may lose for specific segments
+
+FUNNEL ANALYSIS:
+• Define the funnel: Landing → Signup → Onboarding → First Value → Habitual Use
+• Drop-off rates: where do most users leave? — fix the highest-impact step first
+• Time to convert: how long between funnel steps? — long gaps indicate friction or confusion
+• Cohort funnels: compare funnel completion by acquisition channel, signup date, user segment
+• Session recordings: watch real users interact with the drop-off step — qualitative insight
+• User interviews: ask users who dropped off why — most valuable and most overlooked
+
+RETENTION ANALYSIS:
+• N-day retention: what % of day-0 users return on day N? — day-1, day-7, day-30
+• Retention curve: flatten it — a curve that never reaches zero means users are staying
+• Activation: the first moment of value — "aha moment" — find it and move users there faster
+• Power users: users who use the product most — interview them, understand what they love
+• Churn prediction: users with declining engagement churn — identify early, intervene with email/push
+• Feature correlation: which features correlate with retention? — prioritize those features in onboarding
+
+═══════════════════════════════════════
+COMPLIANCE & PRIVACY ENGINEERING
+═══════════════════════════════════════
+GDPR IMPLEMENTATION:
+• Legal basis: identify lawful basis for every data collection — consent, legitimate interest, contract, legal obligation
+• Consent: explicit, granular, revocable — never pre-ticked boxes, separate from T&C
+• Right to erasure: DELETE all personal data on request — including backups (mark deleted, purge in backup window)
+• Right to portability: export user data in machine-readable format — JSON or CSV download
+• Data minimization: don't collect what you don't need — every field is a liability
+• Privacy by design: build privacy in from the start — not bolted on at the end
+• Data retention: define and enforce retention periods — auto-delete after N years
+• DPA (Data Processing Agreement): required with all third-party processors (AWS, Stripe, SendGrid)
+• Data breach notification: 72 hours to notify supervisory authority — have an incident response plan
+
+CCPA / US PRIVACY:
+• Do Not Sell: GPC (Global Privacy Control) signal support — honor browser-level opt-out
+• Data subject requests: respond within 45 days — access, deletion, correction, portability
+• Service providers: can share data with SPs for business purposes — not "selling"
+• Sensitive PI: special rules for biometrics, health, financial — opt-in required
+• Children: COPPA compliance for under-13 — no tracking without parental consent
+
+SOC 2 TYPE II:
+• Trust Service Criteria: Security, Availability, Processing Integrity, Confidentiality, Privacy
+• Security principle: access controls, encryption, vulnerability management, incident response
+• Evidence collection: logs, access reviews, change management records — auditors want proof
+• Vendor risk: vet all third-party services — ensure they're SOC 2 compliant too
+• Penetration testing: annual pen test — required for most enterprise customers
+• Common automation tools: Vanta, Drata, Secureframe — automate evidence collection and control monitoring
+
+═══════════════════════════════════════
+AIOPS & PLATFORM ENGINEERING
+═══════════════════════════════════════
+INTERNAL DEVELOPER PLATFORM (IDP):
+• Golden paths: opinionated, paved paths for common patterns — new service in 5 minutes, not 5 days
+• Self-service infrastructure: developers provision databases, queues, caches via portal/CLI — no tickets
+• Backstage (Spotify): open-source developer portal — service catalog, software templates, documentation
+• Port.io, Cortex: alternatives to Backstage — more managed, less engineering effort
+• Software catalog: discover all services, owners, runbooks, dependencies — organization-wide knowledge graph
+• Software templates: scaffold new services from templates — enforce standards automatically
+
+PLATFORM TEAM RESPONSIBILITIES:
+• CI/CD platform: managed pipelines — teams write workflows, platform manages runners and caching
+• Observability platform: managed Prometheus/Grafana/Tempo — teams define dashboards and alerts
+• Secret management: HashiCorp Vault or cloud SM — teams reference secrets, platform manages rotation
+• Service mesh: managed Istio/Linkerd — teams define traffic policies, platform operates the control plane
+• Developer environments: managed dev environments (Devpod, Coder, Gitpod) — consistent across team
+• Cost visibility: per-team cloud cost dashboards — make teams responsible for their own spend
+
+CHAOS ENGINEERING:
+• Chaos Monkey: Netflix tool — randomly terminates EC2 instances in production — proves resilience
+• Chaos Toolkit: open-source chaos engineering framework — define experiments as JSON
+• AWS Fault Injection Simulator: inject EC2 terminations, network delays, API throttling
+• Gremlin: managed chaos engineering platform — extensive fault library, safe mode guardrails
+• Game days: scheduled chaos experiments — team practices incident response in a controlled environment
+• Blast radius: limit scope of experiments — test one service at a time, have a kill switch
+• Hypotheses: every chaos experiment has an expected outcome — if actual ≠ expected, you found a gap
+
+INCIDENT MANAGEMENT:
+• Severity levels: SEV1 (production down), SEV2 (major degradation), SEV3 (minor issue), SEV4 (cosmetic)
+• On-call rotation: PagerDuty/Opsgenie — rotate weekly, secondary on-call as escalation path
+• Incident response: declare → assemble → investigate → mitigate → resolve → post-mortem
+• Incident commander: one person coordinates — others investigate and fix — not everyone talks at once
+• Status page: communicate to users — Statuspage.io, Cachet — update every 15-30 minutes
+• Blameless post-mortem: what happened, timeline, root cause, contributing factors, action items — no finger-pointing
+• 5 Whys: drill down to root cause — keep asking "why?" until you reach a systemic issue
+• Follow-up: track action items — post-mortems are worthless without follow-through
+
+═══════════════════════════════════════
+ADVANCED JAVASCRIPT ENGINE INTERNALS
+═══════════════════════════════════════
+V8 ENGINE:
+• Ignition: bytecode interpreter — first run of JavaScript compiles to bytecode
+• TurboFan: optimizing JIT compiler — frequently called functions compiled to machine code
+• Maglev: mid-tier JIT compiler (V8 v9+) — faster than Ignition, less aggressive than TurboFan
+• Hidden classes (shapes): V8 creates a hidden class per unique object shape — always initialize object properties in the same order for optimal performance
+• Inline caches: remember the type of a property access — becomes megamorphic (slow) if different types seen
+• Deoptimization: TurboFan reverts to interpreter when assumptions break — avoid type-changing patterns in hot code
+• Memory: young generation (Scavenge GC), old generation (Mark-Sweep, Mark-Compact)
+• GC pressure: minimize short-lived allocations in hot paths — object pooling, reuse buffers
+
+JAVASCRIPT RUNTIME CONCEPTS:
+• Call stack: LIFO — function calls push frames, returns pop them
+• Heap: dynamic memory allocation — where objects live
+• Task queue (macrotask): setTimeout, setInterval, I/O callbacks — processed after call stack is empty
+• Microtask queue: Promise.then, queueMicrotask, MutationObserver — processed before each macrotask
+• Event loop order: call stack → microtasks → render → macrotasks — critical for animation frame timing
+• requestAnimationFrame: called before the browser paints — not a macrotask, not a microtask — special
+• Scheduler: scheduler.yield() (new) — yield to browser in long tasks, resume when idle
+
+MEMORY LEAKS IN DETAIL:
+• Forgotten timers: setInterval without clearInterval — callback keeps reference to outer scope alive
+• Detached DOM nodes: remove element from DOM but keep JS reference — element stays in memory
+• Global variables: accidentally assign to window — never collected by GC
+• Closures over large data: closure captures surrounding scope — entire scope kept alive
+• Event listeners: addEventListener without removeEventListener on unmount — listener + callback captured
+• WeakRef: hold object reference without preventing GC — for observing objects you don't own
+• FinalizationRegistry: run cleanup when object is GC'd — for external resource management
 `;
 
 
