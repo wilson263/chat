@@ -2,45 +2,44 @@ import OpenAI from "openai";
   import Groq from "groq-sdk";
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // OPENROUTER FREE MODELS — ordered by reliability then quality
+  // FREE MODELS — verified live on OpenRouter as of latest check (26 total)
+  // Ordered by: reliability first, then quality. Dead models removed.
   // ─────────────────────────────────────────────────────────────────────────────
   const FREE_MODELS = [
-    // Tier 1 — fastest & most reliably available
-    "stepfun/step-3.5-flash:free",
-    "meta-llama/llama-3.1-8b-instruct:free",
-    "nvidia/llama-3.3-nemotron-nano-8b-v1:free",
-    "arcee-ai/arcee-blitz:free",
+    // ── Tier 1: Fast & highly reliable ──────────────────────────────────────
+    "stepfun/step-3.5-flash:free",                    // Very fast, always available
+    "mistralai/mistral-small-3.1-24b-instruct:free",  // Rock-solid reliability
+    "arcee-ai/trinity-mini:free",                     // Fast, 131k context
+    "z-ai/glm-4.5-air:free",                         // Fast, 131k context
+    "liquid/lfm-2.5-1.2b-instruct:free",             // Tiny but fast
+    "liquid/lfm-2.5-1.2b-thinking:free",             // Thinking variant
     "google/gemma-3-4b-it:free",
     "google/gemma-3n-e4b-it:free",
-    "liquid/lfm2.5-1.2b:free",
-    "mistralai/mistral-small-3.1-24b-instruct:free",
-    // Tier 2 — good quality, sometimes rate-limited
-    "meta-llama/llama-3.3-70b-instruct:free",
-    "google/gemma-3-27b-it:free",
-    "google/gemma-3-12b-it:free",
-    "nvidia/llama-3.3-nemotron-super-49b-v1:free",
-    "google/gemma-2-9b-it:free",
-    "minimax/minimax-m2.5-1.5t:free",
-    "meta-llama/llama-3.2-3b-instruct:free",
-    "meta-llama/llama-3.2-1b-instruct:free",
-    "microsoft/phi-3-mini-128k-instruct:free",
-    "microsoft/phi-3-medium-128k-instruct:free",
-    "huggingfaceh4/zephyr-7b-beta:free",
-    "openchat/openchat-7b:free",
-    "undi95/toppy-m-7b:free",
-    "gryphe/mythomist-7b:free",
-    // Tier 3 — best quality but heavily rate-limited
-    "qwen/qwen3-coder-480b-a35b:free",
-    "deepseek/deepseek-r1:free",
-    "openai/gpt-oss-120b:free",
-    "openai/gpt-oss-20b:free",
-    "nousresearch/hermes-3-llama-3.1-405b:free",
-    "deepseek/deepseek-v3-base:free",
-    "qwen/qwen3-4b:free",
     "google/gemma-3n-e2b-it:free",
+    "meta-llama/llama-3.2-3b-instruct:free",
+
+    // ── Tier 2: Good quality, large context ─────────────────────────────────
+    "meta-llama/llama-3.3-70b-instruct:free",         // Powerful, 128k ctx
+    "nvidia/nemotron-3-nano-30b-a3b:free",            // 256k context
+    "nvidia/nemotron-nano-9b-v2:free",                // 128k context
+    "nvidia/nemotron-nano-12b-v2-vl:free",            // Vision + text, 128k
+    "minimax/minimax-m2.5:free",                      // 197k context
+    "cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
+    "google/gemma-3-12b-it:free",
+    "google/gemma-3-27b-it:free",
+
+    // ── Tier 3: Best quality — large models, sometimes rate-limited ─────────
+    "openai/gpt-oss-120b:free",                       // Best general model
+    "openai/gpt-oss-20b:free",
+    "qwen/qwen3-coder:free",                          // Best coder, 262k ctx
+    "qwen/qwen3-next-80b-a3b-instruct:free",          // 262k context
+    "qwen/qwen3-4b:free",
+    "nvidia/nemotron-3-super-120b-a12b:free",         // 262k context, very capable
+    "arcee-ai/trinity-large-preview:free",            // 131k context
+    "nousresearch/hermes-3-llama-3.1-405b:free",      // Huge, high quality
   ];
 
-  // GROQ FREE MODELS — very fast, generous free tier, great reliability
+  // ── Groq free models — very fast, generous rate limits, great fallback ───
   const GROQ_MODELS = [
     "llama-3.3-70b-versatile",
     "llama-3.1-70b-versatile",
@@ -52,36 +51,38 @@ import OpenAI from "openai";
     "gemma-7b-it",
   ];
 
+  // ── Coding-first fallback list ────────────────────────────────────────────
   export const CODING_FALLBACKS = [
-    "qwen/qwen3-coder-480b-a35b:free",
-    "deepseek/deepseek-r1:free",
+    "qwen/qwen3-coder:free",
     "openai/gpt-oss-120b:free",
-    "meta-llama/llama-3.3-70b-instruct:free",
-    "nvidia/llama-3.3-nemotron-super-49b-v1:free",
+    "nvidia/nemotron-3-super-120b-a12b:free",
     "nousresearch/hermes-3-llama-3.1-405b:free",
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "qwen/qwen3-next-80b-a3b-instruct:free",
     "stepfun/step-3.5-flash:free",
     "mistralai/mistral-small-3.1-24b-instruct:free",
-    "nvidia/llama-3.3-nemotron-nano-8b-v1:free",
-    "arcee-ai/arcee-blitz:free",
+    "arcee-ai/trinity-mini:free",
   ];
 
+  // ── Agent builder models (skip slow rate-limited ones) ───────────────────
   export const AGENT_BUILD_MODELS = [
-    "qwen/qwen3-coder-480b-a35b:free",
+    "qwen/qwen3-coder:free",
     "openai/gpt-oss-120b:free",
     "meta-llama/llama-3.3-70b-instruct:free",
+    "nvidia/nemotron-3-super-120b-a12b:free",
     "stepfun/step-3.5-flash:free",
     "mistralai/mistral-small-3.1-24b-instruct:free",
-    "nvidia/llama-3.3-nemotron-super-49b-v1:free",
-    "nvidia/llama-3.3-nemotron-nano-8b-v1:free",
-    "arcee-ai/arcee-blitz:free",
+    "arcee-ai/trinity-mini:free",
+    "nvidia/nemotron-nano-9b-v2:free",
   ];
 
+  // ── Planning/analysis (speed over code quality) ──────────────────────────
   export const PLANNING_MODELS = [
     "stepfun/step-3.5-flash:free",
-    "meta-llama/llama-3.3-70b-instruct:free",
     "mistralai/mistral-small-3.1-24b-instruct:free",
-    "nvidia/llama-3.3-nemotron-nano-8b-v1:free",
-    "arcee-ai/arcee-blitz:free",
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "arcee-ai/trinity-mini:free",
+    "z-ai/glm-4.5-air:free",
     "google/gemma-3-4b-it:free",
   ];
 
@@ -96,7 +97,7 @@ import OpenAI from "openai";
     const apiKey = process.env.OPENROUTER_API_KEY;
     if (!apiKey) {
       throw new Error(
-        "OPENROUTER_API_KEY is not set. Please add it in your Render environment variables at https://dashboard.render.com → your service → Environment."
+        "OPENROUTER_API_KEY is not set. Please add it in your Render environment variables."
       );
     }
     return new OpenAI({ apiKey, baseURL: "https://openrouter.ai/api/v1" });
@@ -127,22 +128,6 @@ import OpenAI from "openai";
     return status === 429 || msg.includes("rate limit") || msg.includes("too many");
   }
 
-  function isRetryableError(err: any): boolean {
-    const status = err?.status ?? err?.response?.status;
-    if ([429, 404, 400, 503, 502, 500].includes(status)) return true;
-    const msg = String(err?.message ?? "").toLowerCase();
-    return (
-      msg.includes("no endpoints found") ||
-      msg.includes("not a valid model") ||
-      msg.includes("overloaded") ||
-      msg.includes("unavailable") ||
-      msg.includes("rate limit") ||
-      msg.includes("context length") ||
-      msg.includes("temporarily") ||
-      msg.includes("capacity")
-    );
-  }
-
   function buildFallbackList(preferredModel?: string): string[] {
     if (!preferredModel) return FREE_MODELS;
     const isCodingModel = CODING_FALLBACKS.includes(preferredModel);
@@ -154,7 +139,6 @@ import OpenAI from "openai";
     return [preferredModel, ...FREE_MODELS.filter(m => m !== preferredModel)];
   }
 
-  // Convert OpenAI-compatible messages to Groq format (same schema, just different SDK)
   function toGroqMessages(messages: OpenAI.Chat.ChatCompletionMessageParam[]): any[] {
     return messages.map(m => ({
       role: m.role,
@@ -163,7 +147,7 @@ import OpenAI from "openai";
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // GROQ FALLBACK — tries Groq models when ALL OpenRouter models fail
+  // GROQ FALLBACK
   // ─────────────────────────────────────────────────────────────────────────────
 
   async function tryGroqCompletion(
@@ -171,7 +155,6 @@ import OpenAI from "openai";
   ): Promise<OpenAI.Chat.ChatCompletion | null> {
     const groq = getGroqClient();
     if (!groq) return null;
-
     for (const model of GROQ_MODELS) {
       try {
         const response = await groq.chat.completions.create({
@@ -180,15 +163,12 @@ import OpenAI from "openai";
           max_tokens: params.max_tokens ?? 8192,
           temperature: (params.temperature as number) ?? 0.25,
         } as any);
-        console.log(`[Groq fallback] Using model: ${model}`);
+        console.log(`[Groq fallback] Using: ${model}`);
         return response as any;
       } catch (err: any) {
-        if (isAuthError(err)) {
-          console.warn(`[Groq] Auth error — check GROQ_API_KEY`);
-          return null;
-        }
+        if (isAuthError(err)) return null;
         console.warn(`[Groq] ${model} failed (${err?.status}), trying next...`);
-        if (isRateLimit(err)) await sleep(1000);
+        if (isRateLimit(err)) await sleep(500);
       }
     }
     return null;
@@ -199,7 +179,6 @@ import OpenAI from "openai";
   ): Promise<AsyncIterable<OpenAI.Chat.ChatCompletionChunk> | null> {
     const groq = getGroqClient();
     if (!groq) return null;
-
     for (const model of GROQ_MODELS) {
       try {
         const stream = await groq.chat.completions.create({
@@ -209,15 +188,12 @@ import OpenAI from "openai";
           temperature: (params.temperature as number) ?? 0.25,
           stream: true,
         } as any);
-        console.log(`[Groq fallback] Streaming with model: ${model}`);
+        console.log(`[Groq fallback] Streaming with: ${model}`);
         return stream as any;
       } catch (err: any) {
-        if (isAuthError(err)) {
-          console.warn(`[Groq] Auth error — check GROQ_API_KEY`);
-          return null;
-        }
+        if (isAuthError(err)) return null;
         console.warn(`[Groq] ${model} failed (${err?.status}), trying next...`);
-        if (isRateLimit(err)) await sleep(1000);
+        if (isRateLimit(err)) await sleep(500);
       }
     }
     return null;
@@ -233,8 +209,6 @@ import OpenAI from "openai";
   ): Promise<OpenAI.Chat.ChatCompletion> {
     const modelsToTry = buildFallbackList(preferredModel ?? (params.model as string | undefined));
     let lastError: any;
-
-    // Try OpenRouter models
     try {
       const client = getAIClient();
       for (let i = 0; i < modelsToTry.length; i++) {
@@ -242,31 +216,18 @@ import OpenAI from "openai";
           return await client.chat.completions.create({ ...params, model: modelsToTry[i] });
         } catch (err: any) {
           lastError = err;
-          if (isAuthError(err)) {
-            throw new Error(`OpenRouter authentication failed (${err?.status}). Please check your OPENROUTER_API_KEY in Render environment variables.`);
-          }
+          if (isAuthError(err)) throw new Error(`OpenRouter auth failed (${err?.status}). Check OPENROUTER_API_KEY.`);
           if (isRateLimit(err)) await sleep(500);
-          if (i < modelsToTry.length - 1) {
-            console.warn(`[OpenRouter] ${modelsToTry[i]} failed (${err?.status}), trying ${modelsToTry[i + 1]}...`);
-          }
+          if (i < modelsToTry.length - 1) console.warn(`[OR] ${modelsToTry[i]} failed (${err?.status}), trying next...`);
         }
       }
     } catch (err: any) {
-      if (err.message.includes("OPENROUTER_API_KEY")) {
-        console.warn("[AI] OPENROUTER_API_KEY not set, trying Groq fallback...");
-      } else {
-        lastError = err;
-      }
+      if (!err.message?.includes("OPENROUTER_API_KEY")) lastError = err;
     }
-
-    // Groq fallback
     const groqResult = await tryGroqCompletion(params);
     if (groqResult) return groqResult;
-
     console.error("[AI] All providers failed. Last error:", lastError?.status, lastError?.message);
-    throw new Error(
-      "AI is temporarily unavailable — all providers are busy right now. Please try again in a few seconds."
-    );
+    throw new Error("AI is temporarily unavailable — all providers are busy. Please try again in a few seconds.");
   }
 
   export async function createChatCompletionStream(
@@ -275,8 +236,6 @@ import OpenAI from "openai";
   ): Promise<AsyncIterable<OpenAI.Chat.ChatCompletionChunk>> {
     const modelsToTry = buildFallbackList(preferredModel ?? (params.model as string | undefined));
     let lastError: any;
-
-    // Try OpenRouter models
     try {
       const client = getAIClient();
       for (let i = 0; i < modelsToTry.length; i++) {
@@ -284,27 +243,18 @@ import OpenAI from "openai";
           return await client.chat.completions.create({ ...params, model: modelsToTry[i], stream: true });
         } catch (err: any) {
           lastError = err;
-          if (isAuthError(err)) {
-            throw new Error(`OpenRouter authentication failed (${err?.status}). Please check your OPENROUTER_API_KEY in Render environment variables.`);
-          }
+          if (isAuthError(err)) throw new Error(`OpenRouter auth failed (${err?.status}). Check OPENROUTER_API_KEY.`);
           if (isRateLimit(err)) await sleep(500);
-          if (i < modelsToTry.length - 1) {
-            console.warn(`[OpenRouter] ${modelsToTry[i]} failed (${err?.status}), trying ${modelsToTry[i + 1]}...`);
-          }
+          if (i < modelsToTry.length - 1) console.warn(`[OR] ${modelsToTry[i]} failed (${err?.status}), trying next...`);
         }
       }
     } catch (err: any) {
-      if (!err.message.includes("OPENROUTER_API_KEY")) lastError = err;
+      if (!err.message?.includes("OPENROUTER_API_KEY")) lastError = err;
     }
-
-    // Groq fallback
     const groqStream = await tryGroqStream(params);
     if (groqStream) return groqStream;
-
     console.error("[AI] All providers failed. Last error:", lastError?.status, lastError?.message);
-    throw new Error(
-      "AI is temporarily unavailable — all providers are busy right now. Please try again in a few seconds."
-    );
+    throw new Error("AI is temporarily unavailable — all providers are busy. Please try again in a few seconds.");
   }
 
   export async function createChatCompletionStreamFromList(
@@ -312,8 +262,6 @@ import OpenAI from "openai";
     modelList: string[]
   ): Promise<{ stream: AsyncIterable<OpenAI.Chat.ChatCompletionChunk>; model: string }> {
     let lastError: any;
-
-    // Try the given model list
     try {
       const client = getAIClient();
       for (let i = 0; i < modelList.length; i++) {
@@ -323,25 +271,16 @@ import OpenAI from "openai";
           return { stream, model: modelList[i] };
         } catch (err: any) {
           lastError = err;
-          if (isAuthError(err)) {
-            throw new Error(`OpenRouter authentication failed. Please check your OPENROUTER_API_KEY.`);
-          }
+          if (isAuthError(err)) throw new Error(`OpenRouter auth failed. Check OPENROUTER_API_KEY.`);
           if (isRateLimit(err)) await sleep(500);
-          if (i < modelList.length - 1) {
-            console.warn(`[agent] ${modelList[i]} unavailable (${err?.status}), trying ${modelList[i + 1]}...`);
-          }
+          if (i < modelList.length - 1) console.warn(`[agent] ${modelList[i]} failed (${err?.status}), trying next...`);
         }
       }
     } catch (err: any) {
-      if (!err.message.includes("OPENROUTER_API_KEY")) lastError = err;
+      if (!err.message?.includes("OPENROUTER_API_KEY")) lastError = err;
     }
-
-    // Groq fallback
     const groqStream = await tryGroqStream(params as any);
     if (groqStream) return { stream: groqStream, model: "groq/llama-3.3-70b-versatile" };
-
-    throw new Error(
-      "AI is temporarily unavailable — all providers are busy right now. Please try again in a few seconds."
-    );
+    throw new Error("AI is temporarily unavailable — all providers are busy. Please try again in a few seconds.");
   }
   
