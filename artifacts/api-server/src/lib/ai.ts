@@ -160,7 +160,7 @@ import OpenAI from "openai";
         const response = await groq.chat.completions.create({
           model,
           messages: toGroqMessages(params.messages),
-          max_tokens: params.max_tokens ?? 8192,
+          max_tokens: params.max_tokens ?? 100000,
           temperature: (params.temperature as number) ?? 0.25,
         } as any);
         console.log(`[Groq fallback] Using: ${model}`);
@@ -184,7 +184,7 @@ import OpenAI from "openai";
         const stream = await groq.chat.completions.create({
           model,
           messages: toGroqMessages(params.messages),
-          max_tokens: params.max_tokens ?? 8192,
+          max_tokens: params.max_tokens ?? 100000,
           temperature: (params.temperature as number) ?? 0.25,
           stream: true,
         } as any);
