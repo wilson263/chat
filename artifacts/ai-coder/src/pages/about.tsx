@@ -13,6 +13,8 @@ import {
   Gamepad2, Camera, Music, BarChart, CheckSquare, FileText,
   Monitor, Columns2, GitCompare as GitCompare2, LayoutPanelLeft, AlignLeft,
   Command, ArrowUp, ArrowDown, Folder, Image, Keyboard, Layout, Compass,
+  Network, Server, Activity, ShieldCheck, FlaskConical, Workflow,
+  DatabaseZap, CloudUpload, TestTube, Gauge, BookOpen, Lightbulb,
 } from 'lucide-react';
 import { OPENROUTER_MODELS } from '@/components/model-selector';
 
@@ -147,7 +149,22 @@ export default function AboutPage() {
     { icon: Globe, title: 'Trending Projects', desc: 'Discover the most popular projects ranked by views, forks, and community activity to see what developers are building.', color: 'bg-pink-500/10 text-pink-400', badge: 'NEW' },
   ];
 
-  const totalFeatures = playgroundFeatures.length + workspaceFeatures.length + chatFeatures.length + powerFeatures.length + promptGeneratorFeatures.length + exploreFeatures.length;
+  const aiIntelligenceFeatures = [
+    { icon: Network, title: 'Agent Architecture', desc: 'ZorvixAI plans before acting — it breaks every request into steps, executes in order, and self-corrects. It operates like an autonomous agent, not just a chatbot.', color: 'bg-primary/10 text-primary', badge: 'CORE' },
+    { icon: Brain, title: 'Full-Stack Context Awareness', desc: 'The AI understands your entire codebase — frontend, backend, types, and APIs together. It keeps all layers in sync when you make changes.', color: 'bg-violet-500/10 text-violet-400', badge: 'CORE' },
+    { icon: ShieldCheck, title: 'Security-First Code Generation', desc: 'Every piece of code generated follows OWASP Top 10 guidelines — parameterized queries, CSRF protection, helmet headers, and input validation by default.', color: 'bg-red-500/10 text-red-400', badge: 'CORE' },
+    { icon: Gauge, title: 'Performance-Aware Output', desc: 'ZorvixAI targets Core Web Vitals (LCP < 2.5s, INP < 200ms, CLS < 0.1) and flags performance anti-patterns like N+1 queries and layout thrashing.', color: 'bg-yellow-500/10 text-yellow-400', badge: 'CORE' },
+    { icon: FlaskConical, title: 'LLM Engineering Expertise', desc: 'Builds AI-powered features with best practices: streaming SSE, prompt injection defense, token budgets, model routing, RAG pipelines, and cost tracking.', color: 'bg-emerald-500/10 text-emerald-400', badge: 'CORE' },
+    { icon: Workflow, title: 'System Design Patterns', desc: 'Implements circuit breakers, bulkheads, sagas, outbox pattern, BFF, and event-driven architecture — production-grade distributed system design built in.', color: 'bg-blue-500/10 text-blue-400', badge: 'CORE' },
+    { icon: DatabaseZap, title: 'Advanced Database Engineering', desc: 'Handles indexing strategies, connection pooling, cursor pagination, event sourcing, CQRS, soft deletes, optimistic locking, and multi-tenancy by default.', color: 'bg-teal-500/10 text-teal-400', badge: 'CORE' },
+    { icon: Activity, title: 'Observability by Default', desc: 'Generated backends include structured logging, distributed tracing with OpenTelemetry, Prometheus-compatible metrics, and health check endpoints.', color: 'bg-pink-500/10 text-pink-400', badge: 'CORE' },
+    { icon: CloudUpload, title: 'DevOps & CI/CD Guidance', desc: 'ZorvixAI configures GitHub Actions pipelines, Docker multi-stage builds, blue-green deployments, feature flags, and Terraform IaC from the start.', color: 'bg-orange-500/10 text-orange-400', badge: 'CORE' },
+    { icon: TestTube, title: 'Production-Grade Testing', desc: 'Writes unit tests for business logic, integration tests for API endpoints, E2E tests for critical flows, and load tests before launch — test quality, not coverage.', color: 'bg-cyan-500/10 text-cyan-400', badge: 'CORE' },
+    { icon: BookOpen, title: 'I18N & A11Y Built In', desc: 'Generates accessible code (WCAG 2.1 AA) with ARIA labels, focus management, keyboard navigation, and i18n-ready string extraction from day one.', color: 'bg-indigo-500/10 text-indigo-400', badge: 'CORE' },
+    { icon: Lightbulb, title: 'Engineering Mentorship Mode', desc: 'Explains every decision with the WHY behind it, points out ADR-worthy choices, celebrates good engineering, and teaches production-grade patterns as it builds.', color: 'bg-amber-500/10 text-amber-400', badge: 'CORE' },
+  ];
+
+  const totalFeatures = playgroundFeatures.length + workspaceFeatures.length + chatFeatures.length + powerFeatures.length + promptGeneratorFeatures.length + exploreFeatures.length + aiIntelligenceFeatures.length;
 
   return (
     <PageLayout crumbs={[{ label: 'About' }]} backHref="/" withMeshBg>
@@ -420,6 +437,72 @@ export default function AboutPage() {
           <div className="mt-4 flex justify-center">
             <Button variant="outline" onClick={() => setLocation('/explore')} className="gap-2">
               <Compass className="w-4 h-4" />Browse Community
+            </Button>
+          </div>
+        </section>
+
+        {/* AI Intelligence Section */}
+        <section className="mb-14">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+              <Network className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold">AI Intelligence Engine</h2>
+              <p className="text-sm text-muted-foreground">500+ new expert-level instructions across security, performance, observability, testing, and system design</p>
+            </div>
+            <Badge className="ml-auto bg-primary/20 text-primary border-primary/30">500+ NEW</Badge>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {aiIntelligenceFeatures.map(f => (
+              <div key={f.title} className="bg-card border border-border/50 rounded-xl p-5 hover:border-primary/20 transition-colors">
+                <div className="flex items-start gap-3 mb-3">
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${f.color}`}><f.icon className="w-4 h-4" /></div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <h3 className="font-semibold text-sm">{f.title}</h3>
+                      <Badge variant="outline" className="text-xs py-0 h-4">{f.badge}</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">{f.desc}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* New AI Domains Quick Reference */}
+          <div className="mt-6 bg-muted/30 border border-border/50 rounded-xl p-5">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">New Expert Knowledge Domains Added</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              {[
+                { label: 'Agent Architecture', icon: '🤖' },
+                { label: 'TypeScript Mastery', icon: '🔷' },
+                { label: 'React Internals', icon: '⚛️' },
+                { label: 'Node.js & Express', icon: '🟢' },
+                { label: 'Database Engineering', icon: '🗄️' },
+                { label: 'Performance Tuning', icon: '⚡' },
+                { label: 'Security (OWASP)', icon: '🛡️' },
+                { label: 'LLM Engineering', icon: '🧠' },
+                { label: 'DevOps & CI/CD', icon: '🚀' },
+                { label: 'WebSockets & SSE', icon: '📡' },
+                { label: 'Mobile & PWA', icon: '📱' },
+                { label: 'Accessibility A11Y', icon: '♿' },
+                { label: 'I18N & Localization', icon: '🌍' },
+                { label: 'Monorepo Design', icon: '🏗️' },
+                { label: 'System Patterns', icon: '🔗' },
+                { label: 'Observability', icon: '📊' },
+              ].map(d => (
+                <div key={d.label} className="flex items-center gap-2 px-3 py-2 bg-card border border-border/50 rounded-lg">
+                  <span>{d.icon}</span>
+                  <p className="text-xs text-muted-foreground">{d.label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-4 flex justify-center">
+            <Button onClick={() => setLocation('/')} className="gap-2 shadow-lg shadow-primary/20">
+              <Brain className="w-4 h-4" />Try Upgraded AI
             </Button>
           </div>
         </section>
