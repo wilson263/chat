@@ -85,7 +85,7 @@ Provide a comprehensive review with these sections:
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-        max_completion_tokens: 60000,
+        max_completion_tokens: 100000,
       });
 
       for await (const chunk of stream) {
@@ -106,7 +106,7 @@ Provide a comprehensive review with these sections:
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-        max_completion_tokens: 60000,
+        max_completion_tokens: 100000,
       });
 
       const review = result.choices[0]?.message?.content ?? "";
@@ -172,7 +172,7 @@ Structure your explanation:
 (How you'd use this in practice)`,
         },
       ],
-      max_completion_tokens: 60000,
+      max_completion_tokens: 100000,
     });
 
     res.json({ explanation: result.choices[0]?.message?.content ?? "" });
@@ -227,7 +227,7 @@ Provide:
 (Estimated improvement — time complexity, memory, readability)`,
         },
       ],
-      max_completion_tokens: 60000,
+      max_completion_tokens: 100000,
     });
 
     res.json({ optimization: result.choices[0]?.message?.content ?? "" });
@@ -280,7 +280,7 @@ Provide a complete security audit covering:
 (List all security improvements made)`,
         },
       ],
-      max_completion_tokens: 60000,
+      max_completion_tokens: 100000,
     });
 
     res.json({
@@ -336,7 +336,7 @@ Provide:
 (Any packages/imports needed for the ${toLanguage} version)`,
         },
       ],
-      max_completion_tokens: 60000,
+      max_completion_tokens: 100000,
     });
 
     res.json({ conversion: result.choices[0]?.message?.content ?? "" });
@@ -380,7 +380,7 @@ ${code}
 Return ONLY the fully documented code, no extra explanation.`,
         },
       ],
-      max_completion_tokens: 60000,
+      max_completion_tokens: 100000,
     });
 
     res.json({ documented: result.choices[0]?.message?.content ?? "" });
@@ -438,7 +438,7 @@ Include tests for:
 Use descriptive test names that explain WHAT is being tested and WHAT the expected behavior is.`,
         },
       ],
-      max_completion_tokens: 60000,
+      max_completion_tokens: 100000,
     });
 
     res.json({ tests: result.choices[0]?.message?.content ?? "" });
