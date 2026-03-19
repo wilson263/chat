@@ -2,6 +2,7 @@ import { Router, type IRouter, type Request, type Response } from "express";
 import bcrypt from "bcryptjs";
 import { db, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import { sendAdminRegistrationRequest } from "../lib/email";
 
 const router: IRouter = Router();
 
@@ -28,12 +29,28 @@ router.post("/auth/register", async (req: Request, res: Response): Promise<void>
   try {
     const existing = await db.select().from(usersTable).where(eq(usersTable.email, email.toLowerCase()));
     if (existing.length > 0) { res.status(409).json({ error: "An account with this email already exists" }); return; }
+
     const passwordHash = await bcrypt.hash(password, 10);
     const allUsers = await db.select({ id: usersTable.id }).from(usersTable).limit(1);
     const isFirstUser = allUsers.length === 0;
-    const [user] = await db.insert(usersTable).values({ name, email: email.toLowerCase(), passwordHash, isAdmin: isFirstUser }).returning();
-    res.cookie(COOKIE_NAME, String(user.id), COOKIE_OPTIONS);
-    res.json({ id: user.id, name: user.name, email: user.email, isAdmin: user.isAdmin, avatarUrl: (user as any).avatarUrl ?? null });
+
+    const [user] = await db.insert(usersTable).values({
+      name,
+      email: email.toLowerCase(),
+      passwordHash,
+      isAdmin: isFirstUser,
+      status: isFirstUser ? "approved" : "pending",
+    } as any).returning();
+
+    if (isFirstUser) {
+      // First user (admin) — log in immediately
+      res.cookie(COOKIE_NAME, String(user.id), COOKIE_OPTIONS);
+      res.json({ id: user.id, name: user.name, email: user.email, isAdmin: user.isAdmin, avatarUrl: (user as any).avatarUrl ?? null });
+    } else {
+      // All other users — send approval request to admin
+      sendAdminRegistrationRequest({ id: user.id, name: user.name, email: user.email }).catch(() => {});
+      res.status(202).json({ pending: true, message: "Your registration request has been submitted. You will receive an email once the admin approves your account." });
+    }
   } catch (err: any) { res.status(500).json({ error: err.message }); }
 });
 
@@ -45,6 +62,17 @@ router.post("/auth/login", async (req: Request, res: Response): Promise<void> =>
     if (!user) { res.status(401).json({ error: "Invalid email or password" }); return; }
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) { res.status(401).json({ error: "Invalid email or password" }); return; }
+
+    const status = (user as any).status ?? "approved";
+    if (status === "pending") {
+      res.status(403).json({ error: "Your account is pending admin approval. You'll receive an email once approved.", pending: true });
+      return;
+    }
+    if (status === "rejected") {
+      res.status(403).json({ error: "Your account request was not approved. Please contact the administrator." });
+      return;
+    }
+
     res.cookie(COOKIE_NAME, String(user.id), COOKIE_OPTIONS);
     res.json({ id: user.id, name: user.name, email: user.email, isAdmin: user.isAdmin, avatarUrl: (user as any).avatarUrl ?? null });
   } catch (err: any) { res.status(500).json({ error: err.message }); }
@@ -108,7 +136,6 @@ router.put("/auth/avatar", async (req: Request, res: Response): Promise<void> =>
     if (!updated) { res.status(404).json({ error: "User not found" }); return; }
     res.json({ avatarUrl: (updated as any).avatarUrl });
   } catch (err: any) {
-    // avatarUrl column may not exist yet — gracefully handle
     if (err.message?.includes("avatarUrl") || err.message?.includes("avatar_url") || err.code === "42703") {
       res.status(503).json({ error: "Avatar column not available. Run 'pnpm --filter @workspace/db run push' to apply the latest schema." });
     } else {
