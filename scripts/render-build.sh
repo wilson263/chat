@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+echo "=== Running database migrations ==="
+pnpm --filter @workspace/db run push-force
+
 echo "=== Building backend ==="
 pnpm --filter @workspace/api-server run build
 
