@@ -31,6 +31,7 @@ interface ChatMessage {
   role: 'user' | 'assistant'; content: string;
   attachments?: Array<{ name: string; type: 'image' | 'text'; preview?: string }>;
   reaction?: 'up' | 'down'; isImage?: boolean; rating?: number; comment?: string;
+  answeredBy?: string;
 }
 interface HistoryItem {
   id: string; title: string; messages: ChatMessage[];
@@ -198,7 +199,7 @@ export default function ChatPage() {
   const [, setLocation] = useLocation();
   const { user } = useAuth();
   const { toast } = useToast();
-  const { stream, loading: aiLoading } = useAiStream();
+  const { stream, loading: aiLoading, isSwitching, switchHistory, answeredBy: streamAnsweredBy } = useAiStream();
 
   // ── CORE STATE ──────────────────────────────────────────────────────────
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -692,6 +693,20 @@ export default function ChatPage() {
       {
         onModelInfo: (info) => {
           setActiveModelInfo(info);
+          setMessages(prev => {
+            const updated = [...prev];
+            const last = updated[updated.length - 1];
+            if (last?.role === 'assistant') updated[updated.length - 1] = { ...last, answeredBy: info.model };
+            return updated;
+          });
+        },
+        onModelSwitch: (sw) => {
+          setMessages(prev => {
+            const updated = [...prev];
+            const last = updated[updated.length - 1];
+            if (last?.role === 'assistant') updated[updated.length - 1] = { ...last, answeredBy: sw.to };
+            return updated;
+          });
         },
         onChunk: (chunk) => {
           setMessages(prev => {
@@ -701,8 +716,8 @@ export default function ChatPage() {
             return updated;
           });
         },
-        onFinish: async (fullText) => {
-          const finalMessages = [...newMessages, { role: 'assistant' as const, content: fullText }];
+        onFinish: async (fullText, finalAnsweredBy) => {
+          const finalMessages = [...newMessages, { role: 'assistant' as const, content: fullText, answeredBy: finalAnsweredBy }];
           setMessages(finalMessages);
           setFollowUpSuggestions(generateFollowUps(fullText));
           let chatId = activeChatId;
@@ -1439,6 +1454,36 @@ export default function ChatPage() {
           </div>
         )}
 
+        {/* ── MODEL SWITCHING PROGRESS BAR ─────────────────────────────── */}
+        {(isSwitching || (aiLoading && switchHistory.length > 0)) && (
+          <div className="border-b border-amber-500/30 bg-amber-500/5 px-4 py-2 shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 shrink-0">
+                <Loader2 className="w-3.5 h-3.5 text-amber-400 animate-spin" />
+                <span className="text-xs font-semibold text-amber-400">Switching model…</span>
+              </div>
+              <div className="flex-1 flex items-center gap-1.5 overflow-x-auto">
+                {switchHistory.map((sw, i) => (
+                  <React.Fragment key={i}>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/15 text-red-400 border border-red-500/25 shrink-0 line-through opacity-60">
+                      {sw.from.split('/').pop()?.replace(':free', '') ?? sw.from}
+                    </span>
+                    <ArrowDown className="w-2.5 h-2.5 text-amber-400 rotate-[-90deg] shrink-0" />
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-500/15 text-green-400 border border-green-500/25 shrink-0 font-semibold">
+                      {sw.to.split('/').pop()?.replace(':free', '') ?? sw.to}
+                    </span>
+                  </React.Fragment>
+                ))}
+              </div>
+              <span className="text-[10px] text-amber-400/60 shrink-0">busy → retrying</span>
+            </div>
+            {/* Animated progress bar */}
+            <div className="mt-1.5 h-0.5 bg-amber-500/10 rounded-full overflow-hidden">
+              <div className="h-full bg-amber-400/60 rounded-full animate-[shimmer_1.5s_ease-in-out_infinite]" style={{ width: '60%', animation: 'pulse 1.2s ease-in-out infinite' }} />
+            </div>
+          </div>
+        )}
+
         {/* ── MODEL STATUS BAR ─────────────────────────────────────────── */}
         <div className="border-b border-border/30 bg-muted/10 px-4 py-1.5 shrink-0 overflow-x-auto">
           <div className="flex items-center gap-1.5 min-w-max">
@@ -1659,12 +1704,18 @@ export default function ChatPage() {
                         </div>
                       )}
 
-                      {/* Token count badge */}
+                      {/* Token count + Answered-by badges */}
                       {msg.content && msg.role === 'assistant' && (
-                        <div className="flex items-center gap-1 px-1">
+                        <div className="flex items-center gap-2 px-1 flex-wrap">
                           <span className="text-[10px] text-muted-foreground/35 tabular-nums">
                             ~{Math.ceil(msg.content.length / 4).toLocaleString()} tokens
                           </span>
+                          {msg.answeredBy && (
+                            <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 font-medium">
+                              <Bot className="w-2.5 h-2.5" />
+                              {msg.answeredBy.split('/').pop()?.replace(':free', '') ?? msg.answeredBy}
+                            </span>
+                          )}
                         </div>
                       )}
 

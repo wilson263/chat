@@ -122,6 +122,9 @@ function buildModelList(preferredModel?: string, pool: string[] = FREE_MODELS): 
   return [preferredModel, ...pool.filter(m => m !== preferredModel)];
 }
 
+// Callback fired whenever a model switch happens (busy → next model)
+export type OnSwitchCallback = (fromModel: string, toModel: string, attempt: number, reason: string) => void;
+
 // ─────────────────────────────────────────────────────────────────────────────
 // CORE: try each model in turn with 8s timeout + pass full list to OpenRouter
 // so OpenRouter can also switch server-side if a model stalls mid-stream.
@@ -130,7 +133,8 @@ function buildModelList(preferredModel?: string, pool: string[] = FREE_MODELS): 
 async function tryStream(
   client: OpenAI,
   params: Omit<OpenAI.Chat.ChatCompletionCreateParamsStreaming, "model">,
-  models: string[]
+  models: string[],
+  onSwitch?: OnSwitchCallback
 ): Promise<AsyncIterable<OpenAI.Chat.ChatCompletionChunk>> {
   for (let i = 0; i < models.length; i++) {
     const model = models[i];
@@ -158,10 +162,13 @@ async function tryStream(
           "AI authentication failed. Your OPENROUTER_API_KEY is invalid or expired. Please update it on Render."
         );
       }
-      const reason = isUnavailable(err)
-        ? "busy/rate-limited"
-        : `error (${err?.status ?? err?.name ?? "unknown"})`;
+      const reason = isUnavailable(err) ? "busy/rate-limited" : `error (${err?.status ?? err?.name ?? "unknown"})`;
       console.warn(`[OR] ${model} ${reason} → trying next`);
+
+      // Notify the caller so they can stream a switch event to the client
+      if (onSwitch && models[i + 1]) {
+        try { onSwitch(model, models[i + 1], i + 1, reason); } catch (_) {}
+      }
     }
   }
 
@@ -256,19 +263,21 @@ export async function createChatCompletion(
 
 export async function createChatCompletionStream(
   params: OpenAI.Chat.ChatCompletionCreateParamsStreaming,
-  preferredModel?: string
+  preferredModel?: string,
+  onSwitch?: OnSwitchCallback
 ): Promise<AsyncIterable<OpenAI.Chat.ChatCompletionChunk>> {
   let client: OpenAI;
   try { client = getAIClient(); } catch {
     throw new Error("AI service is not configured. OPENROUTER_API_KEY is missing on Render.");
   }
   const models = buildModelList(preferredModel ?? (params.model as string | undefined));
-  return tryStream(client, params, models);
+  return tryStream(client, params, models, onSwitch);
 }
 
 export async function createChatCompletionStreamFromList(
   params: Omit<OpenAI.Chat.ChatCompletionCreateParamsStreaming, "model">,
-  modelList: string[]
+  modelList: string[],
+  onSwitch?: OnSwitchCallback
 ): Promise<{ stream: AsyncIterable<OpenAI.Chat.ChatCompletionChunk>; model: string }> {
   let client: OpenAI;
   try { client = getAIClient(); } catch {
@@ -294,7 +303,11 @@ export async function createChatCompletionStreamFromList(
           "AI authentication failed. Your OPENROUTER_API_KEY is invalid or expired. Please update it on Render."
         );
       }
-      console.warn(`[agent] ${model} ${isUnavailable(err) ? "busy" : `error(${err?.status ?? err?.name})`} → next`);
+      const reason = isUnavailable(err) ? "busy" : `error(${err?.status ?? err?.name})`;
+      console.warn(`[agent] ${model} ${reason} → next`);
+      if (onSwitch && modelList[i + 1]) {
+        try { onSwitch(model, modelList[i + 1], i + 1, reason); } catch (_) {}
+      }
     }
   }
 

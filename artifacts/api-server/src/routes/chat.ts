@@ -311,7 +311,7 @@ async function streamReplitAI(
   context?: string,
   temperature?: number,
   resolvedSystemPrompt?: string
-): Promise<void> {
+): Promise<{ answeredBy: string }> {
   const textAttachments = attachments.filter(a => a.type === "text");
   const imageAttachments = attachments.filter(a => a.type === "image");
 
@@ -340,13 +340,23 @@ async function streamReplitAI(
     messages.push({ role: "user", content: userContent });
   }
 
+  // Track which model actually answers (may differ from requested if switching occurs)
+  let answeredBy = model;
+
+  const onSwitch = (fromModel: string, toModel: string, attempt: number, reason: string) => {
+    answeredBy = toModel;
+    try {
+      res.write(`data: ${JSON.stringify({ modelSwitch: { from: fromModel, to: toModel, attempt, reason } })}\n\n`);
+    } catch (_) {}
+  };
+
   const stream = await createChatCompletionStream({
     model,
     messages: messages as any,
     stream: true,
     max_tokens: 100000,
     temperature: temperature ?? 0.25,
-  } as any);
+  } as any, undefined, onSwitch);
 
   const keepalive = setInterval(() => {
     try { res.write(': keepalive\n\n'); } catch {}
@@ -360,6 +370,8 @@ async function streamReplitAI(
   } finally {
     clearInterval(keepalive);
   }
+
+  return { answeredBy };
 }
 
 async function handleChatRequest(req: any, res: any): Promise<void> {
@@ -383,8 +395,8 @@ async function handleChatRequest(req: any, res: any): Promise<void> {
   res.write(`data: ${JSON.stringify({ modelInfo: { model: resolvedModel, intent, autoSelected } })}\n\n`);
 
   try {
-    await streamReplitAI(res, resolvedModel, userMessage, history, attachments, context, temperature, resolvedSystemPrompt);
-    res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+    const { answeredBy } = await streamReplitAI(res, resolvedModel, userMessage, history, attachments, context, temperature, resolvedSystemPrompt);
+    res.write(`data: ${JSON.stringify({ done: true, answeredBy })}\n\n`);
     res.end();
   } catch (err: any) {
     const errMsg = err?.message ?? "An unexpected error occurred";

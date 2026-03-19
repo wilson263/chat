@@ -6,11 +6,20 @@ export type ModelInfo = {
   autoSelected: boolean;
 };
 
+export type ModelSwitch = {
+  from: string;
+  to: string;
+  attempt: number;
+  reason: string;
+  timestamp: number;
+};
+
 type StreamOptions = {
   onChunk?: (chunk: string) => void;
-  onFinish?: (fullText: string) => void;
+  onFinish?: (fullText: string, answeredBy?: string) => void;
   onError?: (error: Error) => void;
   onModelInfo?: (info: ModelInfo) => void;
+  onModelSwitch?: (sw: ModelSwitch) => void;
 };
 
 export function useAiStream(endpoint: string = 'chat/message') {
@@ -19,6 +28,9 @@ export function useAiStream(endpoint: string = 'chat/message') {
   const [content, setContent] = useState('');
   const [error, setError] = useState<Error | null>(null);
   const [modelInfo, setModelInfo] = useState<ModelInfo | null>(null);
+  const [switchHistory, setSwitchHistory] = useState<ModelSwitch[]>([]);
+  const [answeredBy, setAnsweredBy] = useState<string | null>(null);
+  const [isSwitching, setIsSwitching] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const stop = useCallback(() => {
@@ -41,6 +53,9 @@ export function useAiStream(endpoint: string = 'chat/message') {
     setContent('');
     setError(null);
     setModelInfo(null);
+    setSwitchHistory([]);
+    setAnsweredBy(null);
+    setIsSwitching(false);
     let fullText = '';
 
     try {
@@ -72,13 +87,35 @@ export function useAiStream(endpoint: string = 'chat/message') {
             if (dataStr.trim() === '[DONE]') continue;
             try {
               const data = JSON.parse(dataStr);
-              if (data.done) break;
 
-              // Handle model routing info from the backend
+              // Stream finished — carries which model actually answered
+              if (data.done) {
+                setIsSwitching(false);
+                if (data.answeredBy) {
+                  setAnsweredBy(data.answeredBy);
+                }
+                options?.onFinish?.(fullText, data.answeredBy);
+                break;
+              }
+
+              // Model routing info (initial selection)
               if (data.modelInfo) {
                 const info = data.modelInfo as ModelInfo;
                 setModelInfo(info);
+                setAnsweredBy(info.model);
                 options?.onModelInfo?.(info);
+                continue;
+              }
+
+              // Live model switch event
+              if (data.modelSwitch) {
+                const sw: ModelSwitch = { ...data.modelSwitch, timestamp: Date.now() };
+                setIsSwitching(true);
+                setSwitchHistory(prev => [...prev, sw]);
+                setAnsweredBy(sw.to);
+                options?.onModelSwitch?.(sw);
+                // Clear switching indicator briefly after content starts
+                setTimeout(() => setIsSwitching(false), 2500);
                 continue;
               }
 
@@ -94,7 +131,6 @@ export function useAiStream(endpoint: string = 'chat/message') {
         }
       }
 
-      options?.onFinish?.(fullText);
     } catch (err) {
       if ((err as any)?.name === 'AbortError') {
         options?.onFinish?.(fullText);
@@ -107,8 +143,9 @@ export function useAiStream(endpoint: string = 'chat/message') {
       abortControllerRef.current = null;
       setIsStreaming(false);
       setLoading(false);
+      setIsSwitching(false);
     }
   }, [endpoint]);
 
-  return { stream, stop, isStreaming, loading, content, error, setContent, modelInfo };
+  return { stream, stop, isStreaming, loading, content, error, setContent, modelInfo, switchHistory, answeredBy, isSwitching };
 }
