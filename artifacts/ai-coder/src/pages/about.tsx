@@ -227,7 +227,22 @@ export default function AboutPage() {
     { icon: Lightbulb, title: 'Product Engineering Mindset', desc: 'Ship small & often, blameless postmortems, chaos engineering, boring technology principle, MVP thinking, toil automation, runbooks, graceful degradation, and user empathy.', color: 'bg-sky-500/10 text-sky-400', badge: 'NEW' },
   ];
 
-  const totalFeatures = playgroundFeatures.length + workspaceFeatures.length + chatFeatures.length + powerFeatures.length + promptGeneratorFeatures.length + exploreFeatures.length + aiIntelligenceFeatures.length + aiUpgradeV2Features.length + aiUpgradeV3Features.length + aiUpgradeV4Features.length + aiUpgradeV5Features.length;
+  const aiUpgradeCoreFeatures = [
+    { icon: Zap, title: 'Autonomous Agent Behavior', desc: 'ZorvixAI plans before every task — outputs an implementation plan, completes 100% of what it starts, self-reviews output, and warns you before breaking changes. No more half-finished files.', color: 'bg-yellow-500/10 text-yellow-400', badge: 'CORE' },
+    { icon: Code2, title: 'Full-Stack Generation in One Pass', desc: 'Every API endpoint comes with its Zod schema, TypeScript types, client hook, and UI component. Every form includes loading, error, success, and validation. Never a half-built feature.', color: 'bg-primary/10 text-primary', badge: 'CORE' },
+    { icon: Rocket, title: 'Replit-Style Zero-Config Dev', desc: 'Projects start in under 3 seconds with zero config. Startup logs show port, environment, DB status, and feature flags. Path aliases, HMR, and health check endpoints are standard.', color: 'bg-orange-500/10 text-orange-400', badge: 'CORE' },
+    { icon: Braces, title: 'TypeScript Mastery: satisfies, infer, brands', desc: 'Uses satisfies operator, discriminated unions, template literal types, const assertions, branded ID types, mapped type modifiers, module augmentation, and NoInfer<T> utility.', color: 'bg-blue-500/10 text-blue-400', badge: 'CORE' },
+    { icon: MousePointer2, title: 'React 19 & Server Actions', desc: 'useOptimistic, use() hook, useFormStatus, React Compiler (no manual memo/useCallback), Suspense at every boundary, Error Boundaries, startTransition, and useDeferredValue.', color: 'bg-sky-500/10 text-sky-400', badge: 'CORE' },
+    { icon: CloudUpload, title: 'Production Deployment Patterns', desc: 'Blue-green deployments, canary releases with traffic splitting, backward-compatible migrations, SIGTERM graceful shutdown, immutable infrastructure, and git-SHA-tagged Docker images.', color: 'bg-emerald-500/10 text-emerald-400', badge: 'CORE' },
+    { icon: FlaskConical, title: 'Advanced LLM Engineering', desc: 'Structured output with JSON schemas, RAG with pgvector, prompt caching for 90% cost reduction, streaming SSE, multi-turn context trimming, model routing, and automated evals on every change.', color: 'bg-violet-500/10 text-violet-400', badge: 'CORE' },
+    { icon: Network, title: 'AI Agent Orchestration', desc: 'ReAct pattern, parallel tool execution, 10-step depth limits, human-in-the-loop for destructive actions, agent memory (short/long-term/episodic), and per-step logging for full debuggability.', color: 'bg-pink-500/10 text-pink-400', badge: 'CORE' },
+    { icon: ShieldCheck, title: 'Advanced Security Hardening', desc: 'CSP with nonces, Subresource Integrity, timing-safe comparison, SSRF prevention, secrets rotation with zero downtime, session fixation prevention, and supply chain security with pinned deps.', color: 'bg-red-500/10 text-red-400', badge: 'CORE' },
+    { icon: Gauge, title: 'Core Web Vitals Engineering', desc: 'LCP via preload + CDN, CLS via explicit image dimensions, INP via scheduler.yield(), 103 Early Hints, stale-while-revalidate, Service Worker caching, AVIF images, and critical CSS inlining.', color: 'bg-amber-500/10 text-amber-400', badge: 'CORE' },
+    { icon: Brain, title: 'Implementation Plan First', desc: 'Every non-trivial task begins with a written plan listing files to create/edit and the order of changes. Dependency order is always respected: types → utils → components → pages.', color: 'bg-indigo-500/10 text-indigo-400', badge: 'CORE' },
+    { icon: Activity, title: '100 Elite Instructions Total', desc: 'All 100 new Replit Max Core instructions span agent behavior, full-stack codegen, TypeScript mastery, React 19, deployment, LLM engineering, agent orchestration, security, and performance.', color: 'bg-teal-500/10 text-teal-400', badge: 'CORE' },
+  ];
+
+  const totalFeatures = playgroundFeatures.length + workspaceFeatures.length + chatFeatures.length + powerFeatures.length + promptGeneratorFeatures.length + exploreFeatures.length + aiIntelligenceFeatures.length + aiUpgradeV2Features.length + aiUpgradeV3Features.length + aiUpgradeV4Features.length + aiUpgradeV5Features.length + aiUpgradeCoreFeatures.length;
 
   return (
     <PageLayout crumbs={[{ label: 'About' }]} backHref="/" withMeshBg>
@@ -821,6 +836,71 @@ export default function AboutPage() {
           <div className="mt-4 flex justify-center">
             <Button onClick={() => setLocation('/')} className="gap-2 shadow-lg shadow-rose-500/20 bg-rose-600 hover:bg-rose-700">
               <Lightbulb className="w-4 h-4" />Try v5 Upgraded AI
+            </Button>
+          </div>
+        </section>
+
+        {/* AI Knowledge Update — Replit Max Core */}
+        <section className="mb-14">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-9 h-9 rounded-xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center">
+              <Zap className="w-4 h-4 text-yellow-400" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold">AI Core Update — Replit Max Level</h2>
+              <p className="text-sm text-muted-foreground">100 elite new instructions: autonomous agent behavior, full-stack codegen, React 19, LLM engineering, agent orchestration, advanced security & Core Web Vitals</p>
+            </div>
+            <Badge className="ml-auto bg-yellow-500/20 text-yellow-400 border-yellow-500/30">100 NEW</Badge>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {aiUpgradeCoreFeatures.map(f => (
+              <div key={f.title} className="bg-card border border-border/50 rounded-xl p-5 hover:border-yellow-500/20 transition-colors">
+                <div className="flex items-start gap-3 mb-3">
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${f.color}`}><f.icon className="w-4 h-4" /></div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <h3 className="font-semibold text-sm">{f.title}</h3>
+                      <Badge variant="outline" className="text-xs py-0 h-4 border-yellow-500/40 text-yellow-400">{f.badge}</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">{f.desc}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-6 bg-muted/30 border border-border/50 rounded-xl p-5">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">100 Elite Instruction Domains</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              {[
+                { label: 'Agent Self-Planning', icon: '🤖' },
+                { label: 'Full-Stack Codegen', icon: '⚡' },
+                { label: 'Zero-Config Dev', icon: '🚀' },
+                { label: 'TypeScript: satisfies', icon: '🔷' },
+                { label: 'Branded ID Types', icon: '🏷️' },
+                { label: 'React 19 Patterns', icon: '⚛️' },
+                { label: 'Server Actions', icon: '🔄' },
+                { label: 'useOptimistic Hook', icon: '⚡' },
+                { label: 'Blue-Green Deploy', icon: '🔵' },
+                { label: 'Canary Releases', icon: '🐦' },
+                { label: 'Prompt Caching 90%', icon: '💰' },
+                { label: 'RAG + pgvector', icon: '🧠' },
+                { label: 'Structured Output', icon: '📋' },
+                { label: 'ReAct Agent Pattern', icon: '🔗' },
+                { label: 'CSP with Nonces', icon: '🛡️' },
+                { label: 'Core Web Vitals', icon: '📊' },
+              ].map(d => (
+                <div key={d.label} className="flex items-center gap-2 px-3 py-2 bg-card border border-border/50 rounded-lg">
+                  <span>{d.icon}</span>
+                  <p className="text-xs text-muted-foreground">{d.label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-4 flex justify-center">
+            <Button onClick={() => setLocation('/')} className="gap-2 shadow-lg shadow-yellow-500/20 bg-yellow-600 hover:bg-yellow-700">
+              <Zap className="w-4 h-4" />Try Replit Max Core AI
             </Button>
           </div>
         </section>
