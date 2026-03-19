@@ -1439,6 +1439,44 @@ export default function ChatPage() {
           </div>
         )}
 
+        {/* ── MODEL STATUS BAR ─────────────────────────────────────────── */}
+        <div className="border-b border-border/30 bg-muted/10 px-4 py-1.5 shrink-0 overflow-x-auto">
+          <div className="flex items-center gap-1.5 min-w-max">
+            <span className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-wider mr-1 shrink-0">Models:</span>
+            {[
+              { id: 'meta-llama/llama-3.3-70b-instruct:free', label: 'Llama 3.3 70B', provider: 'Meta', busy: false },
+              { id: 'qwen/qwen3-coder-480b-a35b:free', label: 'Qwen3 Coder', provider: 'Qwen', busy: true },
+              { id: 'deepseek/deepseek-r1:free', label: 'DeepSeek R1', provider: 'DeepSeek', busy: false },
+              { id: 'openai/gpt-oss-120b:free', label: 'GPT-OSS 120B', provider: 'OpenAI', busy: false },
+              { id: 'mistralai/mistral-small-3.1-24b-instruct:free', label: 'Mistral Small', provider: 'Mistral', busy: false },
+              { id: 'google/gemma-3-27b-it:free', label: 'Gemma 3 27B', provider: 'Google', busy: false },
+              { id: 'nvidia/llama-3.3-nemotron-super-49b-v1:free', label: 'Nemotron 49B', provider: 'NVIDIA', busy: false },
+            ].map(m => (
+              <button
+                key={m.id}
+                onClick={() => !m.busy && setModel(m.id)}
+                disabled={m.busy}
+                title={m.busy ? `${m.label} is currently busy — try another model` : `Switch to ${m.label}`}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border transition-all shrink-0 ${
+                  model === m.id && !m.busy
+                    ? 'bg-primary/15 border-primary/40 text-primary'
+                    : m.busy
+                    ? 'bg-red-500/8 border-red-500/25 text-red-400/70 cursor-not-allowed opacity-70'
+                    : 'bg-muted/50 border-border/40 text-muted-foreground hover:text-foreground hover:border-border hover:bg-muted transition-colors'
+                }`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                  m.busy ? 'bg-red-400 animate-pulse' : model === m.id ? 'bg-primary' : 'bg-green-400'
+                }`} />
+                <span className="truncate">{m.label}</span>
+                {m.busy && (
+                  <span className="text-[9px] px-1 py-0.5 rounded bg-red-500/20 text-red-400 font-bold leading-none">busy</span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Settings bar + Context Window Progress Bar */}
         <div className="border-b border-border/30 bg-muted/20 px-4 py-1.5 flex flex-col gap-1 shrink-0">
           <div className="flex items-center gap-4 text-xs text-muted-foreground">
