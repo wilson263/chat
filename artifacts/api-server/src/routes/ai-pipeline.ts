@@ -129,7 +129,7 @@ const CODE_SHIP_PIPELINE: PipelineDefinition = {
       systemPrompt: "You are a senior engineer. Write complete, production-ready code with no placeholders.",
       buildUserPrompt: (input) =>
         `Implement this feature completely:\n${input}\n\nWrite complete, production-ready code. Every function must be fully implemented.`,
-      maxTokens: 60000,
+      maxTokens: 100000,
     },
     {
       id: "test",
@@ -139,7 +139,7 @@ const CODE_SHIP_PIPELINE: PipelineDefinition = {
       systemPrompt: "You are a QA engineer specializing in comprehensive test coverage.",
       buildUserPrompt: (impl, ctx) =>
         `Write comprehensive tests for this implementation:\n\`\`\`\n${impl}\n\`\`\`\n\nOriginal requirement: ${ctx.user_input}\n\nCover:\n- Happy path\n- Edge cases\n- Error cases\n- Boundary conditions`,
-      maxTokens: 60000,
+      maxTokens: 100000,
     },
     {
       id: "document",
@@ -149,7 +149,7 @@ const CODE_SHIP_PIPELINE: PipelineDefinition = {
       systemPrompt: "You are a technical writer creating clear, useful documentation.",
       buildUserPrompt: (_, ctx) =>
         `Generate complete documentation for:\n\nImplementation:\n${ctx.implement?.slice(0, 2000)}\n\nInclude:\n- Module/file overview\n- JSDoc for every function\n- Usage examples\n- Parameter descriptions\n- Return type documentation\n- Error conditions`,
-      maxTokens: 60000,
+      maxTokens: 100000,
     },
     {
       id: "review",
@@ -159,7 +159,7 @@ const CODE_SHIP_PIPELINE: PipelineDefinition = {
       systemPrompt: "You are a principal engineer doing a final code review before shipping.",
       buildUserPrompt: (_, ctx) =>
         `Final review before shipping:\n\nCode:\n${ctx.implement?.slice(0, 2000)}\n\nTests:\n${ctx.test?.slice(0, 1000)}\n\nCheck: correctness, security, performance, completeness.\nList any issues found and provide the final approved or corrected code.`,
-      maxTokens: 60000,
+      maxTokens: 100000,
     },
   ],
 };
@@ -243,7 +243,7 @@ const CONTENT_PIPELINE: PipelineDefinition = {
       systemPrompt: "You are an expert content writer who creates engaging, valuable content.",
       buildUserPrompt: (_, ctx) =>
         `Write a complete, high-quality content piece using:\n\nTopic: ${ctx.user_input?.slice(0, 200)}\nOutline: ${ctx.outline?.slice(0, 800)}\nResearch: ${ctx.research?.slice(0, 600)}\n\nWrite the full draft — engaging, informative, and valuable to the reader.`,
-      maxTokens: 60000,
+      maxTokens: 100000,
     },
     {
       id: "seo",
