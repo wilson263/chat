@@ -4738,7 +4738,665 @@ COMPONENT-DRIVEN DEVELOPMENT (STORYBOOK)
 • Accessibility in Storybook: @storybook/addon-a11y runs axe-core — flag WCAG violations on every story automatically
 • Story hierarchy: organize stories in folders matching your component hierarchy — use the title field: 'Forms/Button' groups them in the sidebar
 • On-demand revalidation from Storybook: connect Storybook to your CMS — editors preview content in real component stories
+
+═══════════════════════════════════════
+ADVANCED AI & LLM INTEGRATION
+═══════════════════════════════════════
+PROMPT ENGINEERING:
+• System prompts define AI identity and constraints — write them as standing orders, not suggestions
+• Few-shot prompting: include 2-5 examples of input→output pairs to shape model behavior dramatically
+• Chain-of-thought prompting: add "Let's think step by step" to dramatically improve reasoning quality
+• Role prompting: assign a specific expert persona — "You are a senior security engineer reviewing this code"
+• Temperature=0 for deterministic tasks (JSON extraction, classification), 0.7-1.0 for creative tasks
+• Use structured output / JSON mode to guarantee machine-readable responses every time
+• Constrain output with strict schemas (Zod, Pydantic) validated after every AI response
+• Prompt injection defense: never concatenate user input directly into system prompts — sanitize first
+• Separate instruction tokens from data tokens — use XML tags or delimiters (<data>...</data>)
+• Test prompts with adversarial inputs — assume users will try to jailbreak or confuse the AI
+
+RETRIEVAL-AUGMENTED GENERATION (RAG):
+• RAG = retrieve relevant context from a knowledge base, inject into prompt, then generate
+• Chunk documents intelligently — semantic chunks (paragraphs/sections), not fixed byte splits
+• Overlap chunks by 10-20% to prevent context loss at boundaries
+• Use embedding models (text-embedding-3-small) to convert text to vectors for similarity search
+• pgvector (PostgreSQL extension) for production vector search — no separate vector DB needed for moderate scale
+• Pinecone, Weaviate, Qdrant, or Chroma for dedicated vector databases at larger scale
+• Hybrid search: combine dense vector similarity + BM25 keyword search for best recall
+• Re-rank retrieved results with a cross-encoder before injecting into context
+• Add metadata filters (date, source, category) to vector search to improve precision
+• Evaluate RAG pipelines with RAGAS metrics: faithfulness, answer relevancy, context precision
+• Reciprocal Rank Fusion (RRF) to merge results from multiple retrieval strategies
+
+LLM APPLICATION PATTERNS:
+• Streaming responses with SSE or WebSockets — never block waiting for full LLM response
+• Structured extraction: use JSON mode + Zod to extract entities, not regex
+• Tool calling / function calling: let the model call defined functions to fetch live data
+• Agentic loops: LLM decides what tool to call next until task is complete
+• Human-in-the-loop: add confirmation steps for irreversible agent actions
+• LangChain / Vercel AI SDK / LlamaIndex — use frameworks to avoid reinventing the wheel
+• Token counting: always estimate tokens before sending — prevent context limit errors
+• Sliding window memory: keep only the last N messages + a rolling summary for long conversations
+• Semantic caching: cache embeddings of questions — return cached answer for similar queries
+• Guardrails: validate both input (prompt injection, PII detection) and output (hallucination, policy violations)
+• Cost tracking: log token counts per request — production LLM costs can surprise you
+• Model fallback: if primary model fails or times out, fall back to a cheaper/faster model
+• Batch API calls for offline workloads — up to 50% cheaper with Anthropic/OpenAI batch endpoints
+
+FINE-TUNING & EVALUATION:
+• Fine-tune only when prompt engineering has reached its limits — it's expensive
+• Prepare high-quality training data: 100-1000 curated examples for good results
+• Use OpenAI Evals, RAGAS, or custom evals to measure performance before and after changes
+• A/B test prompts in production — treat prompt changes like code changes with rollout gates
+• Log every LLM input/output for debugging and dataset creation
+• Use RLHF-inspired feedback: collect thumbs up/down from users to identify failure cases
+
+═══════════════════════════════════════
+DEVOPS & CI/CD MASTERY
+═══════════════════════════════════════
+CONTINUOUS INTEGRATION:
+• Every PR must pass: lint, typecheck, tests, build — block merge on any failure
+• Run CI on every push, not just on PR merge — catch issues early
+• Cache dependencies and build artifacts to keep CI under 5 minutes
+• Fail fast: run cheapest checks first (lint, typecheck), expensive tests last
+• Use matrix builds to test across multiple Node/Python/language versions
+• Separate unit, integration, and E2E test jobs — don't block quick feedback with slow tests
+• Use ephemeral test databases — spin up in CI, destroy after — never share state between runs
+• Artifact storage: save build outputs, coverage reports, and test results as CI artifacts
+• PR previews: deploy every PR to a preview environment — let reviewers click through changes
+
+CONTINUOUS DEPLOYMENT:
+• Trunk-based development: merge small PRs frequently, deploy main automatically
+• Blue-green deployment: run two identical environments, switch traffic atomically
+• Canary releases: route 5% of traffic to new version, monitor, then roll out fully
+• Feature flags: decouple deploy from release — ship code dark, enable features per user/cohort
+• Rollback strategy: always have a one-command rollback — never manually fix production under pressure
+• Zero-downtime deployments: health checks, graceful shutdown (SIGTERM → drain → exit), readiness probes
+• Database migrations before app deploy — never break the running version with schema changes
+• Smoke tests after deploy: hit critical endpoints to verify deployment health before routing real traffic
+
+INFRASTRUCTURE AS CODE:
+• Terraform for cloud infrastructure — never click-ops production changes
+• Pulumi for IaC in TypeScript/Python/Go — same language as your app
+• Ansible for configuration management at scale
+• Always version IaC alongside application code in the same repo
+• Use workspaces / modules to separate environments (dev, staging, prod)
+• Import existing infrastructure before modifying — avoid drift
+• Run terraform plan in CI, terraform apply in CD with manual approval for prod
+• Use remote state (S3 + DynamoDB lock, Terraform Cloud) — never local state in production
+
+DOCKER & CONTAINERS:
+• Multi-stage builds: builder stage compiles, final stage is minimal runtime image
+• Use official distroless or alpine images for production — minimize attack surface
+• Never run containers as root — add USER directive with non-root user
+• Use .dockerignore to exclude node_modules, .git, build artifacts
+• Pin exact image versions (node:22.3.0-alpine, not node:latest) for reproducibility
+• Health checks in Dockerfile: HEALTHCHECK CMD curl -f http://localhost:8080/healthz
+• One process per container — use a process manager (tini) only when necessary
+• Secrets via environment variables or mounted secret files — never baked into image layers
+• Layer caching: copy package.json + lockfile first, install deps, then copy source — install is cached unless deps change
+• Trivy or Snyk to scan images for known CVEs in CI
+
+KUBERNETES:
+• Readiness vs Liveness probes: readiness gates traffic (is ready to serve?), liveness restarts stuck containers
+• Resource requests and limits on every container — no unbounded resource consumption
+• Horizontal Pod Autoscaler (HPA) based on CPU or custom metrics
+• PodDisruptionBudget to ensure N pods always remain running during rolling updates
+• ConfigMaps for configuration, Secrets for sensitive data (encrypt secrets at rest in etcd)
+• NetworkPolicy to restrict pod-to-pod communication — deny all by default
+• Namespaces for environment isolation within the same cluster
+• Helm charts for packaging and versioning Kubernetes manifests
+• Use init containers for migration jobs before the app container starts
+• Avoid NodePort — use LoadBalancer or Ingress for external traffic
+
+MONITORING & OBSERVABILITY:
+• Three pillars: metrics (Prometheus), logs (structured JSON), traces (OpenTelemetry)
+• Metrics: instrument every HTTP endpoint (latency histogram, error rate, throughput)
+• Alerts: alert on symptoms (error rate > 1%, P99 latency > 2s) not causes (CPU > 80%)
+• USE method for resources: Utilization, Saturation, Errors per resource
+• RED method for services: Rate, Errors, Duration per request
+• Distributed tracing: add trace ID to every request, propagate across services via W3C headers
+• Structured logging: always log as JSON with requestId, userId, duration, status
+• Log levels: DEBUG (dev only), INFO (business events), WARN (recoverable issues), ERROR (failures)
+• Never log PII: mask email, phone, card numbers before writing to logs
+• Dashboards: create runbooks linked from alert dashboards — on-call engineers need context fast
+• SLOs and error budgets: define acceptable reliability levels, auto-reduce velocity if budget exhausted
+
+═══════════════════════════════════════
+CLOUD NATIVE PATTERNS
+═══════════════════════════════════════
+AWS SERVICES MAP:
+• Compute: EC2 (VMs), ECS Fargate (containers), Lambda (serverless functions), EKS (managed k8s)
+• Storage: S3 (object store), EBS (block), EFS (file system), Glacier (archive)
+• Database: RDS/Aurora (relational), DynamoDB (NoSQL), ElastiCache (Redis/Memcached), DocumentDB (MongoDB-compatible)
+• Messaging: SQS (queue), SNS (pub/sub fanout), EventBridge (event bus), Kinesis (streaming)
+• API Gateway + Lambda for serverless HTTP APIs
+• CloudFront for CDN — serve S3 static assets globally with low latency
+• VPC with private subnets for backend services, public subnets only for load balancers
+• IAM roles with least-privilege — never use root credentials or long-lived access keys
+
+SERVERLESS PATTERNS:
+• Lambda cold starts: keep functions warm, minimize bundle size, use provisioned concurrency for latency-sensitive
+• Maximum Lambda execution: 15 minutes — offload long work to Step Functions or ECS
+• Lambda layers for shared dependencies — reduce deployment size across functions
+• Event-driven: Lambda triggered by S3, SQS, DynamoDB streams, API Gateway, EventBridge
+• Step Functions for orchestrating multi-step workflows with retry/error handling
+• Lambda@Edge / CloudFront Functions for edge logic (auth, redirects, A/B testing)
+• Avoid Lambda for: long-running tasks, stateful workloads, WebSockets (use API GW WebSocket), CPU-intensive tasks
+
+MULTI-REGION & DISASTER RECOVERY:
+• RTO (Recovery Time Objective): how long can you be down? RTO < 4h requires hot standby
+• RPO (Recovery Point Objective): how much data can you lose? RPO < 1min requires synchronous replication
+• Active-passive: primary region serves traffic, secondary region is warm standby
+• Active-active: both regions serve traffic — requires eventual consistency and conflict resolution
+• Cross-region replication: S3 CRR, DynamoDB global tables, Aurora Global Database
+• DNS failover with Route53 health checks — automatic regional failover in < 60 seconds
+• Test DR runbooks quarterly — a disaster plan only works if it's been practiced
+• Chaos engineering: inject failures in staging (Chaos Monkey, AWS Fault Injection Simulator)
+
+═══════════════════════════════════════
+MICROSERVICES & DISTRIBUTED SYSTEMS
+═══════════════════════════════════════
+WHEN TO USE MICROSERVICES:
+• Only when teams are large enough that coupling causes friction (Conway's Law)
+• Not for startups or small teams — monolith first, extract services when pain is real
+• Each service should be: independently deployable, owns its data, bounded by a domain
+• If services must deploy together, they are not truly independent — question the boundary
+
+SERVICE COMMUNICATION:
+• Synchronous (HTTP/gRPC): use for queries that need an immediate answer
+• Asynchronous (message queue): use for commands where eventual consistency is acceptable
+• Choreography: services react to events independently — loose coupling, hard to trace
+• Orchestration: a coordinator service directs others — easier to trace, coupling to orchestrator
+• Prefer async for write operations — caller doesn't wait for all downstream effects
+
+DATA CONSISTENCY:
+• Each service owns its data store — no sharing databases between services
+• Saga pattern for distributed transactions — sequence of local transactions + compensating actions
+• Eventual consistency: accept that reads may be stale — design UI around this
+• Idempotency keys: every write operation must be safely retryable
+• Outbox pattern: write event to same DB transaction as business data — guaranteed publish
+
+NETWORK RELIABILITY:
+• The 8 fallacies of distributed computing: network is not reliable, not zero latency, not infinite bandwidth
+• Always set timeouts on outgoing calls — no request should wait forever
+• Retry with exponential backoff and jitter — prevent thundering herd on downstream recovery
+• Circuit breaker: after N failures, stop calling the service and return fast failure
+• Bulkhead pattern: isolate thread pools per downstream — one slow service doesn't block all requests
+• Health endpoints: every service exposes /healthz (liveness) and /readyz (readiness)
+
+SERVICE MESH:
+• Istio / Linkerd for: mutual TLS, traffic policies, circuit breaking, distributed tracing across services
+• Sidecar proxy (Envoy) handles cross-cutting concerns — app code stays clean
+• Traffic shifting: route 10% to canary without code changes in the app
+• Service mesh is powerful but complex — only introduce when you have 10+ services
+
+═══════════════════════════════════════
+FRONTEND PERFORMANCE DEEP DIVE
+═══════════════════════════════════════
+CORE WEB VITALS:
+• LCP (Largest Contentful Paint) < 2.5s: optimize hero image loading, preconnect to origins, use CDN
+• INP (Interaction to Next Paint) < 200ms: break up long tasks, defer non-critical JS, use web workers
+• CLS (Cumulative Layout Shift) < 0.1: always set width/height on images, never insert content above existing content
+• Use Chrome DevTools Performance panel + Lighthouse to identify specific bottlenecks
+• Real User Monitoring (RUM) with web-vitals library — lab data ≠ field data
+
+JAVASCRIPT OPTIMIZATION:
+• Parse + execution time: every byte of JS costs CPU — tree-shake aggressively
+• Dynamic import() for route-level code splitting — Vite and webpack do this automatically
+• Bundle analysis: use vite-bundle-visualizer or webpack-bundle-analyzer — find unexpected large deps
+• Preload critical JS: <link rel="modulepreload"> for JS modules needed on first interaction
+• Use web workers for CPU-intensive tasks: sorting, encryption, image processing
+• Avoid main thread work during page load: defer analytics, defer non-essential third-party scripts
+• Use scheduler.postTask() for prioritizing UI work on the main thread
+
+IMAGE OPTIMIZATION:
+• Always use WebP/AVIF — 30-50% smaller than JPEG/PNG with same visual quality
+• Responsive images: <img srcset="..."> with multiple sizes — never serve 2000px image on mobile
+• Lazy load below-the-fold images: loading="lazy" attribute — native browser support
+• Blur-up or LQIP (Low Quality Image Placeholder) for perceived performance
+• Use <picture> element for art direction (different crop per breakpoint)
+• CDN with automatic format conversion (Cloudinary, imgix, Next.js Image, Vercel OG)
+• SVG for icons and illustrations — infinitely scalable, tiny file size
+• Sprite sheets for icon sets — one HTTP request instead of many
+
+CSS PERFORMANCE:
+• Avoid expensive properties in animations: box-shadow, border-radius changes, filter — use transform + opacity
+• contain: layout size paint for components that don't affect outside layout
+• content-visibility: auto for off-screen content — skip rendering until needed
+• Use CSS Grid and Flexbox — far more performant than older float-based layouts
+• Critical CSS: inline above-the-fold CSS, defer rest — eliminates render-blocking stylesheets
+• Minimize CSS specificity conflicts — they cause browsers to recalculate styles frequently
+
+FONT OPTIMIZATION:
+• Use font-display: swap to show fallback font immediately while custom font loads
+• Subset fonts to only include characters used — huge savings for large fonts
+• Preconnect to font CDN: <link rel="preconnect" href="https://fonts.googleapis.com">
+• Self-host fonts — eliminates DNS lookup and potential third-party failure
+• Variable fonts: one file for all weights and styles — replaces multiple font files
+• System font stacks as a fallback: fast and no download required
+
+═══════════════════════════════════════
+ADVANCED REACT PATTERNS
+═══════════════════════════════════════
+CONCURRENT FEATURES:
+• useTransition: mark state updates as non-urgent — keep UI responsive during slow renders
+• useDeferredValue: defer expensive derived values — prioritize user input over computation
+• Suspense: declarative loading states — wrap async components, show fallback while loading
+• use() hook: read promises and context inside render (React 19)
+• Server Components: zero-bundle-size components that run only on the server (Next.js App Router)
+• Server Actions: async functions that run on the server, called from client components
+
+STATE MANAGEMENT DECISIONS:
+• useState + prop drilling: fine for < 3 levels, simple apps
+• useContext: fine for low-frequency updates (theme, locale, auth user)
+• Zustand: lightweight, no boilerplate, works outside React, best for medium apps
+• Jotai / Recoil: atom-based, fine-grained subscriptions — great for large apps with complex derived state
+• Redux Toolkit: overkill for most apps but justified for very large teams with complex sync requirements
+• TanStack Query (React Query): server state is NOT the same as UI state — use React Query for ALL async data
+
+PERFORMANCE PATTERNS:
+• memo() + useMemo() + useCallback(): profile FIRST, memoize SECOND — premature memoization hurts readability
+• Key prop: stable, unique keys prevent unnecessary re-mounts — never use array index as key in dynamic lists
+• Avoid anonymous function props in render: creates new reference every render, breaks memo
+• Split context: separate high-frequency updates (mouse position) from low-frequency (theme)
+• Keep state as low as possible in the tree — lift only when necessary
+• Avoid deriving state from props in useState — derive in render or use useMemo
+
+PATTERNS FOR SCALABLE COMPONENTS:
+• Compound components: <Select>, <Select.Option>, <Select.Placeholder> — share implicit state via context
+• Headless components: logic without UI — Radix, Headless UI — apply your own styles
+• Polymorphic components: accept an 'as' prop to render as any HTML element or component
+• Render props: share stateful logic via a function-as-children prop
+• Controlled vs. uncontrolled: prefer controlled (value + onChange) for form elements you need to react to
+
+ERROR BOUNDARIES:
+• Wrap every major section of the app in an Error Boundary — prevent one crash from killing everything
+• Log errors to Sentry or similar in componentDidCatch
+• Show user-friendly fallback UI — not a blank screen
+• Error boundaries do NOT catch: async errors, event handlers, server-side errors — handle those separately
+• react-error-boundary library: useErrorBoundary hook for triggering boundaries from async code
+
+═══════════════════════════════════════
+NODE.JS DEEP DIVE
+═══════════════════════════════════════
+EVENT LOOP MASTERY:
+• Node.js is single-threaded — blocking the event loop freezes ALL requests
+• Never run CPU-intensive tasks synchronously: use worker_threads for CPU, child_process for shell
+• Long loops, crypto.pbkdf2Sync, JSON.parse on large data — all block the event loop
+• Use setImmediate() to yield control back to the event loop between chunks
+• Monitor event loop lag with process.hrtime() or clinic.js flamegraph
+• Use --inspect flag for Chrome DevTools profiling of Node.js apps
+
+STREAMS:
+• Streams for large data: never load a 1GB file fully into memory — stream it
+• Readable, Writable, Transform, Duplex — four stream types
+• pipe() connects streams and handles backpressure automatically
+• Use pipeline() (util.promisify) instead of pipe() — handles errors and cleanup
+• Transform streams for data transformation in the pipeline (compression, encryption, parsing)
+• Highwater mark: controls how much data is buffered before backpressure kicks in
+
+CLUSTER & WORKER THREADS:
+• Cluster module: fork N worker processes (one per CPU core) — share the same port via IPC
+• PM2: production process manager — clustering, auto-restart, log management, monitoring
+• Worker threads for CPU parallelism within the same process — share memory via SharedArrayBuffer
+• Thread pool (libuv): file I/O, crypto, DNS — runs on 4 threads by default (UV_THREADPOOL_SIZE)
+• Increase UV_THREADPOOL_SIZE if you have many concurrent file I/O or DNS operations
+
+MEMORY MANAGEMENT:
+• V8 heap is limited (~1.5GB by default on 64-bit) — increase with --max-old-space-size
+• Memory leaks: forgotten event listeners, closures holding references, growing caches
+• Use WeakMap/WeakSet for caches keyed by objects — GC collects keys automatically
+• Heap snapshots with --expose-gc and Chrome DevTools Memory tab for leak detection
+• global-agent or node-fetch abort controllers to prevent hanging HTTP requests accumulating
+
+MODULE SYSTEM:
+• ESM (import/export) is the standard — prefer it for new projects
+• CJS (require) for compatibility with legacy packages
+• package.json "type": "module" for ESM by default in the package
+• Dual packages: export both ESM and CJS for library authors (exports field in package.json)
+• Dynamic imports: import() for lazy loading in ESM — same as browser
+
+═══════════════════════════════════════
+PYTHON BACKEND EXCELLENCE
+═══════════════════════════════════════
+ASYNC PYTHON:
+• asyncio for I/O-bound concurrency — not for CPU-bound (use multiprocessing)
+• async def / await for all I/O: database queries, HTTP calls, file reads
+• asyncio.gather() for concurrent awaiting of multiple coroutines
+• aiohttp or httpx for async HTTP — never requests in async code (it's blocking)
+• asyncpg for PostgreSQL — far faster than psycopg2 in async contexts
+• Avoid mixing sync and async — run sync code in executor: loop.run_in_executor()
+
+FRAMEWORKS:
+• FastAPI: async, type hints, automatic OpenAPI docs — best choice for new APIs
+• Django: batteries-included, ORM, admin panel — great for complex apps needing everything
+• Flask: minimal, explicit — use for small APIs or when FastAPI overhead feels too heavy
+• Pydantic v2: 10x faster than v1, strict mode, model serialization, JSON schema generation
+• SQLAlchemy 2.0: the standard Python ORM — async support, Core + ORM layers
+• Alembic: database migrations for SQLAlchemy — never modify schema without migrations
+
+PERFORMANCE:
+• Python GIL: threading doesn't help CPU tasks — use multiprocessing for CPU parallelism
+• Uvicorn + Gunicorn: production ASGI server — multiple worker processes
+• Celery: distributed task queue — background jobs, scheduled tasks, retries
+• Caching: functools.lru_cache for sync, cachetools or aiocache for async, Redis for distributed
+• Numba JIT compilation for numeric code — near C speed for Python loops
+• Cython: compile Python to C extensions for critical performance paths
+• Profile with cProfile + snakeviz before optimizing — measure, don't guess
+
+TYPE HINTS & QUALITY:
+• Type hints on every function signature — use mypy or pyright for static type checking
+• Use from __future__ import annotations for forward references in Python 3.9
+• dataclasses or attrs for data containers — cleaner than namedtuple for mutable data
+• Pydantic models for external data validation — never trust raw request data
+• Ruff for linting (replaces flake8, isort, black in one fast tool)
+• Black for code formatting — zero configuration, just run it
+
+═══════════════════════════════════════
+MOBILE DEVELOPMENT BEST PRACTICES
+═══════════════════════════════════════
+REACT NATIVE / EXPO:
+• Expo Go for quick prototyping; Expo Development Build for custom native modules
+• React Native New Architecture (Fabric + JSI) — enables synchronous native calls, better performance
+• FlashList instead of FlatList for large lists — dramatically better scroll performance
+• Use react-native-reanimated (worklets on UI thread) for 60fps animations — never Animated API for complex animations
+• react-native-gesture-handler for native-feeling touch — replaces PanResponder
+• Avoid large JS bundles — use Hermes engine (default in Expo) for faster startup
+• OTA updates: EAS Update for pushing JS changes without app store review
+• Deep linking: handle universal links (iOS) and app links (Android) for SEO and sharing
+• SafeAreaView everywhere — iPhone notch and Android cutouts will break your layout otherwise
+• Haptics (expo-haptics) for tactile feedback — makes apps feel native
+
+IOS SPECIFICS:
+• App Store review takes 1-3 days — plan releases accordingly
+• TestFlight for beta distribution — add up to 10,000 external testers
+• App Transport Security: HTTPS required — HTTP blocked by default
+• Push notifications: APNs certificates + device tokens — complex setup, use OneSignal or Expo Notifications
+• In-App Purchase: use StoreKit — 30% Apple commission on all digital goods
+• Screen Time API for parental controls — your app must respect restrictions
+
+ANDROID SPECIFICS:
+• Play Store review: faster than iOS (hours not days) for established accounts
+• Target latest Android SDK — Google requires targeting within 1 year of latest release
+• ProGuard / R8 for minification and obfuscation of production builds
+• Play Asset Delivery for large apps — split APKs by screen density and ABI
+• Deep links: Android App Links require server verification (assetlinks.json on your domain)
+• Adaptive icons: foreground + background layers — system applies shape (circle, squircle, etc.)
+
+MOBILE PERFORMANCE:
+• JS thread and UI thread are separate in React Native — bridge crossing is the bottleneck
+• Native modules run on a third thread — heavy computation without JS involvement
+• Minimize re-renders: React.memo + useMemo on all list items
+• Reduce bridge traffic: batch state updates, use hooks not callbacks for animations
+• App startup: defer heavy initialization until after first frame renders (InteractionManager)
+• Image caching: FastImage (react-native-fast-image) caches decoded bitmaps — faster than Image
+
+═══════════════════════════════════════
+DATA ENGINEERING & ANALYTICS
+═══════════════════════════════════════
+DATA PIPELINE PATTERNS:
+• ETL (Extract, Transform, Load) vs ELT (Extract, Load, Transform) — ELT is modern for cloud warehouses
+• Batch vs streaming: batch for daily analytics, streaming for real-time dashboards
+• Idempotent pipelines: running the same pipeline twice produces the same result — essential for reruns
+• Checkpointing: save progress in long-running pipelines — resume from checkpoint on failure
+• Data quality checks: validate row counts, null rates, value distributions at each stage
+• Schema evolution: forward and backward compatible schemas — use Avro or Protobuf
+• Orchestration: Apache Airflow, Prefect, or Dagster for managing pipeline dependencies
+
+SQL ANALYTICS PATTERNS:
+• Window functions: ROW_NUMBER(), RANK(), LAG(), LEAD(), running totals — understand before using raw GROUP BY
+• CTEs for readability: complex queries as named steps, not nested subqueries
+• Materialized views for expensive aggregations refreshed on a schedule
+• Partitioning by date for time-series data — huge query speed improvement
+• Columnar storage (Parquet, ORC): analytical queries read only needed columns — 10-100x faster
+• EXPLAIN ANALYZE on every slow query before optimizing — don't guess
+
+DATA WAREHOUSE:
+• Snowflake, BigQuery, Redshift — each has different optimization strategies
+• Star schema: fact tables + dimension tables — the standard for analytical modeling
+• dbt (data build tool): transform data in the warehouse with SQL + version control
+• dbt tests: not_null, unique, accepted_values, relationships — data quality as code
+• Slowly Changing Dimensions (SCD) Type 2: track historical values with effective_date + end_date
+• Semantic layer: define business metrics once, expose to all BI tools (dbt Metrics, Cube.js)
+
+PYTHON DATA STACK:
+• Pandas for < 1M rows, Polars for 1M-100M rows (10-100x faster), Dask/Spark for 100M+ rows
+• Arrow format: columnar in-memory, zero-copy sharing between tools
+• DuckDB: run SQL on Parquet files or Pandas DataFrames — no server needed
+• Great Expectations or Soda for data quality assertions in pipelines
+• Jupyter notebooks for exploration, .py scripts for production — never run notebooks in production
+
+═══════════════════════════════════════
+SECURITY ADVANCED TOPICS
+═══════════════════════════════════════
+OWASP TOP 10 (2021) — KNOW THEM COLD:
+• A01 Broken Access Control: always verify authorization on every resource access
+• A02 Cryptographic Failures: use TLS 1.3, AES-256, argon2 for passwords — no MD5/SHA1 for security
+• A03 Injection: parameterized queries always — SQL, LDAP, XPath, command injection
+• A04 Insecure Design: threat model during design — not just during pen test
+• A05 Security Misconfiguration: default credentials, unnecessary features, verbose errors
+• A06 Vulnerable Components: audit dependencies regularly, keep them updated
+• A07 Auth Failures: no weak passwords, rate limit login, MFA for sensitive ops
+• A08 Software Integrity Failures: verify integrity of software/CI pipelines, code signing
+• A09 Logging Failures: log security events, detect anomalies, alert on suspicious activity
+• A10 SSRF: validate and allowlist external URLs server-side — never make requests to user-supplied URLs without validation
+
+ADVANCED ATTACK VECTORS:
+• Supply chain attacks: audit npm/pip packages, use lockfiles, pin exact versions, use Dependabot
+• Prototype pollution: Object.create(null) for user-supplied key-value stores
+• Regular expression DoS (ReDoS): avoid backtracking-heavy regexes on user input, use timeout
+• Timing attacks on comparison: use crypto.timingSafeEqual for token comparison
+• DNS rebinding: validate Host header against allowlist in server-side code
+• Clickjacking: X-Frame-Options: DENY + CSP frame-ancestors 'none'
+• Open redirect: validate redirect URLs against allowlist — never redirect to user-supplied URLs
+
+SECRETS MANAGEMENT:
+• HashiCorp Vault for secrets at scale: dynamic credentials, secret leasing, audit logs
+• AWS Secrets Manager / Parameter Store for cloud-native secret storage
+• Never log secrets — sanitize request logging middleware
+• Rotate secrets regularly — automate rotation to prevent operational resistance
+• SOPS (Secrets OPerationS): encrypt secrets in git — gpg or AWS KMS key encryption
+• Environment variable injection at runtime — never bake secrets into container images
+
+PENETRATION TESTING MINDSET:
+• Think like an attacker: what's the most valuable asset and how would I reach it?
+• Attack surface: every public endpoint, every dependency, every third-party integration
+• Threat modeling: STRIDE (Spoofing, Tampering, Repudiation, Info Disclosure, DoS, Elevation)
+• DAST (Dynamic Testing): OWASP ZAP, Burp Suite — scan running app for vulnerabilities
+• SAST (Static Testing): Semgrep, CodeQL — scan source code for patterns
+• Bug bounty programs: crowdsource security testing for mature products
+
+═══════════════════════════════════════
+DESIGN SYSTEMS & COMPONENT ARCHITECTURE
+═══════════════════════════════════════
+DESIGN TOKENS:
+• Design tokens are the atomic values of a design system: colors, spacing, typography, shadow
+• Store tokens as CSS custom properties (variables) — runtime themeable without JS
+• Token tiers: global tokens (--color-blue-500) → semantic tokens (--color-action-primary) → component tokens
+• Single source of truth: generate CSS variables, Tailwind config, and native app themes from one token file
+• Style Dictionary by Amazon: transforms tokens to any platform (CSS, iOS, Android, Figma)
+• Dark mode: swap semantic tokens — never hardcode light mode values in component CSS
+
+COMPONENT LIBRARY ARCHITECTURE:
+• Unstyled / headless components as the base: Radix UI, Ark UI, Headless UI — accessibility baked in
+• Layer styles on top: apply design tokens to unstyled primitives
+• Component variants with cva (class-variance-authority): type-safe variant props without runtime CSS-in-JS
+• Compound components for complex widgets: <Dialog>, <Dialog.Trigger>, <Dialog.Content>
+• Polymorphic components with asChild (Radix) — renders as any HTML element without wrapper divs
+• Strict API contracts: published component props are versioned — breaking changes require major version bump
+
+ACCESSIBILITY (A11Y):
+• WCAG 2.1 AA is the legal baseline in most jurisdictions — target AAA where feasible
+• POUR: Perceivable, Operable, Understandable, Robust — the four principles
+• Semantic HTML first: <button> not <div onclick>, <nav> not <div class="nav">
+• ARIA only when HTML semantics are insufficient — incorrect ARIA is worse than no ARIA
+• Focus management: trap focus in modals, restore focus on close, visible focus rings always
+• Color contrast: 4.5:1 for normal text, 3:1 for large text — test with automated tools
+• Keyboard navigation: all interactive elements reachable and operable via keyboard alone
+• Screen reader testing: NVDA + Chrome (Windows), VoiceOver + Safari (Mac/iOS)
+• axe-core integration in Jest/Playwright — automated a11y checks in CI
+• prefers-reduced-motion: disable animations for users who request it
+• Skip navigation links: first tab stop jumps to main content — crucial for keyboard users
+
+INTERNATIONALIZATION (I18N):
+• i18next / react-i18next: the standard for React — namespace-based, lazy loading, plurals
+• Extract all user-visible strings into translation keys — no hardcoded text
+• Plural rules are language-specific — use ICU message format for correct pluralization
+• RTL languages (Arabic, Hebrew): use CSS logical properties (margin-inline-start not margin-left)
+• Date and number formatting: always use Intl.DateTimeFormat and Intl.NumberFormat — never manual formatting
+• Currency: display in user's locale but store as minor units (cents) in the database
+• Pseudo-localization: replace English text with accented characters — test layout without translations
+
+═══════════════════════════════════════
+BACKEND FRAMEWORK EXCELLENCE
+═══════════════════════════════════════
+EXPRESS / FASTIFY (NODE.JS):
+• Fastify is 2-3x faster than Express — prefer for new high-throughput services
+• Middleware order matters: logging → auth → rate limiting → body parsing → route handlers
+• Always use async route handlers and pass errors to next(err) — uncaught async errors crash the process
+• Compression middleware (gzip/brotli) before routes — 60-80% response size reduction
+• Use Helmet.js for security headers — one line adds 11 security headers
+• Request validation at the framework level (Zod, Fastify JSON Schema) — fail fast before hitting business logic
+• Route grouping: prefix all API routes with /api/v1/ — never expose internal paths
+• Graceful shutdown: on SIGTERM, stop accepting connections, drain active requests, then exit
+
+PRISMA / DRIZZLE ORM:
+• Prisma: declarative schema, automatic migrations, excellent TypeScript inference — great DX
+• Drizzle: SQL-first ORM, zero runtime overhead, closest to raw SQL — best for complex queries
+• Always use transactions for multi-table writes — never rely on "it'll probably work"
+• Eager loading with include/with to prevent N+1 queries
+• SELECT only needed columns — never SELECT * in production queries
+• Soft deletes: add deletedAt and filter it in every query — use a default scope
+• Audit columns: createdAt, updatedAt, createdBy, updatedBy on every business entity table
+• Database connection pooling: PgBouncer for PostgreSQL, or use the pool built into your ORM
+
+API RATE LIMITING:
+• Rate limit at the reverse proxy (nginx, Cloudflare) before reaching your app
+• Per-IP rate limiting for public endpoints, per-user for authenticated
+• Sliding window algorithm is more fair than fixed window — no burst at window reset
+• Distinguish between rate limiting (slow down abusers) and throttling (slow down everyone)
+• Return 429 Too Many Requests with Retry-After header
+• Implement tiered limits: free (100/min), paid (10000/min), enterprise (custom)
+• Whitelist health check endpoints from rate limiting
+
+INPUT VALIDATION PATTERNS:
+• Validate at every boundary: HTTP layer, service layer, database layer — defense in depth
+• Allowlist validation: define what's valid — reject everything else (vs. denylist which misses edge cases)
+• Canonicalize before validation: normalize Unicode, trim whitespace, lowercase email
+• File upload validation: check MIME type by reading magic bytes, not just file extension
+• Maximum length validation on every string field — no unbounded input
+• Use separate schemas for input (insert), update (partial), and output (response) — they differ
+
+═══════════════════════════════════════
+DEVELOPER EXPERIENCE & TOOLING
+═══════════════════════════════════════
+CODE FORMATTING:
+• Prettier for JS/TS/CSS/JSON/Markdown — zero-configuration, opinionated, non-negotiable format debates
+• Black for Python — same philosophy as Prettier
+• rustfmt for Rust — built into the toolchain
+• gofmt for Go — also built in, automatically run on save
+• Format on save in every editor — never manually format code
+• Enforce formatting in CI — fail the build if code isn't formatted
+
+LINTING & STATIC ANALYSIS:
+• ESLint for JS/TS: configure once, enforce team standards automatically
+• TypeScript strict mode: strict, noUncheckedIndexedAccess, exactOptionalPropertyTypes
+• Ruff for Python: replaces flake8, pylint, isort in one fast Rust-based tool
+• Clippy for Rust: aggressive lint suggestions, many categorized as errors
+• Semgrep for security-focused rules across any language
+• SonarQube / SonarCloud for continuous code quality metrics
+• Lint on every commit (pre-commit hooks) and in CI — fix issues at the source
+
+EDITOR SETUP:
+• VS Code with ESLint, Prettier, GitLens, Error Lens, Todo Tree — the standard setup
+• Neovim with LSP client + null-ls for same capabilities in a terminal environment
+• JetBrains IDEs (WebStorm, PyCharm, IntelliJ) for heavy refactoring — best rename/extract tools
+• Configure .editorconfig: consistent indent style, line endings, file encoding across all editors
+• Workspace settings in .vscode/settings.json: format on save, default formatter, test discovery
+• Recommended extensions in .vscode/extensions.json — new team members get consistent setup
+
+MONOREPO TOOLING:
+• Turborepo or Nx for task running with caching and dependency graph awareness
+• pnpm workspaces for Node.js — most efficient disk usage via hard links
+• Changesets for versioning and publishing multiple packages
+• Module boundaries: forbid imports from app packages into library packages via lint rules
+• Shared configs: eslint-config-*, tsconfig/*, @prettier/config — one source of truth for all packages
+• Remote caching: Turborepo + Vercel Remote Cache or Nx Cloud — never rebuild unchanged code in CI
+
+═══════════════════════════════════════
+PRODUCT ENGINEERING MINDSET
+═══════════════════════════════════════
+SHIPPING FAST WITHOUT BREAKING THINGS:
+• Feature flags (LaunchDarkly, Unleash, GrowthBook): deploy dark, release independently
+• Incremental rollouts: 1% → 10% → 50% → 100% with metrics gates
+• A/B testing: measure the impact of every significant feature change
+• Define done: a feature is done when it's in production, monitored, and documented
+• Reversibility: prefer reversible decisions — be bold on easily reversed, careful on hard to reverse
+• Tech debt: intentional shortcuts are fine if tracked — create a ticket, set a payoff date
+• Post-mortems: blameless, focus on systems not people, generate preventive actions
+
+METRICS-DRIVEN DEVELOPMENT:
+• Define success metrics before writing code — what does "working" look like?
+• Instrument features on day one — you can't improve what you don't measure
+• HEART framework: Happiness, Engagement, Adoption, Retention, Task Success
+• Funnel analysis: where do users drop off? Fix the highest-impact step first
+• Cohort analysis: do retained users behave differently from churned users?
+• Session replay (Hotjar, FullStory) for qualitative user behavior data
+
+DOCUMENTATION AS ENGINEERING:
+• README-driven development: write the README first — forces you to articulate the purpose
+• ADRs (Architecture Decision Records): document why, not just what — invaluable for future maintainers
+• API documentation: OpenAPI/Swagger — machine-readable, auto-generates client SDKs
+• Runbooks: step-by-step guides for common operational tasks — on-call engineers need them
+• Decision logs: record technical choices with context, alternatives considered, trade-offs accepted
+• Comment-to-code ratio: too few = unmaintainable, too many = noise — aim for self-documenting code with targeted comments
+
+TECHNICAL LEADERSHIP:
+• 1:1 code reviews: teach, not just critique — ask questions, explain reasoning
+• Pair programming for complex problems — two brains catch more edge cases
+• Design reviews before implementation for significant features — 1h discussion saves 1 week of wrong code
+• Engineering principles that are team-specific — document them, revisit them quarterly
+• On-call rotations: everyone feels production pain — it drives quality improvements
+• Blameless post-mortems: create psychological safety — engineers hide incidents if they fear blame
+• Mentorship: the best engineers multiply others, not just themselves
+
+═══════════════════════════════════════
+EMERGING PATTERNS & FUTURE-PROOFING
+═══════════════════════════════════════
+EDGE COMPUTING:
+• Edge functions run in 30+ global locations — sub-10ms latency for auth, redirects, personalization
+• Cloudflare Workers, Vercel Edge Functions, Deno Deploy — V8 isolates, not containers
+• Edge limitations: no Node.js APIs (fs, crypto), limited runtime, short execution window
+• Cloudflare Durable Objects: stateful edge objects with strong consistency
+• Edge-first patterns: A/B testing, geo-targeting, auth token validation, bot detection
+• KV store at the edge: Cloudflare KV, Vercel Edge Config — eventual consistency, ultra-fast reads
+
+AI-NATIVE APPLICATION PATTERNS:
+• Multimodal inputs: design for text + image + audio + file inputs — models can handle all of these
+• Streaming-first UIs: show AI output character-by-character — never make users wait for the full response
+• Optimistic UI with AI: show a skeleton response immediately, fill in with actual response
+• AI as a background worker: process documents, generate summaries, classify content asynchronously
+• Human-AI collaboration: AI generates draft, human reviews and edits — better than AI-only or human-only
+• Prompt versioning: treat prompts like code — version them, test changes, roll back if needed
+• Cost-performance tradeoffs: use the smallest model that meets the quality bar — Claude Haiku/GPT-4o-mini for classification, larger models for complex reasoning
+
+ZERO-TRUST SECURITY:
+• Never trust the network — verify every request regardless of origin
+• Mutual TLS (mTLS) for service-to-service communication
+• Identity-based access: authenticate the workload (SPIFFE/SPIRE), not just the network
+• Least privilege everywhere: services, users, and CI jobs get minimum required permissions
+• Continuous verification: re-authenticate on privilege escalation, sensitive operations
+• Software supply chain: sign binaries and container images, verify at deploy time
+
+SUSTAINABILITY & GREEN COMPUTING:
+• Carbon-aware computing: schedule batch jobs when the grid is greenest (carbon-aware-sdk)
+• Right-size infrastructure: over-provisioned servers waste energy — scale down idle resources
+• Efficient algorithms reduce computation and energy — O(n log n) vs O(n²) matters at scale
+• Serverless for intermittent workloads: zero resource when idle
+• CDN for static assets: serve from nearby edges — reduce data center round trips
+• Measure: Cloud Carbon Footprint tool for AWS/GCP/Azure energy reporting
 `;
+
 
 
 
