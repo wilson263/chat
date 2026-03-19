@@ -14,6 +14,7 @@
 
 import { Router, type Request, type Response } from "express";
 import { createChatCompletion } from "../lib/ai";
+import { ZORVIX_SYSTEM_PROMPT } from "../lib/system-prompt";
 
 const router = Router();
 
@@ -64,7 +65,7 @@ async function runPipelineStep(
 
   const result = await createChatCompletion({
     messages: [
-      { role: "system", content: step.systemPrompt },
+      { role: "system", content: `${ZORVIX_SYSTEM_PROMPT}\n\n${step.systemPrompt}` },
       { role: "user", content: userPrompt },
     ],
     max_completion_tokens: step.maxTokens ?? 60000,

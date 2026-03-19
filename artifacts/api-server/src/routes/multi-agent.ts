@@ -18,6 +18,7 @@ import {
   PLANNING_MODELS,
 } from "../lib/ai";
 import { createChatCompletionStreamFromList } from "../lib/ai";
+import { ZORVIX_SYSTEM_PROMPT } from "../lib/system-prompt";
 
 const router = Router();
 
@@ -73,7 +74,7 @@ async function runAgent(config: AgentConfig): Promise<string> {
     const { stream } = await createChatCompletionStreamFromList(
       {
         messages: [
-          { role: "system", content: config.systemPrompt },
+          { role: "system", content: `${ZORVIX_SYSTEM_PROMPT}\n\n${config.systemPrompt}` },
           { role: "user", content: config.userPrompt },
         ],
         max_completion_tokens: config.maxTokens ?? 60000,
@@ -90,7 +91,7 @@ async function runAgent(config: AgentConfig): Promise<string> {
     const result = await createChatCompletion(
       {
         messages: [
-          { role: "system", content: config.systemPrompt },
+          { role: "system", content: `${ZORVIX_SYSTEM_PROMPT}\n\n${config.systemPrompt}` },
           { role: "user", content: config.userPrompt },
         ],
         max_completion_tokens: config.maxTokens ?? 60000,

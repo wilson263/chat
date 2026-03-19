@@ -13,10 +13,11 @@
 import { Router, type Request, type Response } from "express";
 import { createChatCompletion } from "../lib/ai";
 import { analyzeCode } from "../lib/code-analyzer";
+import { ZORVIX_SYSTEM_PROMPT } from "../lib/system-prompt";
 
 const router = Router();
 
-const DEBUGGER_SYSTEM_PROMPT = `You are ZorvixAI's debugging specialist — an expert debugger who has fixed thousands of bugs across all programming languages and frameworks. You think systematically:
+const DEBUGGER_SYSTEM_PROMPT = `${ZORVIX_SYSTEM_PROMPT}\n\nYou are ZorvixAI's debugging specialist — an expert debugger who has fixed thousands of bugs across all programming languages and frameworks. You think systematically:
 
 1. READ the error carefully — what does it literally say?
 2. LOCATE — what file, line, function is the source?

@@ -2,6 +2,7 @@ import { Router, type IRouter, type Request, type Response } from "express";
 import { db, projectsTable, projectFilesTable } from "@workspace/db";
 import { getUserId } from "./auth";
 import { createChatCompletionStreamFromList, AGENT_BUILD_MODELS, PLANNING_MODELS } from "../lib/ai";
+import { ZORVIX_SYSTEM_PROMPT } from "../lib/system-prompt";
 
 const router: IRouter = Router();
 
@@ -67,7 +68,7 @@ async function analyseAndPlan(
   send: (data: Record<string, any>) => void
 ): Promise<{ projectName: string; description: string; language: string; filePlan: Array<{ path: string; role: string }> }> {
 
-  const systemPrompt = `You are an expert software architect. Analyse the user's app request and produce a detailed project plan.
+  const systemPrompt = `${ZORVIX_SYSTEM_PROMPT}\n\nYou are an expert software architect. Analyse the user's app request and produce a detailed project plan.
 
 You MUST respond with ONLY valid JSON — no markdown, no explanation:
 {
@@ -311,7 +312,7 @@ REQUIREMENTS:
     ? `\n\nindex.html summary (CDN scripts loaded, file structure):\n${indexHtmlSnippet}`
     : "";
 
-  const systemPrompt = `You are an elite frontend engineer building a Play Store quality app.
+  const systemPrompt = `${ZORVIX_SYSTEM_PROMPT}\n\nYou are an elite frontend engineer building a Play Store quality app.
 Write the COMPLETE, PRODUCTION-READY content of a SINGLE file.
 Output ONLY the raw file content — no markdown fences, no explanation text, no comments like "// rest of code".
 Write EVERY LINE. Minimum 150 lines for CSS/JS files, minimum 80 lines for HTML.

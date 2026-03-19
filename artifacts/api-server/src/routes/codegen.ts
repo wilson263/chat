@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import { createChatCompletion } from "../lib/ai";
+import { ZORVIX_SYSTEM_PROMPT } from "../lib/system-prompt";
 
 import {
   GenerateCodeBody,
@@ -73,7 +74,7 @@ async function streamToResponse(res: any, messages: { role: string; content: str
 
   const stream = await createChatCompletion({
     messages: [
-      { role: "system", content: systemPrompt },
+      { role: "system", content: `${ZORVIX_SYSTEM_PROMPT}\n\n${systemPrompt}` },
       ...messages.map(m => ({ role: m.role as "user" | "assistant", content: m.content })),
     ],
     stream: true,

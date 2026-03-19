@@ -15,6 +15,7 @@
 import { Router, type Request, type Response } from "express";
 import { createChatCompletion, createChatCompletionStream } from "../lib/ai";
 import { analyzeCode } from "../lib/code-analyzer";
+import { ZORVIX_SYSTEM_PROMPT } from "../lib/system-prompt";
 
 const router = Router();
 
@@ -36,7 +37,7 @@ router.post("/api/code/review", async (req: Request, res: Response): Promise<voi
   const staticAnalysis = analyzeCode(code);
   const lang = language ?? staticAnalysis.language.language;
 
-  const systemPrompt = `You are a senior code reviewer and software architect. You review code like a principal engineer at Stripe or Google: thorough, precise, constructive, and respectful. Your reviews improve code quality, catch bugs, identify security issues, and teach best practices.`;
+  const systemPrompt = `${ZORVIX_SYSTEM_PROMPT}\n\nYou are a senior code reviewer and software architect. You review code like a principal engineer at Stripe or Google: thorough, precise, constructive, and respectful. Your reviews improve code quality, catch bugs, identify security issues, and teach best practices.`;
 
   const userPrompt = `Please review this ${lang} code${context ? ` (context: ${context})` : ""}:
 
@@ -200,7 +201,7 @@ router.post("/api/code/optimize", async (req: Request, res: Response): Promise<v
       messages: [
         {
           role: "system",
-          content: "You are a performance optimization expert and code quality specialist. You rewrite code to be faster, cleaner, and more maintainable without changing behavior.",
+          content: `${ZORVIX_SYSTEM_PROMPT}\n\nYou are a performance optimization expert and code quality specialist. You rewrite code to be faster, cleaner, and more maintainable without changing behavior.`,
         },
         {
           role: "user",
@@ -251,7 +252,7 @@ router.post("/api/code/security", async (req: Request, res: Response): Promise<v
       messages: [
         {
           role: "system",
-          content: "You are a security engineer and penetration tester specializing in application security. You identify vulnerabilities using OWASP standards and provide concrete remediation steps.",
+          content: `${ZORVIX_SYSTEM_PROMPT}\n\nYou are a security engineer and penetration tester specializing in application security. You identify vulnerabilities using OWASP standards and provide concrete remediation steps.`,
         },
         {
           role: "user",
@@ -312,7 +313,7 @@ router.post("/api/code/convert", async (req: Request, res: Response): Promise<vo
       messages: [
         {
           role: "system",
-          content: `You are an expert polyglot programmer. You convert code between languages idiomatically — not just translating syntax, but using the target language's patterns, idioms, and best practices.`,
+          content: `${ZORVIX_SYSTEM_PROMPT}\n\nYou are an expert polyglot programmer. You convert code between languages idiomatically — not just translating syntax, but using the target language's patterns, idioms, and best practices.`,
         },
         {
           role: "user",
@@ -418,7 +419,7 @@ router.post("/api/code/test-gen", async (req: Request, res: Response): Promise<v
       messages: [
         {
           role: "system",
-          content: "You are a test-driven development expert. You write comprehensive, practical unit tests that cover happy paths, edge cases, error conditions, and boundary values.",
+          content: `${ZORVIX_SYSTEM_PROMPT}\n\nYou are a test-driven development expert. You write comprehensive, practical unit tests that cover happy paths, edge cases, error conditions, and boundary values.`,
         },
         {
           role: "user",

@@ -15,6 +15,7 @@
 import { Router, type Request, type Response } from "express";
 import { createChatCompletion, createChatCompletionStream } from "../lib/ai";
 import https from "https";
+import { ZORVIX_SYSTEM_PROMPT } from "../lib/system-prompt";
 
 const router = Router();
 
@@ -173,7 +174,7 @@ router.post("/api/search/ai-search", async (req: Request, res: Response): Promis
       return;
     }
 
-    const systemPrompt = `You are ZorvixAI with web search capabilities. You have access to search results and must synthesize them into a helpful, accurate response. Always cite your sources using [1], [2], etc.`;
+    const systemPrompt = `${ZORVIX_SYSTEM_PROMPT}\n\nYou are ZorvixAI with web search capabilities. You have access to search results and must synthesize them into a helpful, accurate response. Always cite your sources using [1], [2], etc.`;
 
     const userPrompt = `Question: ${query}
 
@@ -239,7 +240,7 @@ router.post("/api/search/fact-check", async (req: Request, res: Response): Promi
       messages: [
         {
           role: "system",
-          content: "You are a fact-checker. Assess claims for accuracy based on available information. Be precise about what you know vs. what is uncertain.",
+          content: `${ZORVIX_SYSTEM_PROMPT}\n\nYou are a fact-checker. Assess claims for accuracy based on available information. Be precise about what you know vs. what is uncertain.`,
         },
         {
           role: "user",
@@ -312,7 +313,7 @@ router.post("/api/search/research", async (req: Request, res: Response): Promise
       messages: [
         {
           role: "system",
-          content: "You are a thorough research assistant. Synthesize multiple sources into comprehensive, well-structured research reports.",
+          content: `${ZORVIX_SYSTEM_PROMPT}\n\nYou are a thorough research assistant. Synthesize multiple sources into comprehensive, well-structured research reports.`,
         },
         {
           role: "user",
@@ -364,7 +365,7 @@ router.post("/api/search/docs", async (req: Request, res: Response): Promise<voi
       messages: [
         {
           role: "system",
-          content: `You are an expert in ${technology}. You provide precise, accurate technical documentation answers with code examples.`,
+          content: `${ZORVIX_SYSTEM_PROMPT}\n\nYou are an expert in ${technology}. You provide precise, accurate technical documentation answers with code examples.`,
         },
         {
           role: "user",

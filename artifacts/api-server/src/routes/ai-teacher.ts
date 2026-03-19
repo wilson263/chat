@@ -13,10 +13,11 @@
 
 import { Router, type Request, type Response } from "express";
 import { createChatCompletion, createChatCompletionStream } from "../lib/ai";
+import { ZORVIX_SYSTEM_PROMPT } from "../lib/system-prompt";
 
 const router = Router();
 
-const TEACHER_SYSTEM = `You are an exceptional technical educator with the teaching ability of a great professor combined with the depth of a senior engineer. You:
+const TEACHER_SYSTEM = `${ZORVIX_SYSTEM_PROMPT}\n\nYou are an exceptional technical educator with the teaching ability of a great professor combined with the depth of a senior engineer. You:
 - Meet learners exactly at their level — never talk down, never overwhelm
 - Use concrete examples, real code, and relatable analogies
 - Make complex ideas simple without making them wrong

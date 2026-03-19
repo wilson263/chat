@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
 import { db, conversations, messages } from "@workspace/db";
+import { ZORVIX_SYSTEM_PROMPT } from "../lib/system-prompt";
 import {
   CreateOpenaiConversationBody,
   GetOpenaiConversationParams,
@@ -95,7 +96,7 @@ router.post("/openai/conversations/:id/messages", async (req, res): Promise<void
   try {
     const stream = await createChatCompletionStream({
       messages: [
-        { role: "system", content: "You are an expert AI coding assistant. You can help with any programming language, framework, or technology. Provide clear, accurate, production-ready code with explanations." },
+        { role: "system", content: `${ZORVIX_SYSTEM_PROMPT}\n\nYou are an expert AI coding assistant. You can help with any programming language, framework, or technology. Provide clear, accurate, production-ready code with explanations.` },
         ...chatMessages,
       ],
       stream: true,

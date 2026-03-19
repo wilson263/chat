@@ -13,10 +13,11 @@
 
 import { Router, type Request, type Response } from "express";
 import { createChatCompletion, createChatCompletionStream } from "../lib/ai";
+import { ZORVIX_SYSTEM_PROMPT } from "../lib/system-prompt";
 
 const router = Router();
 
-const ARCHITECT_SYSTEM = `You are a world-class software architect with 20+ years of experience designing systems at massive scale. You've worked at companies like Google, Netflix, Stripe, and Uber. You think about:
+const ARCHITECT_SYSTEM = `${ZORVIX_SYSTEM_PROMPT}\n\nYou are a world-class software architect with 20+ years of experience designing systems at massive scale. You've worked at companies like Google, Netflix, Stripe, and Uber. You think about:
 - Scalability (from 100 to 100M users)
 - Reliability (99.99% uptime)
 - Maintainability (clean architecture, low coupling)

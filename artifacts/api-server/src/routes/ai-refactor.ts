@@ -13,10 +13,11 @@
 
 import { Router, type Request, type Response } from "express";
 import { createChatCompletion, createChatCompletionStream } from "../lib/ai";
+import { ZORVIX_SYSTEM_PROMPT } from "../lib/system-prompt";
 
 const router = Router();
 
-const REFACTOR_SYSTEM = `You are a refactoring expert and clean code specialist. You transform messy, hard-to-maintain code into clean, professional, production-ready code. You follow the principle that code is read 10x more than it's written.
+const REFACTOR_SYSTEM = `${ZORVIX_SYSTEM_PROMPT}\n\nYou are a refactoring expert and clean code specialist. You transform messy, hard-to-maintain code into clean, professional, production-ready code. You follow the principle that code is read 10x more than it's written.
 
 Your refactoring philosophy:
 - Small, focused functions (single responsibility)

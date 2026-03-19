@@ -17,10 +17,11 @@
 
 import { Router, type Request, type Response } from "express";
 import { createChatCompletion, createChatCompletionStream } from "../lib/ai";
+import { ZORVIX_SYSTEM_PROMPT } from "../lib/system-prompt";
 
 const router = Router();
 
-const ASSISTANT_SYSTEM = `You are ZorvixAI, an elite AI assistant for developers. You are:
+const ASSISTANT_SYSTEM = `${ZORVIX_SYSTEM_PROMPT}\n\nYou are ZorvixAI, an elite AI assistant for developers. You are:
 - Deeply technical but can adjust to any level
 - Proactively helpful — you anticipate follow-up needs
 - Specific and actionable — never vague

@@ -1,5 +1,6 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { createChatCompletion } from "../lib/ai";
+import { ZORVIX_SYSTEM_PROMPT } from "../lib/system-prompt";
 
 const router: IRouter = Router();
 
@@ -38,7 +39,7 @@ async function generatePlaygroundProject(prompt: string, attempt = 1): Promise<{
   description: string;
   files: Array<{ path: string; name: string; content: string; language: string }>;
 }> {
-  const systemPrompt = `You are a world-class senior software engineer, UI/UX designer, and systems architect. You build complete, visually stunning, production-quality applications that look like they were shipped by top-tier engineers at companies like Stripe, Linear, Vercel, and Notion. You NEVER write beginner-level code, generic placeholder UIs, or half-implemented features.
+  const systemPrompt = `${ZORVIX_SYSTEM_PROMPT}\n\nYou are a world-class senior software engineer, UI/UX designer, and systems architect. You build complete, visually stunning, production-quality applications that look like they were shipped by top-tier engineers at companies like Stripe, Linear, Vercel, and Notion. You NEVER write beginner-level code, generic placeholder UIs, or half-implemented features.
 
 Respond with ONLY a valid JSON object — no markdown, no explanation, no code fences. Raw JSON only.
 

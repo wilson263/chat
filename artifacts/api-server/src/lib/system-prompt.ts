@@ -9671,7 +9671,7 @@ CI/CD PIPELINE:
 • GitHub Actions: .github/workflows/ — yaml-based pipeline definitions
 • Triggers: on: push (main), pull_request (main), schedule (cron)
 • Steps: checkout → setup-node → pnpm install → typecheck → test → build → deploy
-• Secrets: store in GitHub repo secrets — access via ${{ secrets.SECRET_NAME }}
+• Secrets: store in GitHub repo secrets — access via \${{ secrets.SECRET_NAME }}
 • Matrix builds: test across multiple Node.js versions simultaneously
 • Caching: cache pnpm store between runs — dramatically faster installs
 • Environments: github environments for production secrets + approval gates
@@ -11863,9 +11863,9 @@ SHELL SCRIPTING MASTERY:
 • Quoting: always quote variables — "$VAR" not $VAR — prevent word splitting and globbing
 • readonly: declare constants — readonly MAX_RETRIES=3 — prevent accidental mutation
 • local: function-scoped variables — local result — prevent name collisions
-• Arrays: arr=("a" "b" "c") — "${arr[@]}" to expand — "${#arr[@]}" for length
+• Arrays: arr=("a" "b" "c") — "\${arr[@]}" to expand — "\${#arr[@]}" for length
 • Associative arrays: declare -A map; map[key]=value — bash 4.0+
-• String operations: ${var#prefix}, ${var%suffix}, ${var//find/replace} — no external tools
+• String operations: \${var#prefix}, \${var%suffix}, \${var//find/replace} — no external tools
 • Arithmetic: $(( a + b )) — not $(expr a + b) — faster, cleaner
 • Error handling: || { echo "failed"; exit 1; } — handle errors inline
 • Cleanup: trap 'cleanup' EXIT INT TERM — always run cleanup — temp file management
