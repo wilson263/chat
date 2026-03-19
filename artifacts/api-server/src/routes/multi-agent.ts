@@ -180,7 +180,7 @@ router.post("/api/agents/build", async (req: Request, res: Response): Promise<vo
         role: "Product Manager",
         systemPrompt: "You are a senior product manager. You create clear, actionable development plans with user stories, acceptance criteria, and implementation scope.",
         userPrompt: `Create a detailed development plan for:\n${requirement}\n\nTech stack preference: ${techStack ?? "modern TypeScript/React"}\n\nProvide:\n1. Project overview and goals\n2. User stories (as a [user] I want [goal] so that [benefit])\n3. Feature list (MVP scope vs nice-to-have)\n4. Technical requirements\n5. Data models needed\n6. API endpoints needed\n7. Success criteria`,
-        maxTokens: 60000,
+        maxTokens: 100000,
         models: PLANNING_MODELS,
       });
 
@@ -200,7 +200,7 @@ router.post("/api/agents/build", async (req: Request, res: Response): Promise<vo
         role: "Software Architect",
         systemPrompt: "You are a software architect specializing in modern web applications. You design clean, scalable architectures with clear component boundaries.",
         userPrompt: `Based on this plan:\n\n${planOutput}\n\nDesign the technical architecture:\n1. Component/module structure\n2. Database schema (tables and relationships)\n3. API contract (endpoints, request/response shapes)\n4. State management approach\n5. Authentication/authorization design\n6. File structure\n7. Key technical decisions and trade-offs`,
-        maxTokens: 60000,
+        maxTokens: 100000,
       });
 
       job.steps[1].output = archOutput;
@@ -219,7 +219,7 @@ router.post("/api/agents/build", async (req: Request, res: Response): Promise<vo
         role: "Senior Engineer",
         systemPrompt: "You are a senior full-stack engineer. You write complete, production-ready code using best practices. Every file you output is complete — no TODOs, no placeholders.",
         userPrompt: `Implement the following system:\n\nRequirement:\n${requirement}\n\nPlan:\n${planOutput.slice(0, 1000)}\n\nArchitecture:\n${archOutput.slice(0, 1000)}\n\nWrite COMPLETE, production-ready code using ${techStack ?? "TypeScript/React"}:\n- All files should be fully implemented\n- Include error handling\n- Follow the architecture design\n- Use ===FILE: path/filename.ext=== format for each file`,
-        maxTokens: 60000,
+        maxTokens: 100000,
       });
 
       job.steps[2].output = implOutput;
@@ -238,7 +238,7 @@ router.post("/api/agents/build", async (req: Request, res: Response): Promise<vo
         role: "Code Reviewer",
         systemPrompt: "You are a principal engineer doing a final code review. You catch bugs, security issues, and suggest improvements. You are thorough but constructive.",
         userPrompt: `Review this implementation:\n\n${implOutput.slice(0, 3000)}\n\nCheck for:\n1. Bugs and logic errors\n2. Security vulnerabilities\n3. Missing error handling\n4. Performance issues\n5. Missing edge cases\n\nProvide: summary of findings + corrected code for any critical issues`,
-        maxTokens: 60000,
+        maxTokens: 100000,
         models: PLANNING_MODELS,
       });
 
