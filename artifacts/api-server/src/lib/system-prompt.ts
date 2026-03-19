@@ -9530,7 +9530,7 @@ DRIZZLE ORM PATTERNS:
 • Indexes: db.$with(indexCreator) or Drizzle index() builder
 • Relations: define with relations() helper for type-safe joins
 • Migrations: drizzle-kit generate → drizzle-kit push (dev) / migrate (prod)
-• Never write raw SQL unless Drizzle can't express it — use sql`` template tag
+• Never write raw SQL unless Drizzle can't express it — use sql\`\` template tag
 
 AUTHENTICATION PATTERNS:
 • Replit Auth: preferred for Replit-hosted apps — zero-credential OAuth
