@@ -14,7 +14,7 @@ router.post("/api/chat/auto-title", async (req, res) => {
           content: `Generate a short (3-6 words), descriptive title for a chat that starts with this message. Return ONLY the title, no quotes, no punctuation at end:\n\n"${firstMessage.slice(0, 200)}"`,
         },
       ],
-      max_completion_tokens: 60000,
+      max_completion_tokens: 100000,
     });
     const title = (result.choices[0]?.message?.content ?? "")
       .trim()
@@ -54,7 +54,7 @@ router.post("/api/chat/websearch", async (req, res) => {
           content: `Answer the following question as accurately and comprehensively as possible. Note if any information might be outdated:\n\n${query}`,
         },
       ],
-      max_completion_tokens: 60000,
+      max_completion_tokens: 100000,
     });
     const text = result.choices[0]?.message?.content ?? "";
     res.json({ answer: text, note: "Powered by Replit AI" });
