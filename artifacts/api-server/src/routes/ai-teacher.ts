@@ -93,7 +93,7 @@ Structure your explanation:
           { role: "system", content: TEACHER_SYSTEM },
           { role: "user", content: prompt },
         ],
-        max_completion_tokens: 60000,
+        max_completion_tokens: 100000,
       });
 
       for await (const chunk of stream) {
@@ -112,7 +112,7 @@ Structure your explanation:
           { role: "system", content: TEACHER_SYSTEM },
           { role: "user", content: prompt },
         ],
-        max_completion_tokens: 60000,
+        max_completion_tokens: 100000,
       });
       res.json({ explanation: result.choices[0]?.message?.content ?? "" });
     } catch (err: any) {
@@ -172,7 +172,7 @@ Format as JSON array:
 ]`,
         },
       ],
-      max_completion_tokens: 60000,
+      max_completion_tokens: 100000,
     });
 
     const raw = result.choices[0]?.message?.content ?? "[]";
@@ -257,7 +257,7 @@ For each topic:
 (Specific metrics: can build X, solved Y problems, etc.)`,
         },
       ],
-      max_completion_tokens: 60000,
+      max_completion_tokens: 100000,
     });
     res.json({ roadmap: result.choices[0]?.message?.content ?? "" });
   } catch (err: any) {
@@ -331,7 +331,7 @@ Choose ${itemB} when:
 (What you'd actually recommend and why, without politics)`,
         },
       ],
-      max_completion_tokens: 60000,
+      max_completion_tokens: 100000,
     });
     res.json({ comparison: result.choices[0]?.message?.content ?? "" });
   } catch (err: any) {
@@ -373,7 +373,7 @@ Format it with clear sections, use code blocks for all code, use tables for comp
 Make it dense but scannable — this is a reference, not a tutorial.`,
         },
       ],
-      max_completion_tokens: 60000,
+      max_completion_tokens: 100000,
     });
     res.json({ cheatsheet: result.choices[0]?.message?.content ?? "" });
   } catch (err: any) {
@@ -430,7 +430,7 @@ Common mistakes candidates make at this level
 What to study in the week before the interview`,
         },
       ],
-      max_completion_tokens: 60000,
+      max_completion_tokens: 100000,
     });
     res.json({ prep: result.choices[0]?.message?.content ?? "" });
   } catch (err: any) {
@@ -480,7 +480,7 @@ For each project:
 Range from easy wins (builds confidence) to impressive portfolio pieces.`,
         },
       ],
-      max_completion_tokens: 60000,
+      max_completion_tokens: 100000,
     });
     res.json({ projects: result.choices[0]?.message?.content ?? "" });
   } catch (err: any) {
