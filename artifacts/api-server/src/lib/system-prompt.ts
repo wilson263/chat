@@ -3120,6 +3120,342 @@ PAYMENT & BILLING SYSTEMS
 • Connect: Stripe Connect for marketplace payments — platform takes a fee, pays out to sellers
 • Disputes/chargebacks: respond with evidence via Stripe Dashboard — prepare evidence package
 • Store customer.id, subscription.id, and payment_method.id in your DB — never store card details
+
+═══════════════════════════════════════
+PYTHON BACKEND — FASTAPI & DJANGO
+═══════════════════════════════════════
+• FastAPI is the gold standard for modern Python APIs — async-first, auto-generated OpenAPI docs, Pydantic validation
+• Pydantic v2 is dramatically faster than v1 — use model_config = ConfigDict(strict=True) for type safety
+• Dependency injection in FastAPI: Depends() for database sessions, auth, and shared services — never use globals
+• Use lifespan context manager for startup/shutdown events instead of deprecated @app.on_event
+• Background tasks: BackgroundTasks for fire-and-forget; Celery + Redis for reliable async task queues
+• SQLAlchemy 2.0 async: use AsyncSession with async with session.begin() for proper transaction handling
+• Alembic for database migrations — always generate migration files, never use metadata.create_all() in production
+• Pydantic Settings for configuration: BaseSettings reads from .env automatically, type-safe config
+• FastAPI middleware: add CORS, GZip, TrustedHost middleware in the right order
+• Pytest with AsyncClient for testing FastAPI apps — use pytest-asyncio for async test functions
+• Type hints are mandatory in Python — mypy or pyright for static analysis in CI
+• Django ORM: select_related() for FK/OneOne (JOIN), prefetch_related() for ManyToMany/reverse FK
+• Django: use get_object_or_404() not try/except for cleaner view code
+• Django Channels for WebSockets — layer backend with Redis for multi-process deployments
+• Django REST Framework: ViewSets + Routers for CRUD APIs with minimal boilerplate
+• Django signals for decoupled side effects (post_save, post_delete) — but be careful with performance
+• Django management commands for scripts that need DB access — never run raw scripts with python
+• Celery beat for scheduled tasks — crontab() or solar() schedules
+• Python decorators: understand functools.wraps, closure scoping, and decorator stacking order
+• Context managers: use contextlib.contextmanager for custom with-statement resources
+• dataclasses vs Pydantic: dataclasses for simple data holders, Pydantic for validation and serialization
+• asyncio.gather() for concurrent coroutines; asyncio.TaskGroup (Python 3.11+) for structured concurrency
+• httpx is the async-capable replacement for requests — use httpx.AsyncClient in FastAPI handlers
+• Uvicorn + Gunicorn in production: gunicorn -k uvicorn.workers.UvicornWorker for multi-process async
+
+═══════════════════════════════════════
+GO (GOLANG) PATTERNS
+═══════════════════════════════════════
+• Go's goroutines are cheap — launch thousands without worry; goroutine leaks (never-exiting goroutines) are the real concern
+• Channels are for communication between goroutines — not for shared memory; mutexes protect shared memory
+• Use context.Context for cancellation, deadlines, and request-scoped values — pass it as the first argument
+• defer for cleanup: defer file.Close(), defer cancel(), defer wg.Done() — runs on function exit
+• Error handling in Go: always check errors, never ignore them; use fmt.Errorf("context: %w", err) for wrapping
+• errors.Is() and errors.As() for unwrapping error chains — never type-assert errors directly
+• sync.WaitGroup for waiting on a group of goroutines; sync.Once for one-time initialization
+• sync.Mutex vs sync.RWMutex: RWMutex allows concurrent reads — use it for read-heavy shared state
+• Go interfaces are implicit — no implements keyword; any type with the right methods satisfies the interface
+• Small interfaces are idiomatic Go: io.Reader, io.Writer — accept interfaces, return concrete types
+• Embedding for composition: embed interfaces or structs to inherit methods without inheritance
+• The blank identifier _ discards values — use it for interface compliance checks: var _ io.Reader = (*MyType)(nil)
+• Go modules: go.mod + go.sum are your lockfile — commit both; go mod tidy cleans unused deps
+• Table-driven tests are idiomatic Go: []struct{ input, expected } with t.Run() subtests
+• Benchmarks: func BenchmarkXxx(b *testing.B) { for i := 0; i < b.N; i++ { ... } }
+• pprof for profiling: import _ "net/http/pprof" and hit /debug/pprof — find CPU and memory hotspots
+• net/http is excellent without a framework — use chi or gin only when you need routing features
+• Graceful shutdown: listen for os.Signal, call server.Shutdown(ctx) with a timeout
+• Go generics (1.18+): type parameters for reusable data structures and functions — don't over-generalize
+• Structured logging with log/slog (Go 1.21+) — JSON output by default, zero-alloc fast paths
+• Race detector: go test -race — run it in CI, never ship code with data races
+
+═══════════════════════════════════════
+RUST FUNDAMENTALS FOR SYSTEMS CODE
+═══════════════════════════════════════
+• Ownership model: every value has one owner; when owner goes out of scope, value is dropped
+• Borrowing rules: many immutable references (&T) OR one mutable reference (&mut T) — never both at once
+• Lifetimes: the borrow checker tracks how long references are valid — explicit lifetimes when the compiler can't infer
+• Clone vs Copy: Copy is implicit bit-copy for small types (i32, bool); Clone is explicit deep copy
+• Result<T, E> for recoverable errors, panic! for unrecoverable programmer errors — never panic in library code
+• The ? operator propagates errors up the call stack — equivalent to an early return on Err
+• Option<T> replaces null — use .unwrap_or(), .map(), .and_then() for ergonomic handling
+• match is exhaustive — the compiler ensures you handle every case of an enum
+• Traits are Rust's interfaces — implement Display, Debug, From, Into, Iterator for idiomatic types
+• Iterators are lazy and zero-cost — chain .filter(), .map(), .collect() without intermediate allocations
+• cargo clippy for linting — follow its suggestions, they're almost always right
+• cargo fmt is mandatory — Rust code style is non-negotiable; format on save
+• async/await in Rust requires a runtime: tokio is the standard choice for web servers
+• Axum is the modern Rust web framework — built on hyper and tower, composable middleware
+• Serde for serialization: #[derive(Serialize, Deserialize)] generates code at compile time — zero runtime overhead
+• sqlx for async SQL — compile-time query verification catches SQL errors before runtime
+• Arc<Mutex<T>> for shared mutable state across threads — prefer message-passing with mpsc::channel
+• Box<dyn Trait> for dynamic dispatch when the type isn't known at compile time
+• wasm-pack to compile Rust to WebAssembly — interop with JavaScript via wasm-bindgen
+• cargo test --doc to run doctests — code examples in comments are compiled and tested
+
+═══════════════════════════════════════
+VUE 3 & NUXT MASTERY
+═══════════════════════════════════════
+• Composition API with <script setup> is the modern Vue 3 standard — replace Options API for all new code
+• ref() for primitives, reactive() for objects — ref wraps in { value }, reactive uses a Proxy
+• computed() for derived state — cached based on reactive dependencies, updates automatically
+• watchEffect() for side effects that depend on reactive state — runs immediately, tracks dependencies automatically
+• watch() for explicit source watching with old/new values — use for async operations triggered by state changes
+• defineProps() and defineEmits() in <script setup> — no need to import, compiler macros
+• provide/inject for dependency injection across deep component trees — alternative to prop drilling
+• Teleport component to render content outside the component tree — modals, toasts, tooltips
+• Suspense for async components — show a fallback while the async component resolves
+• Vue Router 4: createRouter with createWebHistory or createWebHashHistory
+• Navigation guards: beforeEach for auth checks, beforeResolve for data loading
+• Pinia is the official Vue state management — Composition API style stores, DevTools support
+• useAsyncData() in Nuxt for server-side data fetching with automatic hydration
+• useFetch() in Nuxt: shorthand for useAsyncData + $fetch — handles loading, error, data states
+• Nuxt modules extend functionality: @nuxtjs/tailwindcss, @pinia/nuxt, nuxt-auth-utils
+• auto-imports in Nuxt: composables, components, and utilities are imported automatically
+• server/api/ directory for Nuxt API routes — full-stack in one codebase like Next.js
+• Nitro is Nuxt's server engine — deploy to any platform: Node, Vercel, Cloudflare, Netlify
+• useHead() and useSeoMeta() for dynamic meta tags in Nuxt — reactive SEO
+• Island architecture in Nuxt 3: <NuxtIsland> for selective client-side hydration
+• defineNuxtPlugin() for plugins that run on both server and client
+
+═══════════════════════════════════════
+ASTRO FRAMEWORK
+═══════════════════════════════════════
+• Astro is zero-JS by default — ships HTML, adds JS only where explicitly requested
+• .astro files: frontmatter (server-side JS) + HTML template + optional <style> and <script>
+• Islands architecture: import any framework component (React, Vue, Svelte) with client: directives
+• client:load — hydrate immediately; client:visible — hydrate when in viewport; client:idle — hydrate when browser idle
+• content collections for type-safe Markdown/MDX — define a schema with Zod, get full TypeScript types
+• Astro.props for passing data from parent to component — typed via Props interface
+• getStaticPaths() for dynamic routes at build time — return an array of { params, props } objects
+• Astro.redirect() and Astro.rewrite() for server-side navigation control
+• Middleware in Astro: src/middleware.ts with onRequest hook — runs before every route
+• API routes in Astro: src/pages/api/endpoint.ts — export GET, POST etc. handlers
+• View Transitions API built into Astro — add <ViewTransitions /> to layout for animated page transitions
+• Image optimization: use <Image /> from astro:assets for automatic WebP conversion and lazy loading
+• Astro DB for type-safe SQL — Turso (libSQL) at the edge, zero-config local development
+• Hybrid rendering: output: 'hybrid' allows mixing static and server-rendered routes in one project
+• SSR adapters: @astrojs/node, @astrojs/vercel, @astrojs/cloudflare for server deployment
+
+═══════════════════════════════════════
+BROWSER APIS & WEB PLATFORM
+═══════════════════════════════════════
+• Intersection Observer for lazy loading, infinite scroll, and analytics — much better than scroll events
+• ResizeObserver for responding to element size changes — replaces window resize + getBoundingClientRect
+• MutationObserver for watching DOM changes — useful for third-party DOM manipulation
+• Web Animations API (WAAPI): element.animate() for imperative animations without CSS class toggling
+• Pointer Events: pointerdown, pointermove, pointerup — unifies mouse, touch, and stylus input
+• Clipboard API: navigator.clipboard.writeText() / readText() — async, requires user gesture
+• Share API: navigator.share() for native OS share sheets on mobile — check navigator.canShare() first
+• Web Workers for CPU-intensive tasks: postMessage() to communicate, no DOM access in worker
+• SharedArrayBuffer + Atomics for lock-free shared memory between workers — requires COOP/COEP headers
+• File System Access API: showOpenFilePicker(), showSaveFilePicker() — read/write local files
+• IndexedDB for client-side structured data — use idb library for a Promise-based wrapper
+• Cache API (Service Worker) for offline-first: caches.open(), cache.put(), cache.match()
+• Web Push API for push notifications — requires VAPID keys, service worker, and user permission
+• Permissions API: navigator.permissions.query({ name: 'camera' }) — check before requesting
+• Battery API, Network Information API, Vibration API — check support with feature detection
+• BroadcastChannel for cross-tab communication — tabs on the same origin can message each other
+• Web Crypto: crypto.subtle for hashing, encryption, key generation — hardware-accelerated
+• Payment Request API for native payment UI — reduces checkout friction on mobile browsers
+• Credential Management API: navigator.credentials.get() for passwordless auth and passkeys
+• Screen Wake Lock API: navigator.wakeLock.request('screen') — keep screen on for video playback
+
+═══════════════════════════════════════
+SEARCH ENGINE OPTIMIZATION (SEO)
+═══════════════════════════════════════
+• Core Web Vitals are a ranking factor — LCP, INP, CLS must be green in Google Search Console
+• Server-side rendering or static generation is required for SEO — client-rendered SPAs are invisible to crawlers
+• Unique, descriptive <title> tags for every page — 50-60 characters, include the main keyword
+• Meta description: 150-160 characters, compelling summary — not a ranking factor but affects CTR
+• Open Graph tags: og:title, og:description, og:image, og:url — for social sharing previews
+• Twitter Card meta tags for Twitter/X sharing — twitter:card, twitter:image, twitter:title
+• Canonical URLs: <link rel="canonical" href="..."> prevents duplicate content issues
+• Structured data with JSON-LD: Article, Product, FAQPage, BreadcrumbList — rich results in SERPs
+• robots.txt: allow crawlers to index what you want, disallow admin, API, and staging routes
+• XML sitemap: list all indexable URLs with lastmod — submit to Google Search Console and Bing
+• Hreflang attributes for multilingual sites — tells search engines which language/region each URL serves
+• Internal linking: link to important pages from many places — distributes PageRank
+• Image SEO: descriptive alt text, file names with keywords, next-gen formats (WebP/AVIF)
+• Page speed as ranking signal: compress, minify, use CDN, reduce server response time
+• Mobile-first indexing: Google indexes the mobile version — responsive design is not optional
+• HTTPS is a ranking signal — all pages must be served over TLS
+• Core Content: E-E-A-T (Experience, Expertise, Authoritativeness, Trustworthiness) — Google's quality rater guidelines
+• Avoid keyword stuffing — write for humans, include semantic keywords naturally
+• Structured URLs: /blog/category/post-slug — clean, descriptive, no parameters for content pages
+• 301 redirect for permanent URL changes — update internal links, update sitemap
+
+═══════════════════════════════════════
+DESIGN SYSTEMS & COMPONENT LIBRARIES
+═══════════════════════════════════════
+• Design tokens are the atomic unit of a design system — colors, spacing, typography, shadows as variables
+• Semantic tokens reference primitive tokens: color.surface.primary = color.slate.50 — never hardcode hex in components
+• Radix UI provides unstyled, accessible primitives — build your visual layer on top without reinventing accessibility
+• shadcn/ui is not a dependency — it's source code you copy and own — customize freely
+• Storybook documents components in isolation: stories for every variant, every state, every prop
+• Chromatic for visual regression on Storybook — screenshot every story, alert on pixel changes
+• CVA (Class Variance Authority) for typed Tailwind variants: cva('base', { variants: { size: {} } })
+• Component API design: boolean props for simple states, string unions for variants, render props for content slots
+• Compound components expose a clean API: <Select>, <Select.Trigger>, <Select.Options> — parent manages shared state
+• Controlled vs uncontrolled components: both for maximum flexibility — use defaultValue + onChange pattern
+• ARIA pattern library at aria-practices.org — reference implementation for every UI pattern
+• Focus management: when a modal opens, move focus into it; when it closes, return focus to the trigger
+• CSS custom properties for theming: --color-primary changes globally when set on :root or .dark
+• Design token tooling: Style Dictionary transforms tokens to CSS, JS, iOS, and Android formats
+• Component documentation: props table, usage examples, do's and don'ts, accessibility notes
+• Versioning and changelog for design system packages — breaking changes need a major version bump
+• Figma tokens plugin syncs design tokens between Figma and code — single source of truth
+• Every component needs: default state, hover, focus, active, disabled, loading, error variants
+• Dark mode: don't just invert colors — rethink contrast, saturation, and shadow for dark surfaces
+
+═══════════════════════════════════════
+DEVELOPER EXPERIENCE (DX)
+═══════════════════════════════════════
+• DX is a product — the developer is your user when building tools, APIs, and libraries
+• README-driven development: write the README before the code — it defines the API before you implement it
+• Zero-config defaults: work out of the box without configuration, allow overrides for advanced users
+• Fail fast with clear error messages: "Expected string, got undefined at config.apiKey" beats a stack trace
+• CLI tools: use commander.js or yargs for argument parsing, chalk for colors, ora for spinners
+• Interactive CLIs: inquirer.js for prompts, menus, and confirmations — detect TTY before prompting
+• Changelog automation with conventional commits + semantic-release or changesets
+• Monorepo dev experience: turbo dev runs all dev servers in parallel with smart caching
+• Hot module replacement (HMR) for instant feedback — Vite's HMR is near-instant for large apps
+• Path aliases: @/ instead of ../../ for imports — configure in tsconfig.json and vite.config.ts
+• Absolute imports for shared code, relative imports for co-located files
+• Prettier + ESLint integration: eslint-config-prettier disables conflicting rules — format then lint
+• Husky + lint-staged: run formatters and linters only on staged files — fast pre-commit hooks
+• commitlint enforces conventional commit format — prevents bad commit messages from merging
+• GitHub Copilot or similar AI coding assistant improves DX — write JSDoc comments for better suggestions
+• Devcontainers (.devcontainer/devcontainer.json) for reproducible development environments in VS Code
+• dotenv-expand for .env variable interpolation: BASE_URL=http://localhost, API_URL=\${BASE_URL}/api
+• VS Code workspace settings and extensions.json: recommend the right extensions for the project
+• Task runners in package.json scripts: keep them readable, document what each does in the README
+• npm workspaces / pnpm workspaces: a single package.json for all packages, hoisted node_modules
+
+═══════════════════════════════════════
+CONCURRENCY & ASYNC PATTERNS
+═══════════════════════════════════════
+• JavaScript is single-threaded with an event loop — async/await doesn't add threads, it adds concurrency
+• The event loop: call stack → microtask queue (Promises) → macrotask queue (setTimeout, I/O)
+• Promise.all() for parallel independent async operations — fails fast if any rejects
+• Promise.allSettled() when you need all results regardless of failure — check each result's status
+• Promise.race() for timeout patterns: Promise.race([fetch(url), timeout(5000)])
+• Promise.any() for first successful result — rejects only if all reject
+• async/await is syntactic sugar over Promises — error handling with try/catch is cleaner than .catch chains
+• Never await inside a loop without reason — use Promise.all(items.map(async item => ...)) for parallel
+• p-limit for concurrency control: limit parallel operations to N at a time — prevent overwhelming APIs
+• AbortController to cancel fetch requests, streaming operations, and custom async work
+• Generator functions (function*) for lazy sequences and custom iterators
+• Async generators (async function*) for async sequences — stream data with for await...of
+• Observable pattern (RxJS): streams of events over time — powerful for complex event handling
+• setTimeout(fn, 0) schedules in the macrotask queue — yields to the microtask queue first
+• queueMicrotask() for scheduling microtasks explicitly — runs before the next macrotask
+• Worker threads in Node.js: for CPU-bound tasks that would block the event loop
+• Cluster module: fork worker processes to use all CPU cores — share a TCP server port
+• POSIX signals in Node.js: SIGTERM for graceful shutdown, SIGUSR2 for custom triggers
+• async_hooks for tracking async context across callbacks — used by APM tools internally
+• AsyncLocalStorage for request-scoped context without passing it explicitly — like thread-local storage
+
+═══════════════════════════════════════
+DATA VALIDATION & SCHEMA DESIGN
+═══════════════════════════════════════
+• Validate at every boundary: API inputs, database outputs, third-party responses — trust nothing
+• Zod is the TypeScript-first validation library — schemas are types, no duplication
+• z.infer<typeof Schema> extracts the TypeScript type from a Zod schema — no need to define types separately
+• z.discriminatedUnion() for tagged unions — more efficient than z.union() for objects with a shared discriminant
+• z.transform() for coercion and mapping: parse raw input, return a clean domain object
+• z.superRefine() for cross-field validation — access the context to add multiple issues
+• z.preprocess() for pre-validation transformation: coerce strings to numbers before validating
+• Zod error formatting: z.ZodError.flatten() for field-level errors, format() for nested errors
+• Yup for form validation: similar to Zod but older — prefer Zod for new projects with TypeScript
+• JSON Schema for language-agnostic validation — OpenAPI uses it, ajv compiles it to fast validators
+• Ajv (Another JSON Validator): compile schemas once, reuse the validator function — extremely fast
+• Valibot: tree-shakable alternative to Zod — smaller bundle for client-side validation
+• Input sanitization vs validation: validate structure, sanitize content (trim, lowercase, escape HTML)
+• Whitelist validation: only allow known-good values — deny by default, not allow-by-default
+• Regular expressions for format validation: email, phone, URL — but use established libraries, not custom regex
+• Date validation: always parse with a date library (date-fns, dayjs), never trust new Date(string)
+• Schema versioning: when your validation schema changes, handle old data format in a migration
+• Partial schemas for PATCH endpoints: z.partial(Schema) makes all fields optional
+• Strict schemas reject unknown keys: z.object({}).strict() — prevent extra properties from slipping through
+
+═══════════════════════════════════════
+MEMORY MANAGEMENT & PERFORMANCE
+═══════════════════════════════════════
+• Memory leaks in JavaScript: event listeners not removed, closures holding references, global variables
+• Use WeakMap and WeakSet for object-keyed caches — entries are garbage-collected when the key object is GC'd
+• WeakRef allows holding a reference to an object without preventing garbage collection
+• FinalizationRegistry: run a callback when a WeakRef target is garbage collected
+• Avoid creating objects in hot loops — reuse objects, or use object pools for high-frequency allocations
+• String concatenation in loops: use array.join('') or template literals, not += accumulation
+• DOM references cause memory leaks when the element is removed but the reference is held in JS
+• Detached DOM trees: elements removed from the document but referenced in JS — a common leak source
+• Chrome DevTools Memory panel: heap snapshots and allocation timelines — find leaks systematically
+• Retained size vs shallow size: retained size includes all objects that become unreachable if this one is GC'd
+• V8 JIT compilation: predictable object shapes (same properties, same order) enable shape optimization
+• Avoid polymorphic functions: functions called with many different argument types deoptimize in V8
+• Array methods create new arrays — for performance-critical loops, use for...of or indexed for loops
+• Typed Arrays (Int32Array, Float64Array) for binary data — more memory-efficient than regular arrays
+• ArrayBuffer for raw binary manipulation — shared between typed array views
+• Object.freeze() prevents property addition/modification — signals immutability and enables optimization
+• structuredClone() for deep cloning objects — faster than JSON.parse(JSON.stringify()), handles more types
+• Lazy initialization: compute expensive values only when first needed, cache the result
+• Memoize pure functions: same inputs always produce same outputs — cache with Map keyed by stringified args
+• requestIdleCallback for non-urgent work during browser idle periods — never block the main thread
+
+═══════════════════════════════════════
+CLOUD STORAGE & FILE HANDLING
+═══════════════════════════════════════
+• Never store files on the application server's filesystem — use object storage (S3, GCS, R2)
+• Pre-signed URLs for direct client uploads: client uploads directly to S3, bypasses your server — scalable
+• Signed URLs for secure downloads: URL includes an expiry and signature — can't be shared indefinitely
+• Multipart upload for files over 100MB — parallel upload of parts, assemble on S3
+• File type validation server-side: check magic bytes (file signature), not just the MIME type or extension
+• Virus scanning uploads: ClamAV, AWS Macie, or VirusTotal API before making files accessible
+• CDN in front of object storage: CloudFront + S3 — serve files from edge, not from origin every time
+• Lifecycle policies: auto-delete or transition to cheaper storage tier (Glacier) after N days
+• Versioning: enable S3 versioning for audit trails and accidental deletion recovery
+• Image processing: Thumbor, Imgix, Cloudinary, or S3 Object Lambda for on-demand resize/crop/format
+• Sharp (Node.js) for server-side image processing: resize, convert to WebP, strip EXIF metadata
+• ffmpeg for video processing: thumbnail extraction, transcoding, compression
+• PDF generation: Puppeteer (HTML to PDF), PDFKit (programmatic), ReportLab (Python) for invoices and reports
+• Streaming file downloads: pipe a readable stream to the HTTP response — never buffer large files in memory
+• Chunked file processing: process large files in chunks with readline or byte-range reads
+• File deduplication: hash the file content (SHA-256) before storing — identical files share one object
+• Content Disposition header: attachment triggers download, inline renders in browser
+• Range requests (206 Partial Content) for resumable downloads and video seeking
+• CORS on object storage buckets: allow specific origins for presigned URL uploads from the browser
+• Access control: bucket policy for broad rules, object ACL for fine-grained control (prefer bucket policies)
+
+═══════════════════════════════════════
+TECHNICAL WRITING & DOCUMENTATION
+═══════════════════════════════════════
+• Good documentation is the highest-leverage engineering activity — it multiplies every user of your code
+• README structure: what it does, why it exists, quick start, full usage, API reference, contributing
+• Code comments: the code says WHAT, comments say WHY — never comment what's obvious from the code
+• JSDoc: /** @param {string} name */ for editor tooltips and auto-generated docs
+• TSDoc standard for TypeScript documentation — @param, @returns, @throws, @example, @deprecated
+• Architecture Decision Records (ADRs): title, status, context, decision, consequences — commit to /docs/adr/
+• Runbooks: step-by-step procedures for recurring operational tasks — linked from alerts
+• API documentation: every endpoint needs method, path, auth requirements, request body, response schema, error codes, and an example
+• Changelogs: what changed, what was fixed, what was removed — CHANGELOG.md follows Keep a Changelog format
+• Diagram as Code: Mermaid, PlantUML, D2 for architecture diagrams that live in the repository
+• sequence diagrams explain async flows; entity-relationship diagrams for database schemas; flowcharts for business logic
+• Docusaurus, GitBook, or Mintlify for hosted documentation sites with search and versioning
+• Every public API function needs a usage example — abstract descriptions without examples are useless
+• Error messages in documentation: list every error code, what causes it, and how to fix it
+• Tutorial vs How-To vs Reference vs Explanation — Diátaxis framework distinguishes four documentation modes
+• Write for the reader's level: Getting Started for newcomers, API reference for experienced users
+• Screenshots and GIFs for UI features; code examples for APIs — a picture saves a thousand words
+• Keep documentation close to the code: prefer docstrings and inline comments over separate wiki pages
+• Review documentation in code review — stale docs are worse than no docs
+• Spell check and grammar check documentation in CI — Vale is a linting tool for prose
 `;
+
 
 
