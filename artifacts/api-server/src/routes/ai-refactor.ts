@@ -52,7 +52,7 @@ async function refactorResponse(
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-        max_completion_tokens: 60000,
+        max_completion_tokens: 100000,
       });
 
       for await (const chunk of stream) {
@@ -71,7 +71,7 @@ async function refactorResponse(
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-        max_completion_tokens: 60000,
+        max_completion_tokens: 100000,
       });
       res.json({ [responseKey]: result.choices[0]?.message?.content ?? "" });
     } catch (err: any) {
