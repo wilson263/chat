@@ -82,7 +82,7 @@ Please analyze this error and provide:
 (How to avoid this class of error in the future)`,
         },
       ],
-      max_completion_tokens: 60000,
+      max_completion_tokens: 100000,
     });
 
     res.json({ analysis: result.choices[0]?.message?.content ?? "" });
@@ -142,7 +142,7 @@ Provide:
 (Why the original code was wrong and why the fix works)`,
         },
       ],
-      max_completion_tokens: 60000,
+      max_completion_tokens: 100000,
     });
 
     res.json({ fix: result.choices[0]?.message?.content ?? "" });
@@ -178,7 +178,7 @@ Explain:
 Keep it concise and actionable.`,
         },
       ],
-      max_completion_tokens: 60000,
+      max_completion_tokens: 100000,
     });
 
     res.json({ explanation: result.choices[0]?.message?.content ?? "" });
@@ -230,7 +230,7 @@ Please:
 5. Add a test case that would catch this bug`,
         },
       ],
-      max_completion_tokens: 60000,
+      max_completion_tokens: 100000,
     });
 
     res.json({ trace: result.choices[0]?.message?.content ?? "" });
@@ -292,7 +292,7 @@ Why #5: [root cause]
 (Process or code changes to prevent this class of bug)`,
         },
       ],
-      max_completion_tokens: 60000,
+      max_completion_tokens: 100000,
     });
 
     res.json({ rootCause: result.choices[0]?.message?.content ?? "" });
