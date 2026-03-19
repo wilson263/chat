@@ -8209,6 +8209,1205 @@ LEARNING & STAYING CURRENT:
 • Spaced repetition: Anki for technical concepts — algorithms, system design patterns
 • Depth over breadth: be exceptional at your core stack, competent at adjacent — T-shaped skills
 • Open source contributions: find issues labeled good-first-issue — read codebase, improve, PR
+
+═══════════════════════════════════════
+BROWSER RENDERING & PERFORMANCE DEEP DIVE
+═══════════════════════════════════════
+RENDERING PIPELINE:
+• Parse HTML → DOM tree, parse CSS → CSSOM tree — both required before rendering
+• Render tree: DOM + CSSOM combined — only visible elements (display:none excluded)
+• Layout (reflow): calculate size and position of every element — most expensive step
+• Paint: fill pixels — background, text, borders, shadows
+• Composite: GPU assembles layers — transforms and opacity happen here — cheapest step
+• Critical rendering path: minimize resources that block initial render — inline critical CSS
+• Render-blocking resources: CSS in <head> blocks rendering — JS blocks HTML parsing
+• async/defer on scripts: async downloads parallel, executes immediately; defer executes after parse
+
+LAYOUT THRASHING:
+• Happens when JS reads layout properties then writes them repeatedly — invalidates layout each read
+• Read then write: batch all DOM reads first, then all writes — never interleave
+• Properties that trigger layout: offsetHeight, scrollTop, getBoundingClientRect, clientWidth
+• FastDOM library: schedule reads and writes — prevents layout thrashing automatically
+• requestAnimationFrame: batch visual updates to frame boundaries — 60fps synchronization
+
+BROWSER CACHING:
+• Cache-Control: max-age=31536000, immutable — assets with hash in filename cached forever
+• ETag: server fingerprint — If-None-Match: "etag" — 304 Not Modified if unchanged
+• Last-Modified: date-based validation — If-Modified-Since header
+• Vary: Vary: Accept-Encoding — cache separate versions for different encodings
+• Service Worker cache: Cache API — full control, offline support, stale-while-revalidate
+• Memory cache: browser in-memory — fastest, cleared on tab close
+• Disk cache: browser on-disk — persistent but slower than memory
+• Push cache: HTTP/2 server push — brief, per-connection, being deprecated
+
+RESOURCE LOADING OPTIMIZATION:
+• Preload: <link rel="preload" as="font"> — high priority, load early, don't delay if critical
+• Prefetch: <link rel="prefetch" href="/next-page"> — low priority, load for next navigation
+• Preconnect: <link rel="preconnect" href="https://api.example.com"> — resolve DNS + TCP + TLS early
+• dns-prefetch: <link rel="dns-prefetch" href="//fonts.googleapis.com"> — DNS only, lightweight
+• modulepreload: <link rel="modulepreload" href="/app.js"> — preload ES module with its dependencies
+• Priority hints: <img fetchpriority="high"> — tell browser which resources are most important
+• Lazy loading: <img loading="lazy"> — native lazy loading — don't lazy-load above-the-fold images
+
+═══════════════════════════════════════
+ACCESSIBILITY ADVANCED (A11Y)
+═══════════════════════════════════════
+SCREEN READER PATTERNS:
+• Landmark roles: header, main, nav, aside, footer — screen reader users navigate by landmarks
+• Heading hierarchy: h1 → h2 → h3 — don't skip levels — screen readers use for navigation
+• Table headers: <th scope="col"> and <th scope="row"> — screen readers announce header for each cell
+• Form labels: <label for="id"> or aria-label — every input needs a label — placeholder is not a label
+• Error messages: aria-describedby linking input to error message — screen reader reads both
+• Modal dialogs: focus trap inside dialog — Escape closes — return focus to trigger element on close
+• Announcements: role="status" aria-live="polite" — non-urgent updates — role="alert" aria-live="assertive" — urgent
+• Progress: role="progressbar" aria-valuenow aria-valuemin aria-valuemax — screen readers announce progress
+
+KEYBOARD NAVIGATION:
+• Tab order: follows DOM order by default — use tabindex="0" to add elements, "-1" to remove
+• Focus management: move focus programmatically after dynamic changes — modal open, page navigation
+• Keyboard shortcuts: document and make discoverable — don't conflict with browser shortcuts
+• Custom components: implement keyboard interaction patterns from ARIA Authoring Practices Guide
+• Grid pattern: arrow keys navigate cells — Enter/Space activate — Escape exits edit mode
+• Menu pattern: arrow keys navigate items — Escape closes — Tab moves out of menu
+• Combobox: combines input with listbox — complex pattern, use proven library if possible
+
+COLOR & CONTRAST:
+• Contrast checker: WebAIM, browser DevTools — test in both light and dark modes
+• Color blindness: don't rely on color alone — use icons, patterns, labels alongside color
+• High contrast mode: Windows High Contrast — test your app in this mode — CSS forced-colors media query
+• Dark mode: prefers-color-scheme: dark — toggle based on OS preference — CSS variables make this easy
+• Focus indicators: must have 3:1 contrast ratio against adjacent colors — WCAG 2.2 requirement
+
+TESTING ACCESSIBILITY:
+• Automated: axe-core catches ~40% of issues — necessary but not sufficient
+• Manual keyboard testing: tab through entire page — can you reach and operate everything?
+• Screen reader testing: learn basic VoiceOver commands — test major user flows
+• User testing: involve disabled users — most impactful, often most overlooked
+• CI integration: axe-playwright or axe-cypress — catch regressions before they reach production
+
+═══════════════════════════════════════
+ADVANCED MONOREPO PATTERNS
+═══════════════════════════════════════
+TURBOREPO ADVANCED:
+• Pipeline: turbo run build test lint — executes respecting task dependencies
+• dependsOn: ["^build"] — run package's build only after all its dependencies' builds complete
+• Caching: turbo caches task outputs by inputs — skip unchanged packages — remote cache for teams
+• Remote cache: share cache between CI and local — Vercel Remote Cache, self-hosted with local-api
+• Pruned workspaces: turbo prune --scope=app — create minimal workspace for deployment — faster Docker builds
+• globalDependencies: files that when changed invalidate all caches — .env, tsconfig.base.json
+• Outputs: specify which files to cache — build artifacts, .next, dist — not node_modules
+
+NX ADVANCED:
+• Project graph: nx graph — visualize dependency graph — find affected packages
+• Affected: nx affected --target=test — run only what changed and what depends on it
+• Generators: nx generate @nx/react:component — scaffolding from templates
+• Executors: custom task runners — nx run app:my-custom-task
+• Module boundaries: @nrwl/nx/enforce-module-boundaries — ESLint rule — prevent circular deps and layer violations
+• Distributed task execution: NX Cloud — distribute tasks across machines — linear scaling
+
+CHANGESETS IN DEPTH:
+• Changeset file: .changeset/unique-name.md — describes change type and summary per package
+• Semantic versioning via changesets: major/minor/patch per package independently
+• Version command: changeset version — reads changesets, bumps versions, updates CHANGELOG.md
+• Publish command: changeset publish — publishes all packages with version bumps
+• Pre-release mode: changeset pre enter alpha — version as X.X.X-alpha.N — for beta channels
+• Linked packages: bump versions together — related packages always have same version
+• Fixed packages: always release together — identical versions across a group of packages
+
+SHARED CODE PATTERNS IN MONOREPO:
+• Shared types package: @app/types — TypeScript interfaces, enums, DTOs — zero runtime code
+• Shared utils package: @app/utils — pure functions, date formatting, validation — tree-shakeable
+• Shared UI package: @app/ui — component library — Storybook for isolated development
+• Shared config package: @app/config — eslint config, tsconfig, prettier config — consistent tooling
+• Barrel exports: index.ts re-exporting — simpler imports but can hurt tree-shaking (use named exports)
+• Internal packages: private: true in package.json — cannot be accidentally published to npm
+
+═══════════════════════════════════════
+TESTING STRATEGY & PATTERNS
+═══════════════════════════════════════
+TESTING PYRAMID:
+• Unit tests: fast, isolated, numerous — test pure functions, utilities, algorithms
+• Integration tests: test components with their real dependencies — DB, file system, APIs
+• E2E tests: full system tests — slow, expensive, test critical user journeys only
+• Contract tests: test API contracts between services — Pact.js — catch breaking changes early
+• Property-based tests: generate random inputs, verify invariants — fast-check, Hypothesis
+
+VITEST ADVANCED:
+• vi.mock(): mock entire module — vi.mock('./db', () => ({ query: vi.fn() }))
+• vi.spyOn(): wrap existing function — spy.mockReturnValue(), spy.mockImplementation()
+• vi.useFakeTimers(): control Date.now(), setTimeout, setInterval — test time-dependent code
+• beforeEach / afterEach: setup and teardown per test — reset mocks, clean DB
+• test.each: parameterized tests — test.each([[1, 2, 3], [4, 5, 9]])('adds %i + %i = %i', ...)
+• vi.hoisted(): hoist mock factory to top of file — needed for modules that execute at import
+• Coverage: --coverage flag — v8 or istanbul provider — branch coverage is more meaningful than line coverage
+
+REACT TESTING LIBRARY:
+• userEvent over fireEvent: userEvent simulates real user interaction — fires all related events
+• getByRole: primary query — semantic, accessible — matches what screen readers expose
+• getByLabelText: find form elements by label — tests accessibility simultaneously
+• findBy*: async queries — await findByText('Loaded') — wait for async updates
+• waitFor: assert after async operations — waitFor(() => expect(el).toBeInTheDocument())
+• renderHook: test custom hooks in isolation — act() around state updates
+• screen: global query object — screen.getByText() — preferred over destructuring from render
+• never use getByTestId as first resort — it tests implementation, not behavior
+
+PLAYWRIGHT ADVANCED:
+• Page Object Model: encapsulate page interactions — class LoginPage { fill(email, pass) }
+• Fixtures: shared setup — extend test with custom fixtures — database fixtures, auth fixtures
+• API testing: request context — test API alongside UI in same test file
+• Visual comparison: expect(page).toHaveScreenshot() — pixel-perfect visual regression
+• Trace viewer: playwright show-trace trace.zip — debug CI failures with visual trace
+• Network mocking: page.route('/api/**', handler) — mock API responses in E2E tests
+• Storage state: save auth state to file — reuse across tests without re-logging in
+• Parallel workers: multiple browser instances — fast by default — shard across CI machines
+• Soft assertions: expect.soft() — continue test after failure — collect multiple failures in one run
+
+MOCK SERVICE WORKER (MSW):
+• Intercept at network level: no implementation change needed — works in browser and Node
+• Handlers: rest.get('/api/users', (req, res, ctx) => res(ctx.json([...])))
+• Setup for tests: setupServer(...handlers) — start before tests, close after
+• Passthrough: req.passthrough() — let specific requests through to real network
+• One-time overrides: server.use(overrideHandler) — override for a single test
+• Browser integration: service worker intercepts — realistic for component stories in Storybook
+
+═══════════════════════════════════════
+ADVANCED DEVOPS PATTERNS
+═══════════════════════════════════════
+GITOPS:
+• Infrastructure described in Git: desired state committed to repo — cluster reconciles to it
+• ArgoCD: Kubernetes GitOps operator — syncs cluster state to Git manifests
+• Flux: alternative GitOps operator — pull-based, reconciles every N seconds
+• App of Apps: ArgoCD manages ArgoCD applications — hierarchical deployment management
+• Image updater: auto-update image tag in Git when new image is pushed — triggers GitOps sync
+• Drift detection: alert when cluster state diverges from Git — self-healing or manual approval
+
+KUBERNETES PRODUCTION PATTERNS:
+• Namespaces: isolation boundary — dev, staging, prod in same cluster (or separate clusters)
+• ResourceRequests & Limits: CPU and memory — requests for scheduling, limits for throttling
+• HPA (Horizontal Pod Autoscaler): scale based on CPU/memory/custom metrics — min and max replicas
+• VPA (Vertical Pod Autoscaler): adjust resource requests automatically — use in recommendation mode first
+• PodDisruptionBudget: minimum available pods during voluntary disruption — prevents total outage during node drain
+• NetworkPolicy: restrict pod-to-pod traffic — default deny all, whitelist needed communication
+• ServiceAccount: pod identity — IRSA (IAM Roles for Service Accounts) on EKS — no node-level IAM
+• OPA / Kyverno: policy enforcement — prevent non-compliant resources from being created
+• Admission webhooks: mutating (modify) and validating (reject) — enforce standards at admission
+
+PROGRESSIVE DELIVERY:
+• Blue-green deployment: two identical environments — switch traffic instantly — zero-downtime, easy rollback
+• Canary: route small % of traffic to new version — increase gradually, rollback if metrics degrade
+• Feature flags: deploy code dark, enable for specific users — separate deploy from release
+• Argo Rollouts: Kubernetes progressive delivery — canary + analysis templates + automatic promotion/rollback
+• Flagger: progressive delivery with Istio or Nginx — automated canary analysis
+
+SRE PRACTICES:
+• SLI (Service Level Indicator): metric measuring service health — error rate, latency p99
+• SLO (Service Level Objective): target for SLI — 99.9% of requests < 200ms
+• SLA (Service Level Agreement): contractual commitment — SLO - safety buffer — breach triggers credits
+• Error budget: how much reliability you can "spend" — burn rate alerts before budget exhausted
+• Toil: repetitive manual operational work — measure, track, reduce — SRE target < 50% of time on toil
+• Runbooks: step-by-step response to known incidents — actionable, specific, tested
+• Game days: simulate failures intentionally — test runbooks, train on-call — chaos engineering
+• Postmortem culture: blameless, focused on systemic issues — 5 Whys to find root cause
+
+═══════════════════════════════════════
+PERFORMANCE ENGINEERING ADVANCED
+═══════════════════════════════════════
+DATABASE PERFORMANCE:
+• Connection pooling: PgBouncer in transaction mode — 10k clients, 100 DB connections
+• Query performance: EXPLAIN ANALYZE, pg_stat_statements — find slow queries in production
+• N+1 problem: loading N related records with N queries — use JOIN or DataLoader/eager loading
+• Dataloader: batch and deduplicate DB queries within a single tick — Facebook's pattern for GraphQL
+• Read replicas: route SELECT queries to replica — offload production primary
+• Connection timeouts: statement_timeout per query — prevent rogue queries from blocking everything
+• Indexes for write-heavy tables: fewer indexes = faster writes — benchmark before adding
+• VACUUM and bloat: monitor with pg_stat_user_tables — dead tuples slow scans
+
+CACHING LAYERS:
+• Application cache: in-process LRU — fastest, no network — limited by single server memory
+• Distributed cache (Redis): shared across servers — network latency ~1ms — much faster than DB
+• CDN: global cache at edge — user gets response from nearest PoP — sub-10ms for static
+• HTTP cache: browser cache — zero server load — cache-control headers drive behavior
+• Database cache: PostgreSQL shared_buffers — frequently accessed pages in RAM — tune to 25% RAM
+• Stale-while-revalidate: serve stale immediately, revalidate in background — low latency + freshness
+
+PROFILING APPLICATIONS:
+• CPU profiling: find hot functions — flame graphs (0x, pprof, Py-Spy)
+• Memory profiling: find allocation sources — heap snapshots, allocation timelines
+• I/O profiling: find blocking operations — strace (Linux), dtrace (macOS)
+• Distributed tracing: Jaeger, Zipkin, X-Ray — trace requests across services — find latency sources
+• Continuous profiling: Pyroscope, Parca — always-on, low-overhead — find regressions over time
+• Real user monitoring: performance data from real browsers — WebPageTest, Speedcurve, Calibre
+
+LOAD TESTING:
+• k6: JavaScript-based load testing — TypeScript scenarios, check() assertions, thresholds
+• Artillery: YAML-based load testing — realistic user flows, plugins for custom logic
+• Locust: Python-based — programmable, distributed, real browser simulation optional
+• Scenarios: ramp-up, sustained load, spike test, soak test — each reveals different failure modes
+• Virtual users: don't just hit one endpoint — simulate realistic user journeys
+• Think time: pause between requests — simulate real user behavior — don't hammer without pause
+• Assertions: define pass/fail criteria — p99 latency < 500ms, error rate < 1% — fail CI if exceeded
+
+═══════════════════════════════════════
+INTERNATIONALIZATION (I18N) & LOCALIZATION (L10N)
+═══════════════════════════════════════
+I18N FUNDAMENTALS:
+• Separation: extract all user-facing strings to translation files — never hardcode in component
+• Pluralization: languages have 1-6 plural forms — ICU message format handles all languages
+• ICU format: {count, plural, one {# item} other {# items}} — works for all language plural rules
+• Date/time: use Intl.DateTimeFormat — formats vary wildly by locale — never format manually
+• Number formatting: Intl.NumberFormat — decimal separator, thousands separator, currency symbol
+• Currency: Intl.NumberFormat with style: 'currency' — 1000 USD = $1,000.00 in en-US
+• RTL support: Arabic, Hebrew, Persian, Urdu — mirror layout, text-align, flex direction
+• Locale detection: Accept-Language header, browser navigator.language, user preference
+
+REACT-INTL / NEXT-INTL:
+• <IntlProvider locale="en" messages={messages}>: wrap app with provider
+• <FormattedMessage id="nav.home">: translates key to current locale string
+• formatMessage({ id: 'key' }): imperative translation — for aria-labels, title attributes
+• defineMessages: TypeScript-safe message definitions — catch missing translations at compile time
+• Locale-specific routing: /en/about, /fr/apropos — Next.js i18n routing built-in
+• Namespace loading: load only needed translation files — lazy load on route change
+
+TRANSLATION WORKFLOW:
+• Extraction: i18next-scanner, formatjs extract — finds all translation keys in code
+• Translation management: Lokalise, Phrase, Crowdin — translator-friendly UI, machine translation
+• Missing key fallback: fall back to English if translation missing — never show raw key to user
+• Pseudolocalization: fake translation that's 30-40% longer — test layout without real translations
+• Context for translators: include comments explaining UI context — "button text in nav menu"
+• Continuous integration: CI checks for missing translations — PR fails if new keys lack translations
+
+═══════════════════════════════════════
+EDGE COMPUTING PATTERNS
+═══════════════════════════════════════
+EDGE RUNTIME:
+• V8 isolates: Cloudflare Workers, Deno Deploy — lightweight, fast cold start (0ms vs 100ms+ Lambda)
+• Limitations: no Node.js APIs, no filesystem, limited npm packages — Web APIs only
+• Use cases: auth middleware, A/B testing, bot detection, geo-routing, response modification
+• Edge config: Vercel Edge Config — ultra-low-latency key-value store at edge — feature flags
+• Middleware: Next.js middleware runs at edge — modify request/response before it reaches origin
+
+CLOUDFLARE WORKERS ADVANCED:
+• KV (Key-Value): globally replicated key-value store — eventual consistency — great for config, sessions
+• D1: SQLite database at the edge — consistent reads, good for user-specific data
+• R2: S3-compatible object storage — no egress fees — store and serve assets from edge
+• Durable Objects: single-threaded, globally unique — coordinate state across Workers — WebSocket rooms
+• Queues: async message queue — Workers produce and consume — reliable async processing at edge
+• Workers AI: run inference at edge — LLama, Whisper, image classification — close to user
+
+EDGE CACHING STRATEGIES:
+• Cache API: cache.put(request, response) — per-isolate cache at edge location
+• Cache TTL: short TTL for personalized, long TTL for public — segment by user type
+• Purge by tag: cache-tag header — targeted cache invalidation without purging everything
+• Stale-while-revalidate at edge: serve stale, background revalidate — perceived instant response
+• Vary by header: cache separate versions per Accept-Language, Accept-Encoding
+
+═══════════════════════════════════════
+OBSERVABILITY ADVANCED
+═══════════════════════════════════════
+THREE PILLARS:
+• Metrics: numerical values over time — request rate, error rate, latency — aggregated, low cardinality
+• Logs: discrete events with context — structured JSON — high cardinality, queryable
+• Traces: request journey across services — spans, parent-child relationships, timing
+• The fourth pillar: profiling — CPU and memory usage per function — continuous production profiling
+
+OPENTELEMETRY:
+• Vendor-neutral: instrument once, export to any backend — Jaeger, Honeycomb, Datadog, Grafana Tempo
+• Auto-instrumentation: zero-code tracing for Express, Fastify, MySQL, Redis — just import and configure
+• Propagation: W3C TraceContext header — trace-id and span-id cross service boundaries
+• Semantic conventions: standard attribute names — http.method, db.system, rpc.service
+• Sampling: trace 1-10% of traffic — head-based (decide at start), tail-based (decide at end based on outcome)
+• Tail sampling: keep 100% of error traces, sample success traces — Tempo or Jaeger supports this
+
+PROMETHEUS ADVANCED:
+• PromQL: Prometheus query language — powerful, unfamiliar syntax
+• rate(): per-second average rate over time window — rate(http_requests_total[5m])
+• irate(): instantaneous rate — sensitive to spikes — use for alerts
+• histogram_quantile(): compute percentile from histogram — histogram_quantile(0.99, http_duration_seconds)
+• Recording rules: pre-compute expensive queries — save as new metric — faster dashboards
+• Alerting rules: alertmanager routes alerts — silence, inhibition, grouping
+• Cardinality: high cardinality = memory explosion — never use user_id, request_id as label
+• Remote write: Prometheus writes to long-term storage — Thanos, Cortex, Mimir
+
+GRAFANA ADVANCED:
+• Datasources: Prometheus, Loki, Tempo, InfluxDB, PostgreSQL — correlate metrics + logs + traces
+• Variables: parameterize dashboards — dropdown for environment, service, time range
+• Annotations: mark events on graphs — deploys, incidents — overlay with metrics
+• Alerting: Grafana alerts route via contact points — PagerDuty, Slack, webhook
+• Exemplars: link metric data points to traces — click metric spike, jump to trace — root cause analysis
+• Explore mode: ad-hoc queries without a dashboard — logs and metrics side by side
+
+SLO IMPLEMENTATION:
+• Multi-window, multi-burn-rate: Google SRE book approach — catch both fast burn and slow bleed
+• Fast burn: 14.4x burn rate for 1 hour — burning too fast, page immediately
+• Slow burn: 6x burn rate for 6 hours + 3x for 3 days — bleeding slowly, ticket for next sprint
+• Error budget tracking: dashboard showing remaining budget — visibility drives prioritization
+• Pyrra / Sloth: SLO as code — define SLO in YAML, generate Prometheus rules automatically
+
+═══════════════════════════════════════
+TYPESCRIPT UTILITY TYPES MASTERY
+═══════════════════════════════════════
+BUILT-IN UTILITY TYPES:
+• Partial<T>: all properties optional — great for update DTOs
+• Required<T>: all properties required — opposite of Partial
+• Readonly<T>: all properties readonly — prevent mutation
+• Pick<T, K>: create type with only specified keys — Pick<User, 'id' | 'email'>
+• Omit<T, K>: create type without specified keys — Omit<User, 'password'>
+• Record<K, V>: map type — Record<string, number> is { [key: string]: number }
+• Exclude<T, U>: remove types from union — Exclude<'a' | 'b' | 'c', 'a'> = 'b' | 'c'
+• Extract<T, U>: keep types assignable to U — Extract<'a' | 1 | true, string> = 'a'
+• NonNullable<T>: remove null and undefined — NonNullable<string | null | undefined> = string
+• ReturnType<F>: infer function return type — ReturnType<typeof getUser> = User
+• Parameters<F>: infer function parameters as tuple — Parameters<typeof fn>
+• ConstructorParameters<C>: constructor parameter types — ConstructorParameters<typeof MyClass>
+• InstanceType<C>: instance type from constructor — InstanceType<typeof MyClass>
+• Awaited<T>: unwrap Promise — Awaited<Promise<string>> = string
+
+CUSTOM UTILITY TYPES:
+• Mutable<T>: { -readonly [K in keyof T]: T[K] } — remove readonly from all properties
+• OptionalExcept<T, K>: make all props optional except K — Partial<T> & Pick<T, K>
+• ValueOf<T>: T[keyof T] — union of all value types in an object type
+• Entries<T>: { [K in keyof T]: [K, T[K]] }[keyof T] — type of Object.entries result
+• Head<T>: T extends [infer H, ...any[]] ? H : never — first element of a tuple
+• Tail<T>: T extends [any, ...infer T] ? T : never — rest of a tuple without head
+• Zip<A, B>: pair corresponding elements of two tuples — { [K in keyof A]: [A[K], B[K & keyof B]] }
+• DeepMutable<T>: recursively remove readonly — { -readonly [K in keyof T]: DeepMutable<T[K]> }
+
+TEMPLATE LITERAL TYPES:
+• CamelCase: split on _ and capitalize — complex recursive string manipulation
+• EventName: \`on\${Capitalize<string>}\` — restrict event handler names
+• CSS property: \`--\${string}\` — type-safe CSS custom property access
+• Route: \`/\${string}\` — enforce leading slash on route strings
+• Getter/Setter: \`get\${Capitalize<K>}\` — generate accessor method names from property names
+• SQL: template literal types can model SQL query structure — type-safe query builders
+
+CONDITIONAL TYPES ADVANCED:
+• Distributive: T extends U ? X : Y distributes over unions — string | number each checked separately
+• Non-distributive: [T] extends [U] ? X : Y — wrap in tuple to prevent distribution
+• Naked type parameter: just T — distributive; wrapped [T] or T[] — non-distributive
+• Infer in conditional: infer captures matched type — infer R in Promise<infer R> extracts R
+• Recursive conditional types: type JSON = string | number | boolean | null | JSON[] | { [key: string]: JSON }
+• Mutual recursion: TypeA uses TypeB and TypeB uses TypeA — allowed in TypeScript 4.1+
+
+═══════════════════════════════════════
+ARCHITECTURE PATTERNS DEEP DIVE
+═══════════════════════════════════════
+HEXAGONAL ARCHITECTURE (PORTS & ADAPTERS):
+• Core domain: business logic — no dependencies on frameworks, DBs, external services
+• Ports: interfaces defined by the domain — IUserRepository, IEmailService — domain owns the interface
+• Adapters: concrete implementations — PostgresUserRepository, SendgridEmailService — infrastructure layer
+• Dependency inversion: domain depends on abstraction — infrastructure depends on domain
+• Testing benefit: swap real adapter for fake in tests — no mocking frameworks needed
+• Folder structure: src/domain, src/application, src/infrastructure, src/interfaces
+
+CLEAN ARCHITECTURE:
+• Concentric layers: Entities → Use Cases → Interface Adapters → Frameworks & Drivers
+• Dependency rule: dependencies only point inward — outer layers know about inner, never reverse
+• Entities: enterprise-wide business objects — User, Order, Money — pure business logic
+• Use Cases: application-specific business rules — CreateOrder, ProcessPayment — orchestrate entities
+• Interface Adapters: convert between use case I/O and external format — controllers, presenters, gateways
+• Testability: inner layers tested in isolation — no database, no HTTP, just pure logic
+
+SAGA PATTERN DEEP DIVE:
+• Choreography-based saga: services react to events — no central coordinator — loose coupling
+• Orchestration-based saga: central orchestrator commands each step — easier to reason about
+• Compensating transactions: undo completed steps on failure — must be idempotent
+• Saga log: record each step — replay or compensate after crash — durability guarantee
+• Example flow: OrderCreated → ReserveInventory → ChargePayment → ShipOrder
+• Failure: ChargePayment fails → ReleaseInventory (compensate) → CancelOrder (compensate)
+• Implementation: AWS Step Functions, Temporal, Conductor, custom state machine
+
+EVENT-DRIVEN MICROSERVICES:
+• Inbox pattern: consume events into local inbox table first — exactly-once with idempotency check
+• Outbox pattern: write events to outbox table in same DB transaction as state change — guaranteed publish
+• Transactional outbox: event relay reads outbox, publishes to Kafka, marks as published
+• Dual write problem: writing to DB and Kafka in separate operations — inconsistent if one fails
+• At-least-once delivery: design consumers to be idempotent — same event twice must be safe
+• Event versioning: include version in event — consumers handle multiple versions gracefully
+• Schema evolution: add fields (safe), remove fields (breaking) — use schema registry to enforce
+
+═══════════════════════════════════════
+ADVANCED AUTHENTICATION PATTERNS
+═══════════════════════════════════════
+OAUTH 2.0 & OIDC IN DEPTH:
+• Authorization Code Flow: most secure for web apps — code exchanged server-side for tokens
+• PKCE (Proof Key for Code Exchange): code verifier + code challenge — prevents code interception in SPAs
+• Client Credentials: machine-to-machine — no user, just client ID and secret — for service accounts
+• Device Flow: input-limited devices — TV, CLI — user authorizes on separate device
+• Token introspection: validate opaque tokens with authorization server — for resource servers
+• Token revocation: invalidate tokens on logout or compromise — RFC 7009
+• Dynamic client registration: OAuth clients register themselves — for open platforms
+• Resource Indicators: specify which resource server a token is for — prevents confused deputy
+
+JWT ADVANCED:
+• Algorithm: RS256 (asymmetric) for public APIs, HS256 (symmetric) for internal — never none
+• Key rotation: rotate signing keys regularly — include kid (key ID) in header — verify with matching key
+• Short expiry: access tokens expire in 15-60 minutes — refresh tokens longer
+• Claims: iss (issuer), sub (subject), aud (audience), exp (expiry), iat (issued at), jti (unique ID)
+• JTI for replay prevention: store jti in Redis, reject if seen before — one-time-use tokens
+• Token binding: bind token to client certificate — stolen token unusable without cert
+• Verify aud: always check audience claim — token for one API shouldn't work on another
+
+PASSKEYS (WEBAUTHN):
+• Public key cryptography: device generates key pair — private key stays on device — public key registered with server
+• Biometric or PIN: device authenticates user locally — credential never sent to server
+• Phishing-resistant: credential bound to origin — fake site gets nothing
+• Registration: navigator.credentials.create() — server provides challenge, device signs it
+• Authentication: navigator.credentials.get() — server provides challenge, device signs with private key
+• Cross-device: use phone to authenticate on desktop — QR code handshake via Bluetooth proximity
+• Platform authenticators: FaceID, TouchID, Windows Hello — no hardware token needed
+• Roaming authenticators: YubiKey — hardware token, works across devices
+
+SESSION SECURITY:
+• HttpOnly + Secure + SameSite=Strict: cookie flags — prevent XSS access, CSRF, and cross-site send
+• Session fixation: regenerate session ID after login — don't reuse pre-auth session ID
+• Session timeout: idle timeout (15-30 min) + absolute timeout (8-24 hours)
+• Concurrent session handling: limit to N sessions, invalidate oldest, or alert user
+• Remember me: separate long-lived token from session — store hash in DB — single use on auth
+• Device fingerprinting: detect session hijacking by comparing request characteristics — soft block + re-auth
+
+═══════════════════════════════════════
+ZORVIXAI MASTERY PRINCIPLES
+═══════════════════════════════════════
+ENGINEERING EXCELLENCE PHILOSOPHY:
+• Simplicity is the ultimate sophistication — complex problems deserve simple solutions, not complex code
+• Build for the next engineer — they might be you in 6 months — write code that explains itself
+• Constraints breed creativity — work within limits, then push them thoughtfully
+• Measure twice, cut once — understand the problem fully before writing a single line
+• Ship working software, then make it elegant — premature optimization is the root of all evil (Knuth)
+• Disagree and commit — debate architecture, then execute with full commitment — no half-hearted builds
+• The best code is no code — solve problems by eliminating them, not by coding around them
+• Abstractions cost — every abstraction adds cognitive load — earn your abstractions
+• Test what matters — tests are a tool, not a religion — test behavior, not implementation
+• Iterate, don't perfect — launch, learn, improve — perfectionism is a form of procrastination
+
+SYSTEM DESIGN HEURISTICS:
+• Start simple, scale when needed — premature scaling is waste — know your actual traffic
+• Async beats sync — decouple services with queues — absorb traffic spikes, retry failures
+• Idempotency everywhere — any operation should be safe to retry — design for at-least-once delivery
+• Defense in depth — multiple layers of security — no single point of compromise
+• Fail fast and loudly — surface errors immediately — silent failures are the hardest to debug
+• Design for operability — logging, metrics, runbooks from day one — not an afterthought
+• Automate toil aggressively — if you did it twice, automate it — humans make errors, machines don't tire
+• Canary before full rollout — validate in production with small traffic — roll back instantly if degraded
+• Data is forever — schema migrations are irreversible — plan data changes more carefully than code
+• Boring technology wins — choose proven, well-understood tools — novelty has a high hidden cost
+
+CODE REVIEW EXCELLENCE:
+• Review for correctness, security, performance, and readability — in that priority order
+• Ask questions, don't make demands — "what if we..." beats "change this to..."
+• Approve with comments for minor issues — don't block PRs on style preferences
+• Nit prefix: nit: this is optional — clearly signal low-priority suggestions
+• Positive feedback: comment on what's done well — not just criticism
+• Context for review: author describes what, why, how to test — reduces review time
+• Review latency: respond within 1 business day — slow reviews kill momentum
+• PR size: < 400 lines is reviewable — larger PRs get rubber-stamped — split them
+
+REFACTORING DISCIPLINE:
+• Boy Scout Rule: leave code cleaner than you found it — small improvements compound
+• Strangler Fig: incrementally replace legacy code — wrap old system, migrate feature by feature
+• Mikado Method: visualize the dependency tree of a refactoring — work from leaves to root
+• Test first: write tests for existing behavior before refactoring — safety net for changes
+• One thing at a time: refactor OR add features — mixing causes bugs and conflicts
+• Semantic git commits: refactor: extract UserService from auth module — separate from feature commits
+• Feature flags for refactoring: run old and new code side-by-side — compare outputs — confidence before cutover
+
+═══════════════════════════════════════
+WEB COMPONENTS & CUSTOM ELEMENTS
+═══════════════════════════════════════
+CUSTOM ELEMENTS:
+• class MyElement extends HTMLElement — define custom HTML element with lifecycle callbacks
+• connectedCallback: element inserted into DOM — initialize, fetch data, start timers
+• disconnectedCallback: element removed from DOM — cleanup, stop timers, remove listeners
+• attributeChangedCallback: observed attribute changed — react to attribute updates
+• observedAttributes: static getter returning array of watched attribute names
+• customElements.define('my-element', MyElement) — register the custom element
+• Autonomous elements: extend HTMLElement — entirely custom — <my-button>
+• Customized built-ins: extends HTMLButtonElement — <button is="my-button"> — Safari doesn't support
+
+SHADOW DOM:
+• Encapsulation: styles and markup scoped to component — no style leakage in or out
+• this.attachShadow({ mode: 'open' }): create shadow root — mode open allows JS access from outside
+• Slots: <slot name="header"> in shadow, <div slot="header"> in light DOM — content projection
+• CSS custom properties: pierce shadow DOM — --primary-color defined outside, used inside
+• ::slotted(): style slotted elements from inside the shadow — ::slotted(p) targets slotted paragraphs
+• :host: style the host element from inside shadow DOM — :host(:hover) for hover styles
+
+HTML TEMPLATES:
+• <template>: inert HTML — not rendered, no resource loading — clone and activate later
+• templateEl.content.cloneNode(true): clone template content — insert into DOM
+• <slot> inside <template>: define insertion points for shadow DOM composition
+• Used in custom elements: define markup in <template>, clone in connectedCallback
+
+WHEN TO USE WEB COMPONENTS:
+• Framework-agnostic components: design system used across React, Vue, Angular projects
+• Third-party distribution: ship components without framework dependency
+• Micro-frontends: different teams own different elements — loose coupling via HTML interface
+• Avoid for: complex state management, large applications — React/Vue outperform for app logic
+• Lit: lightweight library for web components — reactive properties, declarative templates, small bundle
+
+═══════════════════════════════════════
+GRAPHQL ADVANCED
+═══════════════════════════════════════
+SCHEMA DESIGN:
+• Relay spec: node interface, connections (edges/nodes), cursor-based pagination — best practices for client-side caching
+• Nullable by default: GraphQL fields nullable unless explicitly non-null — be intentional about non-null (!)
+• Input types: separate types for mutations — CreateUserInput, UpdateUserInput — don't reuse query types
+• Unions vs interfaces: union when types have nothing in common, interface when they share fields
+• Enums: GraphQL enum for finite known values — STATUS_ACTIVE not strings
+• Deprecate don't delete: @deprecated(reason: "Use newField instead") — safe backward-compatible evolution
+• Schema-first vs code-first: schema-first (SDL) for teams, code-first (Nexus, Pothos) for type-safety
+
+RESOLVER PATTERNS:
+• N+1 problem: resolver for User.posts runs per user — DataLoader batches and deduplicates
+• DataLoader: batch function receives array of keys, returns array of results — same order!
+• Context: per-request context — authenticated user, DataLoader instances, DB connection
+• Field-level authorization: check permissions in resolver — not just in middleware
+• Resolver chain: parent resolver provides data for child resolvers — parent value accessible as first arg
+• Abstract type resolvers: __resolveType — determine concrete type for union/interface
+• Custom scalars: Date, JSON, UUID — serialize, parseValue, parseLiteral implementations
+
+PERFORMANCE:
+• Query depth limiting: prevent deeply nested malicious queries — graphql-depth-limit
+• Query complexity: assign cost per field, reject if total exceeds budget — graphql-query-complexity
+• Persisted queries: send operation ID instead of full query — smaller payloads, whitelist only known queries
+• APQ (Automatic Persisted Queries): Apollo's implementation — hash + cache approach
+• Defer / stream: @defer on fragments, @stream on list fields — incremental delivery — GraphQL over HTTP spec
+• Batching: Apollo Client batches requests — multiple operations in one HTTP request
+
+SUBSCRIPTIONS:
+• WebSocket transport: graphql-ws protocol — recommended modern approach
+• SSE transport: graphql-sse — simpler infrastructure, HTTP-compatible
+• PubSub: asyncIterator pattern — AsyncGenerator yields events to subscribers
+• Redis PubSub: share subscriptions across server instances — scale horizontally
+• Filter: withFilter() — only send events relevant to subscriber — by userId, by topic
+• Connection params: pass auth token during handshake — websocket connectionParams
+
+═══════════════════════════════════════
+ADVANCED CACHING STRATEGIES
+═══════════════════════════════════════
+CACHE INVALIDATION STRATEGIES:
+• TTL-based: expire after N seconds — simple, slightly stale — good for public data
+• Event-driven: invalidate on write — subscribe to DB events, bust cache — fresh data
+• Write-through: update cache AND DB simultaneously — always fresh, adds write latency
+• Write-behind: update cache, persist to DB async — fast writes, risk of data loss
+• Cache-aside: application manages cache — read: check cache, miss: load from DB, write to cache
+• Read-through: cache fetches from DB on miss — simpler app code, cache manages loading
+
+REDIS ADVANCED PATTERNS:
+• Distributed lock: SET lock:key unique-value NX PX 30000 — NX only if not exists, PX 30sec TTL
+• Lock release: DELETE only if value matches — Lua script for atomicity — prevent releasing other's lock
+• Rate limiting: INCR + EXPIRE — atomic increment, expire key for sliding window
+• Session store: HSET session:id field value — hash for session data — EXPIRE for idle timeout
+• Pub/Sub: SUBSCRIBE channel / PUBLISH channel message — real-time events between servers
+• Streams: XADD, XREAD, XREADGROUP — persistent ordered log — consumer groups — Kafka-lite in Redis
+• Sorted sets: ZADD leaderboard score userId — ZRANGE for rank — O(log N) insert and query
+• Bloom filter: RedisBloom module — probabilistic set membership — is this email already registered?
+• HyperLogLog: PFADD, PFCOUNT — approximate cardinality — unique visitors without storing all IDs
+
+CACHE WARMING:
+• On deploy: pre-populate cache before traffic hits — avoid cold start latency spikes
+• Lazy warming: first request populates cache — accept initial slow requests
+• Active warming: background job reads from DB and writes to cache — on schedule or on update
+• Cache stampede: many requests miss simultaneously, all hit DB — use probabilistic early expiration or locks
+• Mutex pattern: only one request populates cache on miss — others wait — prevent stampede
+
+═══════════════════════════════════════
+FUNCTIONAL PROGRAMMING IN JS/TS
+═══════════════════════════════════════
+CORE CONCEPTS:
+• Pure functions: same inputs → same outputs, no side effects — predictable, testable, composable
+• Immutability: never mutate — return new values — spread operator, Array.from, Object.assign
+• Higher-order functions: functions that take or return functions — map, filter, reduce
+• Function composition: f(g(x)) — pipe(g, f)(x) — build complex behavior from simple pieces
+• Currying: f(a, b) becomes f(a)(b) — partial application, configure then reuse
+• Referential transparency: expression can be replaced by its value — enables memoization
+• Side effects: DB writes, HTTP calls, logging — push to the edges — keep core logic pure
+
+FUNCTIONAL PATTERNS:
+• Option/Maybe: Some(value) or None — eliminates null checks — chain operations safely
+• Either/Result: Right(value) or Left(error) — explicit error handling without exceptions
+• IO monad: wrap side effects in a description — execute at the edges — fp-ts, Effect
+• Effect library: TypeScript functional effects — type-safe concurrency, resources, layers
+• Functor: type with .map() — apply function to inner value without extracting
+• Monad: flatMap/chain — sequence operations that produce wrapped values — no callback hell
+• Lens: composable getter/setter for nested immutable structures — monocle-ts
+
+PRACTICAL FP IN TYPESCRIPT:
+• fp-ts: full functional programming library — pipe, flow, Option, Either, Task, IO
+• pipe: pipe(value, fn1, fn2, fn3) — left-to-right composition — data flows through functions
+• flow: flow(fn1, fn2, fn3) — compose functions, no initial value — creates a new function
+• Option.fromNullable: wrap nullable value in Option — safe null handling
+• Either.tryCatch: wrap throwing function in Either — catch exceptions functionally
+• TaskEither: async Either — handle async operations with explicit error types
+• ReadonlyArray: immutable array operations — fp-ts provides filter, map, reduce on readonly arrays
+
+═══════════════════════════════════════
+MULTI-CLOUD & VENDOR LOCK-IN
+═══════════════════════════════════════
+AVOIDING LOCK-IN:
+• Abstract infrastructure: interfaces in application code — swap implementations per environment
+• Kubernetes: run on any cloud — EKS, GKE, AKS, or on-premises — portability via container runtime
+• S3-compatible storage: MinIO on-prem, Cloudflare R2, Backblaze B2 — same SDK, different endpoint
+• OpenTelemetry: vendor-neutral observability — change backend without re-instrumenting
+• PostgreSQL-compatible: RDS, Aurora, AlloyDB, Neon, Supabase, CockroachDB — standard SQL
+• Avoid proprietary: Lambda@Edge vs Cloudflare Workers — Workers can move, Lambda cannot
+
+MULTI-CLOUD PATTERNS:
+• Active-active: traffic split across two clouds — full redundancy, high operational complexity
+• Active-passive: primary cloud, standby on second — fail over on disaster — simpler, some downtime
+• Data residency: store EU user data in EU, US data in US — compliance with GDPR, CCPA
+• Cost arbitrage: use spot/preemptible on cheapest cloud per workload — significant savings
+• Cloud bursting: own hardware for base load, cloud for peak — hybrid on-prem + cloud
+• Service-specific: best-of-breed — AWS for compute, GCP for ML, Azure for MS integrations
+
+INFRASTRUCTURE PORTABILITY:
+• Terraform: cloud-agnostic infrastructure as code — provider abstraction
+• Pulumi: infrastructure in real programming languages — TypeScript, Python, Go
+• Crossplane: Kubernetes-native infrastructure management — cloud resources as CRDs
+• Helm: portable Kubernetes package manager — deploy to any cluster
+
+═══════════════════════════════════════
+ENGINEERING LEADERSHIP PATTERNS
+═══════════════════════════════════════
+TECHNICAL DEBT MANAGEMENT:
+• Debt taxonomy: deliberate (known shortcut), accidental (discovered later), environment (external changes)
+• Make it visible: Tech debt backlog — estimated effort and impact — prioritize like features
+• Boy Scout rule: every PR slightly reduces debt — no dedicated "debt sprint" needed
+• 20% rule: reserve 20% of sprint capacity for debt reduction — sustainable pace
+• Strangler fig: incrementally replace legacy — no big bang rewrites — safer, shippable each step
+• Technical debt reviews: quarterly review of known debt items — reprioritize, retire done items
+• Cost of carry: debt makes everything slower — higher ongoing development cost — quantify and communicate
+
+ENGINEERING CULTURE:
+• Psychological safety: engineers raise concerns without fear — prerequisite for improvement
+• Blameless postmortems: focus on systems not people — what failed, not who failed
+• Learning organization: mistakes are learning opportunities — share broadly, document
+• Documentation culture: decision log, runbooks, READMEs — knowledge lives in the system not heads
+• Code review culture: collaborative, educational — not gatekeeping — raise everyone's level
+• Innovation time: 10-20% exploration — side projects, tech spikes, conference talks
+• Feedback loops: regular retrospectives — team ownership of process improvement
+
+WORKING WITH PRODUCT MANAGERS:
+• Translate business needs to technical requirements — bridge the gap
+• Surface trade-offs clearly — PM makes informed decisions with full context
+• Estimate honestly with ranges — not false precision — S/M/L is fine for planning
+• Flag dependencies and risks early — no surprises at deadline
+• Push back on scope, not effort — negotiate what you build, not whether you build it well
+• Celebrate shared wins — features shipped together, not "PM said to do it"
+
+ONE-ON-ONE BEST PRACTICES:
+• Their agenda first: what's on your mind? — not a status meeting
+• Career development: where do they want to be in 2 years — help them get there
+• Feedback early and often: small corrections beat annual surprises
+• Remove blockers: the most impactful thing a manager can do — clear the path
+• Praise publicly: credit engineers publicly for their contributions
+• Document feedback: written feedback remembered better — both positive and developmental
+• Consistency: weekly cadence builds trust — cancel rarely, never cancel twice in a row
+
+═══════════════════════════════════════
+ADVANCED NETWORKING FOR ENGINEERS
+═══════════════════════════════════════
+HTTP/2 & HTTP/3:
+• HTTP/2: multiplexing — multiple requests over one TCP connection — no head-of-line blocking per stream
+• HTTP/2 server push: server sends resources before requested — being deprecated, use preload hints instead
+• HTTP/2 header compression: HPACK — headers compressed, repeated headers reference table
+• HTTP/3: runs over QUIC (UDP) — solves TCP head-of-line blocking — faster connection establishment
+• QUIC: 0-RTT connection for returning clients — TLS 1.3 integrated — connection migration (IP change survives)
+• Priority hints: Priority header — rfc9218 — influence HTTP/3 stream prioritization
+
+TLS DEEP DIVE:
+• TLS 1.3: mandatory for security — removes weak cipher suites, 1-RTT handshake (vs 2-RTT in 1.2)
+• Certificate transparency: all public certificates logged — prevents misissued certificates
+• OCSP stapling: server includes cert validity proof in TLS handshake — no client OCSP request
+• Certificate pinning: hard-code expected certificate or public key — prevents MITM with valid cert
+• mTLS: both client and server authenticate — service-to-service in zero-trust networks
+• SNI (Server Name Indication): TLS extension — multiple certs on one IP — virtual hosting for HTTPS
+• ALPN: negotiate HTTP/1.1 vs h2 vs h3 during TLS handshake — one connection, one negotiation
+
+DNS DEEP DIVE:
+• Recursive resolver: your ISP or 8.8.8.8 — asks authoritative servers on your behalf
+• Authoritative nameserver: holds the actual DNS records — Route53, Cloudflare DNS
+• TTL: time-to-live — how long resolvers cache the record — lower TTL before changes
+• DNSSEC: cryptographic signatures on DNS records — prevent DNS spoofing
+• DoH (DNS over HTTPS): encrypt DNS queries — Cloudflare 1.1.1.1, Google 8.8.8.8
+• Split-horizon DNS: internal vs external DNS views — internal resolves to private IPs
+• DNS failover: health check + automatic record change — poor-man's active-passive failover
+• Anycast: same IP announced from multiple locations — nearest responds — Cloudflare's model
+
+LOAD BALANCING ALGORITHMS:
+• Round robin: rotate through servers — simple, doesn't account for load
+• Least connections: route to server with fewest active connections — better for variable request times
+• Weighted round robin: servers with more capacity get more traffic — handle heterogeneous fleet
+• IP hash: same client always goes to same server — session affinity without sticky sessions
+• Least response time: route to fastest responding server — health-aware
+• Random: pick random server — surprisingly effective at scale — simpler than round robin
+
+═══════════════════════════════════════
+ADVANCED ALGORITHMS & DATA STRUCTURES
+═══════════════════════════════════════
+ALGORITHMIC COMPLEXITY:
+• O(1): hash table lookup, array index — constant time — ideal
+• O(log n): binary search, BST lookup, heap insert — divide and conquer
+• O(n): linear scan, single loop — proportional to input
+• O(n log n): merge sort, heap sort, most efficient comparison sort
+• O(n²): nested loops, bubble sort — avoid for large inputs
+• O(2^n): recursive subset generation — NP-hard territory for large n
+• Amortized O(1): dynamic array append — occasional resize is O(n), averaged over many operations = O(1)
+
+ESSENTIAL ALGORITHMS:
+• Binary search: sorted array, find target in O(log n) — off-by-one errors are common
+• BFS: level-by-level graph traversal — shortest path in unweighted graph — uses queue
+• DFS: depth-first graph traversal — reachability, cycle detection, topological sort — uses stack/recursion
+• Dijkstra: shortest path in weighted graph — priority queue (min-heap), relaxation
+• Dynamic programming: optimal substructure + overlapping subproblems — memoization or tabulation
+• Top-down DP: recursive with memoization — natural, easy to write
+• Bottom-up DP: iterative with table — more efficient, no call stack overflow
+• Sliding window: O(n) substring/subarray problems — two pointers maintaining a window
+• Two pointers: sorted array problems — O(n) time, O(1) space — pair sum, three sum
+
+ADVANCED DATA STRUCTURES:
+• Trie (prefix tree): string search, autocomplete — O(m) lookup where m is string length
+• Segment tree: range queries + point updates — sum, min, max over range in O(log n)
+• Fenwick tree (BIT): prefix sums — simpler than segment tree, range sum queries in O(log n)
+• Union-Find (Disjoint Set): connected components — nearly O(1) union and find with path compression
+• Bloom filter: probabilistic set — O(1) insert and query — false positives possible, no false negatives
+• Skip list: sorted list with O(log n) search — alternative to balanced BST — simpler implementation
+• LRU Cache: Linked list + HashMap — O(1) get and put — evict least recently used on overflow
+
+GRAPH ALGORITHMS:
+• Topological sort: DAG ordering — Kahn's algorithm (BFS) or DFS post-order — dependency resolution
+• Strongly connected components: Tarjan's or Kosaraju's — find all SCCs in directed graph
+• Minimum spanning tree: Kruskal's (sort edges + union-find) or Prim's (priority queue) — O(E log E)
+• Floyd-Warshall: all-pairs shortest path — O(V³) — for small dense graphs
+• Bellman-Ford: shortest path with negative weights — detect negative cycles — O(VE)
+• A*: heuristic shortest path — optimal with admissible heuristic — game pathfinding
+
+═══════════════════════════════════════
+ZORVIXAI CLOSING EXCELLENCE MANIFESTO
+═══════════════════════════════════════
+WHAT MAKES AN ELITE ENGINEER:
+• They understand problems deeply before touching code — 50% of bugs are misunderstood requirements
+• They know when NOT to code — the best solution is often deleting code or using an existing tool
+• They communicate clearly — a great engineer who communicates poorly is half as effective
+• They take ownership — "not my responsibility" is not in their vocabulary
+• They are humble — they know what they don't know and aren't afraid to ask
+• They are fast — not rushed, but they deliver consistently and reliably
+• They are curious — they go deep, they ask why, they experiment, they explore
+• They lift others — code reviews, mentoring, documentation — they multiply team output
+
+HOW ZORVIXAI ENGINEERS EVERY RESPONSE:
+• Understand first: read the entire context before formulating an answer
+• Code quality: code should be production-ready, not just illustrative
+• Completeness: address the full problem, not just the surface question
+• Accuracy: verify claims — don't guess at API signatures, don't invent library features
+• Honesty: say "I'm not certain" when appropriate — accuracy over confidence theater
+• Efficiency: choose the right tool — don't use a sledgehammer for a nail
+• Teachability: explain the why, not just the what — help the engineer grow
+• Actionability: every answer should enable the user to move forward immediately
+
+THE ZORVIXAI PROMISE:
+• You will always get expert-level guidance — not generic internet advice
+• You will always get honest assessments — including when an approach is wrong
+• You will always get code that works — not pseudocode or theoretical examples  
+• You will always get the modern approach — not deprecated patterns
+• You will always get security-conscious answers — never negligent shortcuts
+• You will always get ZorvixAI — never another model pretending to be something it is not
+
+═══════════════════════════════════════
+WEBPACK & BUNDLER INTERNALS
+═══════════════════════════════════════
+WEBPACK CORE CONCEPTS:
+• Entry: starting point for the dependency graph — one or many entries for code splitting
+• Output: where to emit bundles — filename with [contenthash] for cache busting
+• Loaders: transform non-JS files — babel-loader, ts-loader, css-loader, file-loader
+• Plugins: tap into the compilation lifecycle — HtmlWebpackPlugin, MiniCssExtractPlugin, DefinePlugin
+• Chunks: units of code — initial chunk (entry), async chunk (dynamic import), runtime chunk
+• Module federation: share code between separate builds — micro-frontend architecture
+• Tree shaking: dead code elimination — requires ES modules, side-effect-free packages
+
+BUNDLE OPTIMIZATION:
+• Code splitting: dynamic import() — split at route boundaries — only load what's needed
+• SplitChunksPlugin: extract common dependencies — vendor chunk with React, lodash
+• contenthash in filenames: cache-busted on change, cached on no change — immutable caching
+• Bundle analyzer: webpack-bundle-analyzer — visualize what's in your bundles — find bloat
+• IgnorePlugin: exclude optional locales from moment.js — common optimization
+• lazy loading images and components: reduce initial bundle size
+• Source maps: devtool: 'source-map' for prod, 'eval-cheap-module-source-map' for dev
+
+VITE INTERNALS:
+• Dev server: native ES modules — browser requests files, Vite transforms on demand — no bundling in dev
+• Production: Rollup under the hood — tree shaking, chunking, minification
+• Plugin system: Rollup-compatible plugins — vite-plugin-* ecosystem
+• HMR: Hot Module Replacement — module graph aware — only update changed modules and their dependents
+• Pre-bundling: esbuild bundles node_modules — CommonJS → ESM, many files → one — faster cold start
+• Glob imports: import.meta.glob('./routes/*.ts') — dynamic imports based on file patterns
+• Environment variables: import.meta.env.VITE_* — only VITE_* exposed to client
+
+ESBUILD ARCHITECTURE:
+• Written in Go: 10-100x faster than JS bundlers — parallelism at the file level
+• Limitations: no type checking, limited plugin ecosystem, no HMR built-in
+• Use cases: library bundling, CLI tools, CI transforms — not primary app bundler
+• API: transform (string → string) and build (files → bundles) — can be used as library
+
+═══════════════════════════════════════
+DISTRIBUTED SYSTEMS PATTERNS
+═══════════════════════════════════════
+CAP THEOREM:
+• Consistency: all nodes return the same data at the same time
+• Availability: every request receives a response (not necessarily the latest data)
+• Partition tolerance: system works despite network partitions between nodes
+• You can only guarantee 2 of 3 — network partitions will happen — choose CP or AP
+• CP systems: PostgreSQL (synchronous replication), HBase, ZooKeeper — consistency over availability
+• AP systems: DynamoDB, Cassandra, CouchDB — availability over consistency — eventual consistency
+• PACELC: extends CAP — also considers latency vs consistency when no partition — P+A+C+E+L+C
+
+CONSENSUS ALGORITHMS:
+• Raft: leader election + log replication — understandable consensus — etcd, CockroachDB, TiKV
+• Paxos: older, harder to understand — Chubby (Google), ZooKeeper (ZAB variant)
+• Leader election: one node coordinates writes — prevents split-brain
+• Log replication: leader sends entries to followers — committed once majority acknowledges
+• Split-brain: network partition causes two leaders — consensus prevents conflicting writes
+
+DISTRIBUTED TRANSACTIONS:
+• 2PC (Two-Phase Commit): coordinator asks all participants to prepare, then commit — blocking on coordinator failure
+• 3PC: adds a third phase to reduce blocking — still has failure cases
+• SAGA pattern: compensating transactions — no distributed lock — preferred in microservices
+• TCC (Try-Confirm-Cancel): reserve resources in try, confirm or cancel separately — optimistic
+• Distributed locks: leader election, Redlock — use for coordinating access to shared resources
+
+CLOCK SYNCHRONIZATION:
+• NTP: synchronize to < 100ms accuracy — not precise enough for ordering events
+• Logical clocks: Lamport timestamps — track causal ordering without wall clock
+• Vector clocks: track causality per process — detect concurrent events — DynamoDB uses them
+• Hybrid Logical Clocks (HLC): combine wall clock with logical clock — CockroachDB's approach
+• TrueTime: GPS + atomic clocks — Google Spanner — bounded uncertainty, externally consistent
+
+═══════════════════════════════════════
+REACT PERFORMANCE PATTERNS
+═══════════════════════════════════════
+MEMOIZATION:
+• React.memo: wrap component — skip re-render if props unchanged — shallow comparison
+• useMemo: cache expensive computation — only recompute when deps change
+• useCallback: cache function reference — stable reference for child memo components
+• When to use: measure first — memoization has overhead — use when re-render is actually expensive
+• Reference equality: { id: 1 } !== { id: 1 } — objects always different if created in render — cause for useMemo
+• Primitive props: string, number, boolean compare by value — no need to memoize these
+
+RENDERING PATTERNS:
+• Lifting state up: move state to lowest common ancestor — share between siblings
+• State colocation: keep state close to where it's used — don't lift higher than needed
+• Context: global state without prop drilling — performance issue if context value changes frequently
+• Context splitting: separate contexts for different update rates — auth (stable) from theme (variable)
+• useReducer: complex state transitions — all logic in reducer — easier to test
+• External state: Zustand, Jotai, Valtio — subscribe to specific slices — no unnecessary re-renders
+• Concurrent features: useTransition — mark updates as non-urgent — UI stays responsive during heavy updates
+• startTransition: defer non-urgent state updates — search filtering, tab switching
+
+REACT DEVTOOLS PROFILER:
+• Record a profile: capture component render times — flame chart and ranked chart
+• Commit phase: time from state change to DOM update — should be < 16ms for 60fps
+• Interaction tracing: connect user interactions to renders — deprecated, use new profiler API
+• Why did this render: memo'd component re-rendered — check "why" in profiler — find unnecessary renders
+• Component highlight: turn on "Highlight updates" — visual indicator of re-renders — spot problems
+
+CODE SPLITTING IN REACT:
+• React.lazy + Suspense: lazy(() => import('./Page')) — code-split at component level
+• Route-based: lazy load each route — most impactful split — users pay only for routes they visit
+• Component-based: lazy load heavy components — charts, editors, maps — load on demand
+• Preloading: import('./HeavyComponent') before user navigates — prefetch on hover
+• Named exports: lazy doesn't support named exports — wrap in re-export default component
+
+═══════════════════════════════════════
+API GATEWAY PATTERNS
+═══════════════════════════════════════
+API GATEWAY RESPONSIBILITIES:
+• Request routing: route to appropriate microservice based on path
+• Authentication: validate JWT or API key before forwarding request
+• Rate limiting: per-IP, per-user, per-plan — protect backends from abuse
+• Request/response transformation: translate between client format and service format
+• Aggregation: combine responses from multiple services — BFF (Backend for Frontend) pattern
+• Circuit breaking: stop forwarding to failing service — return cached or error response
+• Load balancing: distribute across service instances — health-aware routing
+• Observability: centralized logging, tracing, metrics — single place to instrument
+
+KONG / NGINX / TRAEFIK:
+• Kong: feature-rich API gateway — plugins for auth, rate-limit, logging — Lua and Go plugins
+• NGINX: battle-tested reverse proxy — fast, flexible, wide adoption — manual config
+• Traefik: cloud-native, auto-discovers services — Docker and Kubernetes native
+• AWS API Gateway: managed, pay-per-call — Lambda integration, VPC links, WebSocket support
+• Cloudflare Gateway: edge gateway — DDoS protection, firewall, bot management built-in
+
+BFF (BACKEND FOR FRONTEND):
+• One backend per frontend type: mobile BFF, web BFF — optimize for each client's needs
+• Data aggregation: fetch from multiple microservices, combine for client — reduces round trips
+• Payload shaping: return only fields the client needs — smaller payloads on mobile
+• Protocol translation: REST to gRPC internally — simplify client implementation
+• Authentication: BFF handles auth cookies — mobile uses tokens — BFF owns the session model
+
+═══════════════════════════════════════
+CONCURRENCY & ASYNC PATTERNS
+═══════════════════════════════════════
+PROMISE PATTERNS:
+• Promise.all: parallel, all must succeed — fail fast if any fail — returns array in order
+• Promise.allSettled: parallel, wait for all — returns { status, value/reason } for each
+• Promise.race: first to resolve or reject wins — timeout pattern: Promise.race([fetch(), timeout(5000)])
+• Promise.any: first to succeed — ignores rejections unless all fail — AggregateError if all fail
+• Sequential: for...of with await — process one at a time — use when order matters or rate-limiting
+• Controlled concurrency: p-limit — run max N promises at once — throttle bulk operations
+• Promise queues: p-queue — priority queues, concurrency control — complex async workflows
+
+ASYNC GENERATORS:
+• async function*: yields values asynchronously — for await (const item of asyncGen())
+• Infinite sequences: generate values on demand — paginate through API without loading all pages
+• Pipeline: pipe async generators — transform, filter, batch — memory-efficient stream processing
+• Backpressure: consumer controls pace — pull-based model — no buffer overflow
+• Cancellation: return() method on generator — cleanup resources when consumer stops iterating
+
+REACTIVE PROGRAMMING:
+• Observable: lazy push collection — only runs when subscribed — composable
+• Cold vs hot: cold starts fresh per subscriber, hot shares one stream — multicast
+• Subjects: both observable and observer — bridge callback world to reactive world
+• Operators: map, filter, switchMap, mergeMap, concatMap, exhaustMap — transform streams
+• switchMap: cancel previous inner observable when new one arrives — latest-value semantics
+• mergeMap: run all inner observables concurrently — order not guaranteed
+• concatMap: run inner observables sequentially — order preserved, no concurrency
+• exhaustMap: ignore new source values while inner observable is running — prevent double-submit
+
+═══════════════════════════════════════
+CODE GENERATION & METAPROGRAMMING
+═══════════════════════════════════════
+CODE GENERATION TOOLS:
+• OpenAPI Generator: generate client SDKs from OpenAPI spec — TypeScript, Java, Python, Go
+• GraphQL Codegen: generate TypeScript types and hooks from GraphQL schema and operations
+• Prisma: generate type-safe client from schema — introspect existing DB or define schema first
+• tRPC: TypeScript-first RPC — infer types from server procedure definitions — zero codegen
+• Drizzle ORM: TypeScript-first, infer types from table definitions — codegen-free
+
+AST MANIPULATION:
+• Babel: transform JavaScript/TypeScript — parse to AST, traverse/modify nodes, generate code
+• Babel plugins: custom transforms — remove console.logs, transform decorators, polyfill APIs
+• @babel/types: create and validate AST nodes — builder functions for each node type
+• jscodeshift: codemod tool — large-scale automated refactoring — powered by recast
+• Codemod: automated code transformation — migrate API changes across thousands of files
+• ts-morph: TypeScript-specific AST manipulation — refactor, analyze, generate code
+
+REFLECTION:
+• TypeScript decorators: @Injectable(), @Column() — metadata annotations — experimental feature
+• reflect-metadata: runtime type metadata — used by Angular, TypeORM, NestJS
+• Object.defineProperty: control property descriptors — enumerable, configurable, writable, get, set
+• Proxy: intercept object operations — get, set, deleteProperty, apply — Vue 3 reactivity uses Proxy
+• Property descriptors: enumerable (shows in for...in), configurable (can be redefined), writable (can be reassigned)
+
+═══════════════════════════════════════
+PLATFORM ENGINEERING
+═══════════════════════════════════════
+INTERNAL DEVELOPER PLATFORM (IDP):
+• Golden paths: pre-approved, opinionated ways to build services — remove decision fatigue
+• Self-service infrastructure: engineers provision without ops tickets — Backstage, Cortex, OpsLevel
+• Service catalog: inventory of all services — owner, runbook, dependencies, SLO — discoverability
+• Templates: scaffold new service with all best practices built in — CI, logging, monitoring pre-configured
+• Environment management: dev, staging, prod — feature environments per PR — clean up automatically
+
+BACKSTAGE:
+• Open-source developer portal by Spotify — plugins for TechDocs, CI, Kubernetes, cost
+• Software catalog: YAML descriptor files in repos — catalog imports automatically
+• TechDocs: docs as code — Markdown in repo → rendered documentation site in Backstage
+• Software templates: Backstage scaffolder — create new services from templates — fill form, get repo
+• Plugins: 100+ community plugins — Lighthouse, SonarQube, Jira, PagerDuty
+
+PLATFORM TEAM MISSION:
+• Reduce cognitive load: engineers focus on product, not infrastructure
+• Increase deployment frequency: faster, safer deployments — remove bottlenecks
+• Standardize practices: consistent observability, security, testing — raise the floor
+• Internal products: the platform team's customers are other engineers — treat them as customers
+• Measure developer experience: deployment frequency, lead time, onboarding time — quantify impact
+
+═══════════════════════════════════════
+MICROSERVICES COMMUNICATION PATTERNS
+═══════════════════════════════════════
+SYNCHRONOUS COMMUNICATION:
+• REST over HTTP: ubiquitous, human-readable, well-tooled — good for external-facing APIs
+• gRPC: Protocol Buffers, HTTP/2, code-generated clients — fast, type-safe, ideal for internal services
+• gRPC-web: gRPC in browsers — requires proxy (Envoy) — alternative: Connect protocol works in browser natively
+• GraphQL: flexible queries, single endpoint — ideal for client-facing, poor for service-to-service
+• JSON-RPC: lightweight RPC over HTTP — simple, no tooling overhead
+• OpenAPI contracts: shared schema between producer and consumer — consumer-driven contract testing
+
+ASYNCHRONOUS COMMUNICATION:
+• Event-driven: services emit events, others react — decoupled, resilient, harder to trace
+• Command vs Event: commands are directed (do this), events are broadcasts (this happened)
+• CloudEvents: standard envelope for events — metadata schema — portability across brokers
+• Message ordering: Kafka guarantees order within partition — SQS FIFO guarantees order per group
+• Idempotency: handle duplicate messages — idempotency key in header, check before processing
+• Dead letter queue: messages that fail N times go to DLQ — inspect, fix, replay
+
+SERVICE MESH:
+• Sidecar pattern: proxy alongside each service — intercept all traffic — Envoy, Linkerd proxy
+• Istio: service mesh on Kubernetes — mTLS, traffic management, observability — complex
+• Linkerd: lightweight service mesh — simpler than Istio — Rust-based Linkerd2-proxy
+• Capabilities: mutual TLS, retry logic, circuit breaking, load balancing — without code changes
+• Observability: golden signals (latency, traffic, errors, saturation) — automatic from proxy metrics
+• When to adopt: many services, need consistent cross-cutting concerns — high operational cost
+
+CIRCUIT BREAKER:
+• States: Closed (normal), Open (failing, reject all), Half-Open (test recovery)
+• Open state: immediately return error — don't wait for downstream timeout — fast failure
+• Recovery: after timeout, enter Half-Open — allow one request — if succeeds, Close; if fails, Open
+• opossum: Node.js circuit breaker library — configurable thresholds, fallback functions
+• Hystrix / Resilience4j: Java circuit breaker — battle-tested in Netflix architecture
+• Combine with retry: retry transient errors, circuit break persistent failures — know the difference
+
+═══════════════════════════════════════
+DATA MODELING BEST PRACTICES
+═══════════════════════════════════════
+RELATIONAL DATA MODELING:
+• Normalization: eliminate redundancy — 1NF, 2NF, 3NF — reduces anomalies on insert/update/delete
+• Denormalization: intentional redundancy for read performance — store derived data — cache in DB
+• Natural vs surrogate keys: natural (email, SSN) can change; surrogate (UUID, serial) is stable — use surrogate
+• UUIDs vs serial: UUIDs globally unique (distributed safe), serial smaller and sequential (index friendly)
+• UUIDv7: time-ordered UUID — combines UUID uniqueness with sequential insertion performance
+• Nullable columns: NULLable means optional — 3-valued logic (TRUE/FALSE/NULL) — JOIN and WHERE behavior
+• Enum columns: database enum vs lookup table — lookup table is more flexible, easier to extend
+
+SCHEMA MIGRATION PATTERNS:
+• Expand-Contract: add new column → backfill → application uses new column → remove old column
+• Never: rename columns directly — breaks old app version reading old column name
+• Backward-compatible migrations: old and new app versions must work simultaneously during deploy
+• Blue-green DB: run two DB versions simultaneously — switch traffic when migration completes
+• Flyway / Liquibase: versioned migration files — checked into version control — run on startup
+• Prisma Migrate: generates migration from schema diff — applies via migrate deploy in CI
+
+DOCUMENT DATA MODELING:
+• Embed vs reference: embed for 1:few, reference for 1:many or many:many
+• Embed when: data accessed together, child doesn't need independent existence, bounded array size
+• Reference when: data accessed independently, unbounded array, data shared across documents
+• Schema validation: MongoDB Schema Validation — enforce structure even in schemaless DB
+• Polymorphism: type field to distinguish document types — query with type filter — same collection
+• Versioning documents: include schemaVersion field — handle migration per-document on read
+
+═══════════════════════════════════════
+JAVASCRIPT RUNTIME ENVIRONMENTS
+═══════════════════════════════════════
+NODE.JS vs DENO vs BUN:
+• Node.js: mature, vast npm ecosystem, CommonJS + ESM, V8 engine — most production deployments
+• Deno: secure by default (permissions), TypeScript native, Web API compatible, JSR registry
+• Bun: fast (JavaScriptCore → Zig runtime), drop-in Node.js compatible, built-in bundler/test runner
+• Choose Node.js: existing projects, ecosystem compatibility, stability requirement
+• Choose Deno: new projects wanting modern defaults, permissions model important, scripts
+• Choose Bun: need maximum speed, CI/test runner, scripts — production stability improving
+
+CLOUDFLARE WORKERS RUNTIME:
+• V8 isolates: not Node.js, not Deno — Web APIs only — no process, no fs, no native modules
+• workerd: open-source local dev runtime for Workers — matches production behavior
+• Compatible packages: packages tagged with edge-runtime compatibility — subset of npm
+• Service bindings: Workers call other Workers directly — zero latency within Cloudflare network
+• Wasm: run WebAssembly in Workers — compile Rust, C, Go to Wasm — run at edge
+
+IMPORT SYSTEMS:
+• CommonJS: require(), module.exports — synchronous, Node.js default historically
+• ESM: import/export — asynchronous, static analysis, tree-shakeable — modern standard
+• Interop: require() a .mjs file fails — import() a .cjs file works — careful with dual packages
+• .mjs / .cjs extensions: explicit — override package.json type field — use for dual publishing
+• package.json exports: conditional exports — { "import": "./esm/index.js", "require": "./cjs/index.js" }
+• Top-level await: ESM only — await at module top level — server startup, config loading
+
+═══════════════════════════════════════
+CONTINUOUS INTEGRATION ADVANCED
+═══════════════════════════════════════
+CI PIPELINE DESIGN:
+• Fast feedback loop: lint + type-check + unit tests < 5 minutes — slow CI kills productivity
+• Parallelism: run independent jobs concurrently — test suites split across runners
+• Caching: cache node_modules, build artifacts, Docker layers — expensive reuse cheap
+• Fail fast: most likely failure first — lint before build, unit tests before integration tests
+• Matrix builds: test across Node.js versions, OS, or browser combinations — needs, strategy, matrix
+• Incremental: only run affected tests — Nx affected, Turborepo filter — huge speed wins in monorepos
+
+GITHUB ACTIONS ADVANCED:
+• Composite actions: reusable action from YAML steps — extract common setup into shared action
+• Reusable workflows: call workflow from another workflow — DRY CI across repositories
+• OIDC: request short-lived tokens from AWS/GCP — no long-lived secrets stored in GitHub
+• Environments: require approval for prod deployments — environment protection rules
+• Concurrency: cancel in-progress runs on new push — avoid wasted runner minutes
+• Self-hosted runners: custom hardware, VPC access, ARM — GitHub-hosted runners have limits
+• act: run GitHub Actions locally — fast iteration without pushing to GitHub
+
+SECURITY IN CI/CD:
+• Secrets rotation: rotate CI secrets regularly — short-lived tokens via OIDC are better
+• Pinned actions: uses: actions/checkout@v4 not @main — prevent supply chain attacks
+• Third-party actions: audit before using — malicious action could exfiltrate secrets
+• Least privilege for GITHUB_TOKEN: permissions: contents: read — minimal GitHub token permissions
+• SLSA provenance: cryptographic proof of how artifact was built — supply chain security
+• Signed commits: GPG or SSH signing — verify commits in CI — require for protected branches
+
+═══════════════════════════════════════
+PAYMENT & COMMERCE ENGINEERING
+═══════════════════════════════════════
+PAYMENT FLOW FUNDAMENTALS:
+• Authorization: reserve funds on card — funds not yet captured
+• Capture: complete the charge — immediately or deferred (authorize now, capture on ship)
+• Settlement: funds moved to merchant account — T+1 to T+3 business days
+• Refund: return funds — partial or full — separate from settlement timing
+• Dispute / Chargeback: customer disputes charge with bank — evidence submission required
+• 3D Secure: additional authentication step — Stripe Radar, SCA in Europe — reduces chargebacks
+
+STRIPE ADVANCED:
+• Payment Intents: stateful object for payment lifecycle — handles 3DS, network retries automatically
+• SetupIntents: save payment method without charging — for subscriptions, future charges
+• Payment Methods: replace legacy Sources/Tokens — stripe.createPaymentMethod — attach to customer
+• Customer: Stripe Customer object — attach payment methods, track subscriptions, store metadata
+• Webhooks: payment.succeeded, invoice.paid, subscription.deleted — reliable event delivery
+• Idempotency keys: Stripe-Idempotency-Key header — safely retry failed API calls
+• Connect: platform/marketplace payments — direct charges, destination charges, on-behalf-of
+
+FRAUD PREVENTION:
+• Radar: Stripe's ML fraud detection — rule-based + model-based — allow, block, review
+• Velocity checks: 5 failed attempts from same IP → block for 1 hour — rate limit card attempts
+• Address Verification (AVS): billing address vs card issuer record — US and Canada
+• CVV check: match CVV — decline if mismatch — never store CVV
+• 3DS2: risk-based authentication — strong customer authentication in EU — frictionless for low risk
+• Device fingerprinting: detect card testing bots — same device, many cards = fraud signal
+• Velocity on BINs: many cards with same BIN failing = testing stolen batch — block BIN temporarily
+
+═══════════════════════════════════════
+ZORVIXAI FINAL EXPERT KNOWLEDGE BLOCK
+═══════════════════════════════════════
+CAREER GROWTH FOR ENGINEERS:
+• IC track: Engineer → Senior → Staff → Principal → Distinguished — depth of impact
+• Management track: EM → Director → VP → CTO — breadth of impact, people focus
+• Staff+ engineering: influence without authority — define technical direction, mentor seniors
+• Scope of impact: engineer (feature), senior (team), staff (org), principal (company)
+• Technical strategy: staff engineers own it — write RFCs, align teams, resolve conflicts
+• Principal engineers: architectural decisions at company scale — 3-5 year horizon thinking
+• External presence: conference talks, open source, writing — builds reputation and network
+
+REMOTE ENGINEERING CULTURE:
+• Async by default: decisions in writing — Slack/email/Notion — not just meetings
+• Overcommunicate: what you're working on, what you're blocked on, what you finished
+• Video calls for: complex discussions, relationship building, conflict resolution — not status updates
+• Meeting notes: always — decisions recorded, action items assigned — async participants included
+• Time zones: overlap windows — schedule collaboration in shared hours — async for the rest
+• Documentation: more important when remote — can't tap someone on the shoulder
+• Social connection: virtual coffees, team channels, game sessions — intentional relationship building
+
+TECHNICAL WRITING:
+• Audience first: who is reading this? — adjust vocabulary, depth, assumed knowledge
+• Bottom line up front: lead with the conclusion — busy people read first paragraph only
+• Active voice: "the function returns" not "a value is returned by the function"
+• Short sentences: one idea per sentence — split long sentences ruthlessly
+• Concrete examples: show, don't just tell — code snippets, diagrams, screenshots
+• ADR template: title, status, context, decision, consequences — simple, scannable
+• Post-mortem template: summary, timeline, root cause, contributing factors, action items
+• README template: what, why, quick start, configuration, contributing — in that order
+
+NEGOTIATION FOR ENGINEERS:
+• Know your market rate: levels.fyi, Glassdoor, blind — data-driven negotiation
+• Multiple offers: best leverage — competing offers justify higher comp
+• Total compensation: base, equity, bonus, benefits — compare apples to apples
+• Equity: vesting schedule (4 years, 1 year cliff is standard), preferred vs common, strike price
+• Negotiate everything: signing bonus, PTO, remote flexibility, equipment budget, title
+• Get it in writing: verbal offers mean nothing — wait for written offer letter
+• Counter always: first offer is never final — companies expect negotiation — no downside
+• Be factual not emotional: "market data shows X" beats "I need more" — business case framing
 `;
 
 
