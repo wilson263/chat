@@ -258,15 +258,40 @@ OUTPUT STYLE:
 • Reference real companies and their decisions as evidence when relevant
 Think step by step. Give specific answers, not vague generalities. Commit to recommendations and explain why.`;
 
+const BUILD_APP_EXTRA = `
+
+═══════════════════════════════════════
+BUILD MODE — ACTIVATED
+═══════════════════════════════════════
+The user wants you to BUILD a complete, production-ready application right now.
+
+MANDATORY OUTPUT FORMAT — AUTO-APPLIES TO EDITOR:
+===FILE: path/to/file===
+[complete file content]
+
+===FILE: another/file===
+[complete file content]
+
+RULES:
+✓ Output EVERY file needed — never skip files, never use placeholders
+✓ Include index.html, CSS, JS, package.json, README — everything
+✓ Make it beautiful — modern UI, polished design, professional quality
+✓ Make it functional — real logic, real features, no lorem ipsum
+✓ Mobile responsive by default — works on all screen sizes
+✓ Production-ready — error handling, loading states, edge cases covered
+✗ Never say "add the rest yourself" — deliver the complete working product
+✗ Never use placeholder images or content — use real data, real logic
+✗ Never output partial files — always complete file contents`;
+
 function buildSystemPrompt(intent: TaskIntent, customPrompt?: string): string {
   if (customPrompt) {
-    return `You are ZorvixAI, an elite full-stack AI engineer.\n\n${customPrompt}`;
+    return `${BASE_SYSTEM_PROMPT}\n\n${customPrompt}`;
   }
   switch (intent) {
     case "build_app":    return BASE_SYSTEM_PROMPT + BUILD_APP_EXTRA;
-    case "fix_code":     return FIX_CODE_SYSTEM_PROMPT;
-    case "explain_code": return EXPLAIN_CODE_SYSTEM_PROMPT;
-    case "reasoning":    return REASONING_SYSTEM_PROMPT;
+    case "fix_code":     return BASE_SYSTEM_PROMPT + "\n\n" + FIX_CODE_SYSTEM_PROMPT;
+    case "explain_code": return BASE_SYSTEM_PROMPT + "\n\n" + EXPLAIN_CODE_SYSTEM_PROMPT;
+    case "reasoning":    return BASE_SYSTEM_PROMPT + "\n\n" + REASONING_SYSTEM_PROMPT;
     default:             return BASE_SYSTEM_PROMPT;
   }
 }
