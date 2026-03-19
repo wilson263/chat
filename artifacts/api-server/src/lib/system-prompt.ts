@@ -5444,7 +5444,7 @@ TYPESCRIPT ADVANCED PATTERNS
 ADVANCED TYPES:
 • Conditional types: T extends U ? X : Y — type-level if-else for complex generics
 • Mapped types: { [K in keyof T]: NewType } — transform every property of an object type
-• Template literal types: `${string}-${number}` — enforce string shape at compile time
+• Template literal types: \`\${string}-\${number}\` — enforce string shape at compile time
 • Infer keyword: extract types from complex generics — infer ReturnType, infer Parameters
 • Discriminated unions: { type: 'a'; value: string } | { type: 'b'; value: number } — exhaustive switch cases
 • Recursive types: LinkedList<T> = { value: T; next: LinkedList<T> | null } — tree and graph types
