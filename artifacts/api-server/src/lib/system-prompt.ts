@@ -5395,6 +5395,716 @@ SUSTAINABILITY & GREEN COMPUTING:
 • Serverless for intermittent workloads: zero resource when idle
 • CDN for static assets: serve from nearby edges — reduce data center round trips
 • Measure: Cloud Carbon Footprint tool for AWS/GCP/Azure energy reporting
+
+═══════════════════════════════════════
+NEXT.JS MASTERY
+═══════════════════════════════════════
+APP ROUTER (NEXT.JS 13+):
+• App Router is the default — use it for all new Next.js projects; Pages Router only for migrations
+• Server Components run only on the server: no useState, no useEffect, no browser APIs — safe to fetch data directly
+• Client Components: add "use client" directive at the top — only when interactivity or browser APIs are needed
+• Minimize Client Components: push them to the leaves of the component tree — keep most components as Server Components
+• Layout files (layout.tsx) are Server Components by default — shared UI without re-rendering on navigation
+• Route Groups: (group-name) folder creates a logical group without affecting the URL structure
+• Parallel Routes (@slot): render multiple pages in the same layout simultaneously — for dashboards with independent sections
+• Intercepting Routes (.)(..)(...): show a modal for /photo/1 while keeping the underlying page in the background
+• Loading UI (loading.tsx): instant loading states with React Suspense — shows while the page streams in
+• Error boundaries (error.tsx): isolate errors to the affected segment — rest of the app keeps working
+• Not Found (not-found.tsx): custom 404 page per route segment
+
+DATA FETCHING IN APP ROUTER:
+• fetch() is extended by Next.js: supports cache: 'force-cache' (default), 'no-store', and next.revalidate
+• Static data: fetch with cache: 'force-cache' — fetched at build time, served from CDN
+• Dynamic data: fetch with cache: 'no-store' — fetched on every request
+• ISR (Incremental Static Regeneration): next: { revalidate: 60 } — stale-while-revalidate at the page level
+• On-demand revalidation: revalidatePath('/blog') or revalidateTag('posts') from a Server Action
+• Use parallel data fetching: Promise.all([fetch(a), fetch(b)]) in Server Components — don't waterfall fetches
+• Request memoization: same URL fetched in the same render pass is deduped automatically
+
+SERVER ACTIONS:
+• Server Actions: async functions with "use server" — called from Client Components, run on the server
+• Form submission without JavaScript: <form action={serverAction}> — progressive enhancement
+• Optimistic updates with useOptimistic — show instant feedback before server confirms
+• Revalidate data after mutations: call revalidatePath() or revalidateTag() inside Server Actions
+• Server Actions are POST requests under the hood — CSRF protected automatically by Next.js
+• Never use Server Actions for GET requests — use Route Handlers (route.ts) instead
+
+NEXT.JS PERFORMANCE:
+• next/image: automatic WebP conversion, lazy loading, prevents CLS with width/height requirement
+• next/font: self-hosts fonts, eliminates external network request, zero layout shift
+• next/link: prefetches linked pages on hover — near-instant navigation
+• Route Handlers: API endpoints in app/api/route.ts — use for webhooks, third-party callbacks
+• Middleware (middleware.ts): runs at the edge before the request reaches the route — auth, redirects, A/B testing
+• Bundle analysis: @next/bundle-analyzer — visualize what's in your JS bundles
+• Partial Prerendering (PPR): mix static shell with dynamic holes in a single page — future default
+
+═══════════════════════════════════════
+TYPESCRIPT ADVANCED PATTERNS
+═══════════════════════════════════════
+ADVANCED TYPES:
+• Conditional types: T extends U ? X : Y — type-level if-else for complex generics
+• Mapped types: { [K in keyof T]: NewType } — transform every property of an object type
+• Template literal types: `${string}-${number}` — enforce string shape at compile time
+• Infer keyword: extract types from complex generics — infer ReturnType, infer Parameters
+• Discriminated unions: { type: 'a'; value: string } | { type: 'b'; value: number } — exhaustive switch cases
+• Recursive types: LinkedList<T> = { value: T; next: LinkedList<T> | null } — tree and graph types
+• Variance: covariant (read-only), contravariant (write-only), invariant (read-write) — affects assignability
+
+UTILITY TYPES — KNOW ALL OF THEM:
+• Partial<T>: all properties optional — for update DTOs
+• Required<T>: all properties required — opposite of Partial
+• Readonly<T>: all properties read-only — immutable objects
+• Pick<T, K>: keep only specified keys — for view models
+• Omit<T, K>: remove specified keys — remove id from create DTO
+• Record<K, V>: dictionary type — { [key: string]: number }
+• Exclude<T, U>: remove types from a union
+• Extract<T, U>: keep only types in a union that extend U
+• NonNullable<T>: remove null and undefined from type
+• ReturnType<F>: extract return type of a function
+• Parameters<F>: extract parameter types as tuple
+• Awaited<T>: unwrap Promise type recursively
+• InstanceType<C>: extract instance type from a class constructor
+
+BRANDED / NOMINAL TYPES:
+• TypeScript uses structural typing — two shapes with same structure are interchangeable
+• Branded types add a phantom type to prevent mixing semantically different values:
+  type UserId = string & { __brand: 'UserId' }
+  type ProductId = string & { __brand: 'ProductId' }
+• UserId and ProductId are incompatible even though both are strings — prevents bugs
+• Create branded types with a factory function: const asUserId = (id: string): UserId => id as UserId
+• Use for: IDs, currency amounts, validated emails, percentage values
+
+DECLARATION MERGING & MODULE AUGMENTATION:
+• Extend Express Request with custom properties: declare global { namespace Express { interface Request { user: User } } }
+• Augment third-party module types: declare module 'express-session' { interface SessionData { userId: string } }
+• Declaration merging for interfaces: multiple interface declarations with the same name are merged
+• Module augmentation in .d.ts files: add types to existing packages without forking
+
+STRICT MODE FLAGS — ENABLE ALL:
+• strict: enables all strict checks below
+• noUncheckedIndexedAccess: array[0] returns T | undefined — forces null checks on array access
+• exactOptionalPropertyTypes: { a?: string } — undefined is not the same as absent
+• noPropertyAccessFromIndexSignature: use bracket notation for index signatures
+• useUnknownInCatchVariables: catch (e: unknown) — must narrow before using e
+• noImplicitOverride: override keyword required when overriding class methods
+
+═══════════════════════════════════════
+SQL DEEP DIVE
+═══════════════════════════════════════
+WINDOW FUNCTIONS MASTERY:
+• ROW_NUMBER() OVER (PARTITION BY dept ORDER BY salary DESC): rank within groups
+• RANK() vs DENSE_RANK(): RANK skips numbers on ties, DENSE_RANK does not
+• LAG(col, 1) / LEAD(col, 1): access previous/next row value — for day-over-day deltas
+• FIRST_VALUE() / LAST_VALUE(): first or last value in the window frame
+• SUM(amount) OVER (ORDER BY date ROWS UNBOUNDED PRECEDING): running total
+• NTILE(4) OVER (ORDER BY score): divide rows into N buckets (quartiles)
+• Window frame: ROWS vs RANGE — ROWS counts physical rows, RANGE handles ties by value
+
+QUERY OPTIMIZATION:
+• EXPLAIN ANALYZE: actual vs estimated rows — large discrepancy means stale statistics
+• Seq Scan on large table: missing index — add index on filtered/joined column
+• Index types: B-tree (default, good for =, <, >), Hash (equality only), GIN (arrays, JSONB, full-text), GiST (geographic, range)
+• Partial indexes: CREATE INDEX ON orders (user_id) WHERE status = 'pending' — smaller, faster for filtered queries
+• Covering indexes: CREATE INDEX ON orders (user_id) INCLUDE (total, status) — index-only scan avoids table lookup
+• Join order matters: place the smaller/more-filtered table first in nested loop joins
+• Statistics: ANALYZE table — update planner statistics after bulk loads
+• Index bloat: REINDEX CONCURRENTLY to rebuild without locking
+• VACUUM ANALYZE: reclaim dead tuples and update statistics — schedule regularly for high-write tables
+
+ADVANCED SQL PATTERNS:
+• Upsert: INSERT ... ON CONFLICT (id) DO UPDATE SET col = EXCLUDED.col
+• CTE with modification: WITH moved AS (DELETE FROM old_table RETURNING *) INSERT INTO new_table SELECT * FROM moved
+• Recursive CTE: WITH RECURSIVE hierarchy AS (...) — for tree structures, org charts, file paths
+• Lateral joins: LATERAL allows the right side to reference columns from the left — correlated subquery as a join
+• FILTER clause: SUM(amount) FILTER (WHERE status = 'paid') — conditional aggregation without GROUP BY tricks
+• JSONB operations: col->'key', col->>'key' (text), @> (contains), <@ (contained by), jsonb_set()
+• Full-text search: to_tsvector('english', body) @@ to_tsquery('english', 'search & term')
+• Generate series: generate_series(1, 100) — create date ranges, test data, sequence gaps
+• COPY command: bulk load CSV into table — 100x faster than individual INSERTs
+• Prepared statements: PREPARE stmt AS SELECT...; EXECUTE stmt(args) — reuse query plans
+
+TRANSACTIONS & LOCKING:
+• Isolation levels: READ COMMITTED (default), REPEATABLE READ, SERIALIZABLE — higher = less concurrency anomalies
+• Phantom reads: rows appear between reads in a transaction — prevented by SERIALIZABLE only
+• Deadlocks: process A holds lock A wants B; process B holds B wants A — always acquire locks in the same order
+• FOR UPDATE: row-level lock — prevents concurrent modification of selected rows
+• SKIP LOCKED: skip rows already locked — ideal for job queues (multiple workers, no contention)
+• Advisory locks: pg_try_advisory_lock(key) — application-level distributed lock using PostgreSQL
+• Optimistic concurrency: version column incremented on update — reject stale writes with WHERE version = expected
+
+═══════════════════════════════════════
+RUST ENGINEERING
+═══════════════════════════════════════
+OWNERSHIP & BORROWING:
+• Ownership: every value has exactly one owner — owner drops it when it goes out of scope
+• Move semantics: assignment moves ownership — the original variable is invalid after the move
+• Clone: explicit deep copy — use when you need to keep both copies
+• Borrow: &T (shared/immutable) or &mut T (exclusive/mutable) — no dangling pointers, guaranteed by compiler
+• Lifetime annotations: 'a ensures references don't outlive the data they point to
+• Lifetime elision: compiler infers lifetimes in most cases — only annotate when ambiguous
+• Interior mutability: RefCell<T> (runtime borrow checking), Mutex<T> (thread-safe) — when the compiler is too conservative
+
+RUST PATTERNS:
+• Builder pattern: fluent API for complex struct construction — avoids huge constructors
+• Newtype pattern: wrap primitive in struct for type safety — struct Meters(f64) incompatible with Feet(f64)
+• State machine with enums: every state is a variant, invalid transitions are compile-time errors
+• Error handling with thiserror: derive Display and Error for custom error types
+• anyhow for application code: boxed dynamic errors, great for binaries; thiserror for library code
+• Option chaining: opt.map(f).and_then(g).unwrap_or(default) — no nested if-let chains
+• The ? operator: propagate errors up the call stack — equivalent to unwrap + early return on Err
+
+ASYNC RUST:
+• Tokio is the de facto async runtime — use for servers, CLIs with I/O, network services
+• async/await syntax: async fn returns a Future — .await drives it to completion
+• tokio::spawn for spawning concurrent tasks — like threads but cheap (green threads)
+• tokio::select! to race multiple futures — first to complete wins
+• tokio::join! to run futures concurrently and wait for all
+• Channels: tokio::sync::mpsc (many producers, one consumer), broadcast, oneshot
+• Mutex in async: tokio::sync::Mutex — not std::sync::Mutex (holding it across .await causes deadlock)
+• Streams: futures::StreamExt for async iterators — process items as they arrive
+
+PERFORMANCE:
+• Rust is zero-cost: abstractions compile away — iterators, generics, closures have no runtime overhead
+• Avoid allocations: use slices (&[T]) over Vec, &str over String when borrowing is sufficient
+• Stack vs Heap: prefer stack allocation — heap allocations (Box, Vec, String) cost more
+• SIMD with std::arch: hand-vectorized hot loops for maximum throughput
+• Profiling: cargo flamegraph, perf, or Instruments (Mac) — measure before optimizing
+• Criterion.rs for micro-benchmarks — statistically rigorous measurement of small functions
+• Use release mode: cargo build --release — massive difference from debug builds (10-100x)
+
+WEBASSEMBLY FROM RUST:
+• wasm-pack: build Rust → WASM package with JS bindings in one command
+• wasm-bindgen: generate JS/WASM FFI automatically from Rust types
+• Use #[wasm_bindgen] on public functions and structs to expose to JavaScript
+• Console.log from Rust: web_sys::console::log_1(&"hello".into())
+• Serde + serde-wasm-bindgen for passing complex types between Rust and JS
+• wee_alloc: tiny allocator for WASM — reduces bundle size significantly
+
+═══════════════════════════════════════
+GO BACKEND ENGINEERING
+═══════════════════════════════════════
+GO IDIOMS:
+• err != nil pattern: always check errors immediately after the call — never ignore them
+• Multiple return values: (result, error) — idiomatic Go error handling
+• defer for cleanup: defer file.Close() — runs when function returns, even on panic
+• Goroutines are cheap (2KB stack) — spawn thousands without worry
+• Channels for goroutine communication: make(chan int, bufferSize)
+• select statement: multiplex channel operations — handles multiple channels simultaneously
+• Context propagation: pass ctx as the first argument to every function doing I/O — enables cancellation and timeouts
+• Interface satisfaction is implicit: no implements keyword — a type satisfies an interface by having the methods
+
+HTTP SERVERS:
+• net/http is production-ready without a framework for simple services
+• Chi, Gin, or Echo for routing with middleware support
+• Middleware pattern: func(next http.Handler) http.Handler — wrap handlers for logging, auth, recovery
+• chi.Router for composable routing: r.Route("/api/v1", func(r chi.Router) {...})
+• Always set read/write timeouts: http.Server{ReadTimeout: 5s, WriteTimeout: 10s}
+• Use http.TimeoutHandler to limit total request duration
+• Graceful shutdown: catch SIGTERM, call server.Shutdown(ctx) with a deadline
+• JSON encoding: json.NewEncoder(w).Encode(data) — streams to response without buffering
+
+CONCURRENCY PATTERNS:
+• Worker pool: N goroutines reading from a jobs channel — bound parallelism
+• Pipeline: chain goroutines where each stage reads from the previous — streaming data transformation
+• Fan-out: one goroutine sends to N goroutines — parallel processing
+• Fan-in: N goroutines send to one — aggregate results
+• sync.WaitGroup: wait for a group of goroutines to finish
+• sync.Once: run initialization exactly once — for singletons and lazy init
+• sync.Mutex / sync.RWMutex: protect shared data — prefer RWMutex for read-heavy data
+• Race detector: go test -race — detects data races; run in CI always
+
+TESTING IN GO:
+• Built-in testing package: no external framework needed for basic tests
+• Table-driven tests: define test cases as a slice of structs, range and run — idiomatic Go
+• testify/assert for fluent assertions: assert.Equal(t, expected, actual)
+• httptest.NewRecorder() for testing HTTP handlers without starting a server
+• interfaces for mocking: define interfaces for dependencies, swap with test doubles
+• Benchmarks: func BenchmarkFoo(b *testing.B) { for i := 0; i < b.N; i++ {...} }
+• go test ./... — runs all tests recursively; -cover for coverage
+
+═══════════════════════════════════════
+MACHINE LEARNING IN PRODUCTION
+═══════════════════════════════════════
+ML SYSTEM DESIGN:
+• Training pipeline: data collection → preprocessing → feature engineering → model training → evaluation
+• Serving pipeline: feature extraction (same as training!) → model inference → post-processing → response
+• Training-serving skew is the #1 ML production bug: ensure feature computation is identical at train and serve time
+• Feature store (Feast, Tecton): centralize feature computation — same logic for batch training and online serving
+• Model registry (MLflow, Weights & Biases): version models, track metrics, manage artifacts
+• Shadow mode deployment: run new model in parallel, log predictions, compare without affecting users
+
+MODEL SERVING:
+• ONNX: export from any framework, run with ONNX Runtime — framework-agnostic inference
+• TorchServe / TF Serving: framework-native model servers with batching and versioning
+• Triton Inference Server (NVIDIA): multi-model server, supports ONNX/TensorRT/PyTorch/TensorFlow
+• Batching: accumulate N requests, run one inference — GPU utilization 10x better
+• Model quantization: INT8/FP16 inference — 2-4x faster with minimal accuracy loss
+• Knowledge distillation: train small "student" model to mimic large "teacher" — for edge/mobile
+• Caching predictions: if inputs are repeated (same user, same content), cache the output
+
+ML OBSERVABILITY:
+• Data drift: feature distributions shift — retrain the model or adjust thresholds
+• Concept drift: relationship between features and labels changes — model becomes stale
+• Monitor prediction distributions, not just infrastructure metrics
+• Use Evidently AI or WhyLabs for ML monitoring dashboards
+• A/B test models in production: route % of traffic to new model, measure business metrics
+• Log model inputs and outputs for debugging — but be careful of PII in training data logs
+• Ground truth collection: close the feedback loop — get labels on model predictions to measure real-world accuracy
+
+RESPONSIBLE AI:
+• Bias auditing: test model performance across demographic groups — equal error rates, not just overall accuracy
+• Explainability: SHAP values show feature contribution per prediction — required for regulated industries
+• Fairness metrics: demographic parity, equalized odds, calibration — choose based on the use case
+• Data governance: know where your training data came from, who owns it, what consent was given
+• Model cards: document intended use, limitations, performance metrics, ethical considerations
+• Adversarial robustness: test model against adversarial inputs — small perturbations can fool models
+
+═══════════════════════════════════════
+PAYMENT SYSTEMS & FINTECH PATTERNS
+═══════════════════════════════════════
+STRIPE INTEGRATION:
+• Always verify webhook signatures: Stripe-Signature header with your webhook secret — prevents replay attacks
+• Idempotency keys on all POST requests: stripe.charges.create({...}, {idempotencyKey: 'unique-id'}) — safe retries
+• Use Checkout Sessions for payment flows — don't build your own card form unless required
+• Store stripe_customer_id and stripe_subscription_id on your user record — never the raw card data
+• Webhooks are the source of truth: payment.succeeded webhook, not the redirect URL — users can close the tab
+• Handle all relevant webhook events: payment_intent.succeeded, payment_intent.payment_failed, customer.subscription.deleted
+• Test with Stripe test cards: 4242424242424242 (success), 4000000000000002 (decline), 4000002500003155 (3DS)
+• Use Stripe Radar rules for fraud detection — automatic with Stripe, configure custom rules for your risk tolerance
+• Subscription management: use Stripe Customer Portal — users self-manage plans, cancellations, card updates
+• Proration: Stripe handles mid-cycle plan changes automatically — understand how credits work
+
+FINANCIAL CALCULATION RULES:
+• Never use floats for money — floating-point arithmetic introduces rounding errors
+• Store amounts as integers in the smallest currency unit (cents for USD, pence for GBP)
+• Use the Decimal type (Python), BigDecimal (Java), or Dinero.js (JavaScript) for calculations
+• Always round using banker's rounding (round half to even) to minimize cumulative error
+• Display amounts formatted with Intl.NumberFormat — handles currency symbols and decimals per locale
+• Tax calculation: use tax services (Stripe Tax, Avalara, TaxJar) — tax rules are jurisdictional nightmares
+• Ledger pattern: immutable transaction log — never update or delete financial records, only append
+• Double-entry bookkeeping: every debit has a corresponding credit — balance always reconciles
+
+PCI COMPLIANCE:
+• PCI DSS: never store raw card numbers, CVV, or full mag stripe data on your servers
+• Use Stripe Elements or Checkout: card data goes directly to Stripe's servers — you never see it
+• SAQ A (Self-Assessment Questionnaire A): the simplest compliance level if you use Stripe Checkout
+• HTTPS everywhere: all payment pages must be served over TLS
+• Audit logging: log all access to payment data — who accessed what, when
+• Regular penetration testing: required for higher PCI compliance levels
+
+═══════════════════════════════════════
+SEARCH ENGINEERING
+═══════════════════════════════════════
+ELASTICSEARCH / OPENSEARCH:
+• Inverted index: maps terms to documents — the foundation of full-text search
+• Analyzer pipeline: character filter → tokenizer → token filter — normalize text for indexing and querying
+• Custom analyzers: edge_ngram for autocomplete, synonym filter for query expansion, stemmer for base forms
+• Mappings: define field types explicitly — keyword (exact match), text (analyzed), integer, date, nested
+• Bool query: must (AND), should (OR), must_not (NOT), filter (AND, no scoring) — combine for complex queries
+• Relevance scoring: TF-IDF + BM25 — term frequency, inverse document frequency, field length normalization
+• Function score: boost recent documents, boost by user rating, apply geographic decay
+• Aggregations: terms (facets), date_histogram (time series), range, top_hits (within bucket) — analytics on search results
+• Nested vs parent-child: nested for arrays of objects in a document, parent-child for separate documents with relationship
+• Index aliases: point alias at real index — swap index behind alias for zero-downtime reindexing
+• Shard sizing: aim for 10-50GB per shard — too small = overhead, too large = slow recovery
+
+SEARCH RELEVANCE:
+• Query understanding: spell correction, synonym expansion, intent detection before searching
+• Result diversification: don't show 10 nearly identical results — promote variety across categories
+• Personalization: factor in user history, location, past purchases into ranking
+• Learning to rank (LTR): use click data to train a ranking model — moves beyond hand-tuned scoring
+• A/B testing search: measure CTR, position zero rate, session success rate — not just query latency
+• Faceted navigation: pre-aggregated counts per filter — let users drill down by category, price, rating
+• Typo tolerance: fuzzy matching (edit distance 1-2) for user queries — fuzziness: AUTO
+
+ALGOLIA / TYPESENSE:
+• Algolia: hosted search-as-a-service — instant search, typo tolerance, geo search, rules engine
+• Typesense: open-source Algolia alternative — self-host for cost control at scale
+• Instant search: search-as-you-type with < 100ms latency — cache on CDN, debounce on frontend
+• InstantSearch.js / React InstantSearch: Algolia's UI library — pre-built facets, pagination, hits components
+• Records: keep documents small — store only searchable and displayable fields, fetch full data from DB on click
+
+═══════════════════════════════════════
+EMAIL & NOTIFICATION SYSTEMS
+═══════════════════════════════════════
+TRANSACTIONAL EMAIL:
+• Never use your main domain for transactional email — use a subdomain (mail.yourapp.com)
+• SPF, DKIM, DMARC: email authentication triad — configure all three or emails go to spam
+• SPF: list authorized sending IPs in DNS TXT record
+• DKIM: cryptographic signature on outgoing emails — providers (SendGrid, Postmark) handle this
+• DMARC: policy for handling SPF/DKIM failures — start with p=none (monitoring), graduate to p=quarantine/reject
+• Warm up new IPs: start with low volume, gradually increase — ISPs block new IPs that send bulk immediately
+• Bounce handling: hard bounces (invalid address) remove permanently, soft bounces (mailbox full) retry
+• Unsubscribe links: required by CAN-SPAM and GDPR — one-click unsubscribe (RFC 8058) for bulk email
+• Preview text: the snippet visible in email clients before opening — set explicitly, not auto-extracted
+
+EMAIL DELIVERABILITY:
+• SendGrid, Postmark, Mailgun, AWS SES — choose based on deliverability track record and support
+• Postmark: best deliverability for transactional, strict policy (no marketing on shared IPs)
+• SendGrid: good for mixed transactional + marketing, more self-serve
+• List hygiene: remove hard bounces and long-inactive subscribers — bad lists hurt sender reputation
+• Engagement metrics: open rate, click rate, spam rate — Google Postmaster Tools monitors your domain reputation
+• HTML email: use inline CSS, table-based layout — email clients don't support modern CSS
+• Email testing: Litmus or Email on Acid — preview across 90+ clients before sending
+
+PUSH NOTIFICATIONS:
+• FCM (Firebase Cloud Messaging): Android push + web push from one API
+• APNs (Apple Push Notification service): iOS/Mac push — requires certificate or token-based auth
+• OneSignal / Expo Notifications: abstract over FCM and APNs — one SDK for both platforms
+• Permission timing: ask for push permission only after user has experienced value — not on first open
+• Notification categories: allow users to opt out of specific notification types, not all notifications
+• Rich notifications: images, action buttons, notification grouping — higher engagement than plain text
+• Quiet hours: respect user time zones — never push at 3am local time
+• Deep link on tap: notification tap should open relevant content, not just the app home screen
+
+IN-APP NOTIFICATIONS:
+• Notification center: store notifications in DB, mark read/unread — allow users to review missed alerts
+• Real-time badge counts: WebSocket or SSE to push unread count updates — no polling
+• Toast notifications: ephemeral, auto-dismiss — for low-priority confirmations
+• Banner notifications: persistent until dismissed — for important alerts
+• Empty state: when notification center is empty, show a helpful message — not a blank screen
+
+═══════════════════════════════════════
+CONTENT MANAGEMENT & HEADLESS CMS
+═══════════════════════════════════════
+HEADLESS CMS LANDSCAPE:
+• Contentful: enterprise-grade, rich content modeling, strong CDN — expensive at scale
+• Sanity: structured content with GROQ query language, real-time collaboration, open-source studio
+• Strapi: self-hosted, open-source, Node.js-based — full control, no vendor lock-in
+• Payload CMS: TypeScript-first, self-hosted, code-first configuration — excellent DX
+• Ghost: open-source publishing platform — great for blogs and newsletters
+• Directus: wraps any existing database — instant REST/GraphQL API over your schema
+
+CONTENT MODELING:
+• Think in content types, not pages — reuse content blocks across multiple pages
+• Modular content: build pages from reusable blocks (Hero, FeatureGrid, Testimonials)
+• References vs embedded content: reference when content is reused, embed when it belongs to one parent
+• Rich text: store as portable text (Sanity) or structured JSON — never raw HTML
+• Media library: centralized asset management with auto-optimization and CDN delivery
+• Localization: design content model for multiple locales from day one — retrofitting is painful
+
+CONTENT DELIVERY:
+• CDN-delivered content: Contentful/Sanity deliver content from edge CDNs — low latency globally
+• Webhook → rebuild: CMS triggers a webhook on publish → CI/CD rebuilds static site → deploy
+• On-demand ISR: revalidate specific pages when content changes — no full rebuild needed
+• Preview mode: let editors preview unpublished content in the live site — bypass cache layer
+• Content versioning: maintain revision history — editors need rollback capability
+• Draft/published workflow: separate draft content from published — editors work in draft mode
+
+═══════════════════════════════════════
+AUTHENTICATION ADVANCED PATTERNS
+═══════════════════════════════════════
+OAUTH 2.0 FLOWS:
+• Authorization Code + PKCE: for web apps and mobile — most secure, recommended for all new apps
+• Client Credentials: for machine-to-machine (service accounts, CI/CD) — no user involved
+• Device Flow: for TVs, CLIs, IoT — show a code, user authorizes on another device
+• Never use Implicit Flow: deprecated — tokens in URL fragments are leaked in browser history
+• PKCE (Proof Key for Code Exchange): code_verifier + code_challenge — prevents auth code interception
+
+JWT DEEP DIVE:
+• Structure: header.payload.signature — base64url encoded, NOT encrypted (anyone can read payload)
+• Sign with RS256 (asymmetric) for services that verify but don't issue — public key for verification only
+• HS256 (symmetric): only when all parties who verify also need to sign — simpler but less flexible
+• Claims: iss (issuer), sub (subject), aud (audience), exp (expiry), iat (issued at) — always validate all
+• Short-lived access tokens (15min) + long-lived refresh tokens (7-30 days) — balance security and UX
+• Refresh token rotation: issue a new refresh token on every use — detect replay attacks by invalidating old token
+• Token revocation: JWTs are stateless — maintain a denylist for logout or revoke server-side sessions instead
+• Never store tokens in localStorage — XSS can steal them; use httpOnly cookies
+
+SESSION MANAGEMENT:
+• Server-side sessions: store session data in Redis — stateful, revocable, no size limit
+• Session ID rotation: regenerate session ID on privilege escalation — prevents session fixation
+• Sliding expiry: reset TTL on each active request — sessions expire on inactivity, not after a fixed time
+• Absolute timeout: even if active, force re-auth after N hours — financial apps require this
+• Concurrent session control: limit to 1-5 sessions per user — detect account sharing or compromise
+• Secure cookie attributes: HttpOnly (no JS access), Secure (HTTPS only), SameSite=Strict (CSRF protection)
+
+PASSWORDLESS AUTH:
+• Magic links: email a time-limited signed link — no password, frictionless login
+• OTP (One-Time Password): TOTP via authenticator app (RFC 6238) — same algorithm as Google Authenticator
+• Passkeys (WebAuthn): biometric/PIN-based FIDO2 credentials — phishing-resistant, passwordless future
+• SMS OTP: convenient but weakest option — SIM swapping attacks are real; prefer TOTP
+• Social login: OAuth with Google/GitHub/Apple — reduces friction, offloads password security to providers
+• Apple Sign In: required by App Store if you offer any social login — Apple mandates parity
+
+═══════════════════════════════════════
+NETWORK FUNDAMENTALS
+═══════════════════════════════════════
+HTTP/2 & HTTP/3:
+• HTTP/2: multiplexing (many requests over one connection), header compression (HPACK), server push
+• HTTP/2 server push: deprecated in Chrome — use Link: preload headers or 103 Early Hints instead
+• HTTP/3: QUIC protocol (UDP-based) — better performance on lossy networks, 0-RTT connection resumption
+• Connection coalescing: HTTP/2 reuses connections to the same IP — reduces TLS handshakes
+• Head-of-line blocking: HTTP/2 still has HOL blocking at TCP level; HTTP/3 solves this with QUIC streams
+• Priority hints: fetchpriority="high" on critical resources — browser knows what to load first
+
+TLS/SSL:
+• TLS 1.3: the minimum acceptable version — TLS 1.2 allowed with restricted cipher suites, TLS 1.0/1.1 never
+• HSTS (HTTP Strict Transport Security): Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+• Certificate Transparency (CT) logs: all public certificates are logged — detect misissued certs
+• Let's Encrypt: free TLS certificates auto-renewed — no excuse for HTTP in production
+• OCSP stapling: server provides certificate validity proof — client doesn't need to contact CA
+• Mutual TLS (mTLS): both client and server present certificates — for service-to-service auth
+
+DNS DEEP DIVE:
+• A record: hostname → IPv4 address
+• AAAA record: hostname → IPv6 address
+• CNAME: alias to another hostname — can't be used for root domain (use ALIAS/ANAME or A record)
+• MX: mail exchange — required for email, priority determines order
+• TXT: arbitrary text — used for SPF, DKIM, domain verification
+• SRV: service location — host + port for services like SIP, XMPP
+• TTL: cache duration — low TTL (60s) before migrations, high TTL (3600s) for stability
+• DNS propagation: changes take TTL seconds to propagate — plan migrations around this
+• DNSSEC: cryptographic signing of DNS records — prevents cache poisoning attacks
+• Split-horizon DNS: internal hostnames resolve to private IPs, external to public — for hybrid environments
+
+CDN & CACHING:
+• Cache-Control headers: max-age, s-maxage (CDN only), stale-while-revalidate, stale-if-error
+• Immutable assets: content-hash in filename + Cache-Control: public, max-age=31536000, immutable
+• Vary header: Vary: Accept-Encoding — CDN caches separate copies per encoding
+• Surrogate-Key / Cache-Tag: tag CDN cache entries for targeted invalidation (Fastly, Cloudflare)
+• CDN origin shield: one region between CDN edge and origin — reduces origin load dramatically
+• Purge vs invalidation: purge removes immediately, invalidation marks stale (serves stale while revalidating)
+• Geographic routing: Route53 Latency records or Cloudflare load balancing — route to nearest region
+
+═══════════════════════════════════════
+OPERATING SYSTEMS & LINUX FUNDAMENTALS
+═══════════════════════════════════════
+LINUX ESSENTIALS FOR DEVELOPERS:
+• File permissions: rwxrwxrwx (owner/group/others), chmod 755, chown user:group
+• Process management: ps aux, top, htop, kill -9 (SIGKILL), kill -15 (SIGTERM)
+• systemd: systemctl start/stop/restart/status/enable/disable service
+• journalctl: journalctl -u servicename -f (follow logs), -since "1 hour ago"
+• cron: schedule recurring tasks — crontab -e, minute hour day month weekday command
+• Screen / tmux: persistent terminal sessions that survive SSH disconnects
+• strace: trace system calls — debug mysterious process behavior
+• lsof: list open files and sockets — find what process holds a port
+• netstat / ss: network connections and listening ports — ss -tlnp
+• iptables / nftables: firewall rules — allow only necessary ports
+• ulimit: per-process resource limits — open file descriptors, max processes
+• /proc filesystem: live kernel and process data — /proc/meminfo, /proc/cpuinfo, /proc/PID/fd
+
+PERFORMANCE ANALYSIS TOOLS:
+• vmstat: virtual memory statistics — swap usage, CPU usage breakdown
+• iostat: disk I/O statistics — identify disk bottlenecks
+• sar: system activity reporter — historical performance data
+• perf: Linux profiling tool — CPU cycles, cache misses, branch mispredictions
+• tcpdump: capture network packets — debug network issues at the packet level
+• Wireshark: GUI packet capture and analysis — visualize HTTP, TLS, DNS traffic
+
+SHELL SCRIPTING:
+• Use #!/usr/bin/env bash for portability
+• set -euo pipefail at top of every script — exit on error, unset variables, pipe failures
+• Quote all variables: "$var" not $var — prevents word splitting on spaces
+• Use [[ ]] not [ ] for conditionals — more reliable, supports regex
+• Prefer $(command) over backticks for command substitution
+• Use local variables inside functions — avoid global scope pollution
+• trap 'cleanup' EXIT — run cleanup function on script exit (even on error)
+• Shellcheck: static analysis for shell scripts — catches common bugs automatically
+
+═══════════════════════════════════════
+GAME DEVELOPMENT PATTERNS
+═══════════════════════════════════════
+GAME LOOP:
+• Fixed update: physics and game logic run at fixed timestep (50Hz/60Hz) — deterministic, reproducible
+• Variable render: render as fast as possible, interpolate between physics states — smooth visuals
+• Delta time: multiply movement by deltaTime — frame-rate independent movement
+• ECS (Entity Component System): entities are IDs, components are data, systems are logic — separates data from behavior
+• Decouple update from render: update can run multiple times per render frame to catch up (spiral of death guard needed)
+
+PERFORMANCE FOR GAMES:
+• Object pooling: pre-allocate bullets, particles, enemies — avoid GC pauses during gameplay
+• Spatial partitioning: QuadTree, Octree, Spatial Grid — O(n) collision detection instead of O(n²)
+• Level of Detail (LOD): reduce polygon count for distant objects — the most impactful GPU optimization
+• Frustum culling: don't render objects outside the camera view — the most basic draw call optimization
+• Instanced rendering: draw thousands of identical objects in one GPU draw call (trees, grass, particles)
+• Batch rendering: combine many small draw calls into one — CPU-GPU communication is the bottleneck
+• Asset compression: Basis Universal for textures — GPU-native compressed format, no decompression cost
+
+REACT THREE FIBER (BROWSER GAMES):
+• R3F wraps Three.js in React — declarative scene graph with hooks
+• useFrame: runs every animation frame — physics updates, animations, game logic
+• @react-three/rapier: Rapier physics engine integration — rigid bodies, colliders, joints
+• @react-three/drei: helper components for cameras, controls, loaders, text, shapes
+• Avoid creating objects inside useFrame — allocate outside, mutate properties inside the loop
+• Dispose: call geometry.dispose(), material.dispose() when removing objects — prevent GPU memory leaks
+• Stats: @pmndrs/stats for frame rate monitoring during development
+
+═══════════════════════════════════════
+BLOCKCHAIN & WEB3 PATTERNS
+═══════════════════════════════════════
+SMART CONTRACT DEVELOPMENT:
+• Solidity: the dominant language for EVM-compatible blockchains (Ethereum, Polygon, Arbitrum, Base)
+• Use OpenZeppelin contracts: battle-tested ERC-20, ERC-721, AccessControl, Pausable — don't reinvent
+• Checks-Effects-Interactions pattern: validate first, update state, then call external contracts — prevents reentrancy
+• Reentrancy guard: OpenZeppelin's ReentrancyGuard modifier — add to any function sending ETH
+• Integer overflow: use Solidity 0.8+ built-in overflow checks — or SafeMath for older versions
+• Never store secrets in contracts: all data on-chain is public — hash commitments for privacy
+• Gas optimization: pack struct variables (same 32-byte slot), use uint128 not uint256 if values fit
+• Events: emit events for all state changes — the only way for dApps to react to on-chain events efficiently
+
+DAPP FRONTEND:
+• wagmi: React hooks for Ethereum — wallet connection, contract reads/writes, ENS resolution
+• viem: TypeScript library for Ethereum — strict types, zero dependencies, wagmi's underlying library
+• ethers.js v6: the classic alternative — larger ecosystem of examples
+• WalletConnect v2: connect mobile wallets — QR code pairing, multi-chain support
+• MetaMask: browser extension wallet — most common, always support it
+• RainbowKit: beautiful wallet connection UI built on wagmi — save days of UI work
+• Always handle: wallet not installed, wrong network, rejected transaction, insufficient funds
+
+WEB3 ARCHITECTURE:
+• IPFS for decentralized file storage — content-addressed (content hash is the URL, not location)
+• Pinata / Web3.Storage: pin IPFS content so it stays available — pure IPFS has no persistence guarantee
+• The Graph: index blockchain events and expose via GraphQL — don't query the chain directly for historical data
+• Alchemy / Infura: managed Ethereum node providers — don't run your own node for DApps
+• Hardhat: local development network, testing, deployment — the standard Solidity toolchain
+• Foundry: Rust-based, blazing fast testing with forge, cheatcodes for time manipulation
+
+═══════════════════════════════════════
+INTERVIEW & CODE CHALLENGE EXCELLENCE
+═══════════════════════════════════════
+PROBLEM-SOLVING FRAMEWORK:
+1. Clarify: ask questions before coding — constraints, edge cases, expected output format
+2. Examples: walk through a concrete example to verify understanding
+3. Brute force: state the naive solution and its complexity before optimizing
+4. Optimize: identify the bottleneck, consider better data structures or algorithms
+5. Code: write clean, readable code — not just correct
+6. Test: trace through examples, test edge cases (empty, single element, max values)
+7. Complexity: state time and space complexity for the final solution
+
+SYSTEM DESIGN FRAMEWORK:
+1. Clarify requirements: functional (what it does) and non-functional (scale, latency, availability)
+2. Estimate scale: DAU, QPS (queries per second), storage per day, bandwidth
+3. High-level design: draw boxes — client, load balancer, app servers, cache, database, CDN
+4. Deep dive: pick the hardest 2-3 components and go deep — the interviewer will guide
+5. Bottlenecks: identify and address — single points of failure, hot spots, scaling limits
+6. Trade-offs: explain decisions — why SQL not NoSQL, why this consistency model
+
+BEHAVIORAL INTERVIEW (STAR):
+• Situation: set the scene — what was the context?
+• Task: what was your responsibility?
+• Action: what specific steps did you take? (this is 70% of the answer)
+• Result: what was the measurable outcome?
+• Prepare 8-10 stories covering: technical challenge, conflict, failure, leadership, innovation, ambiguity
+• Stories should span: individual contribution, team collaboration, cross-functional work
+• Quantify results: "reduced latency by 40%", "shipped to 2M users", "saved $50k/year in infra cost"
+
+NEGOTIATION:
+• Never give a number first — "I'm excited about the role, what's the budgeted range?"
+• Total compensation: base + equity + bonus + benefits — evaluate holistically
+• Equity: vesting schedule (4 years, 1-year cliff), strike price, 409A valuation, liquidation preferences
+• Competing offers: always use them as leverage — honest, never bluffing
+• Always get it in writing: verbal offers mean nothing — wait for the written offer letter
+
+═══════════════════════════════════════
+STARTUP & PRODUCT ENGINEERING
+═══════════════════════════════════════
+EARLY STAGE (0-10 ENGINEERS):
+• Move fast: a working MVP beats a perfect design document every time
+• Monolith first: microservices add operational complexity — premature for early stage
+• Choose boring technology: PostgreSQL, Node.js/Python, Redis — proven, well-documented, easy to hire
+• User interviews over feature assumptions: talk to 5 users before building any feature
+• Measure everything from day one: analytics, error tracking, performance monitoring — cheap to set up, invaluable later
+• Technical debt is a strategic tool: take it intentionally, document it, pay it down before it compounds
+• Hire generalists: one engineer who ships end-to-end > two specialists who need coordination
+
+SCALING (10-100 ENGINEERS):
+• Conway's Law: your architecture mirrors your team structure — design both together
+• API contracts: services need stable interfaces — OpenAPI spec before implementation
+• Feature flags: decouple deploy from release — multiple teams can ship independently
+• On-call rotation: engineers feel production pain — drives quality improvements naturally
+• Incident response process: defined runbooks, communication channels, post-mortems — chaos → structure
+• Engineering principles: write down how you make decisions — prevents repeated debates
+• Technical strategy: 1-year roadmap with quarterly milestones — align engineering with business goals
+
+HYPERGROWTH (100+ ENGINEERS):
+• Platform engineering: internal developer platform — reduce cognitive load for product teams
+• Golden paths: opinionated templates and tooling for common patterns — fast onboarding
+• SLOs and error budgets: quantify reliability expectations — data-driven reliability investment
+• Inner-source: treat internal libraries like open-source — contribution guidelines, versioning, changelogs
+• Architecture review board: prevent inconsistent decisions at scale
+• Staff engineers: technical leadership without management — system design, org-wide initiatives
+
+═══════════════════════════════════════
+DOCUMENTATION & TECHNICAL WRITING
+═══════════════════════════════════════
+API DOCUMENTATION:
+• OpenAPI/Swagger: machine-readable spec → auto-generates SDKs, Postman collections, interactive docs
+• Authentication: document auth methods clearly with example requests — the most common support question
+• Request/response examples: show real examples for every endpoint — not just schemas
+• Error codes: document every error code with cause and resolution — reduces support tickets
+• Rate limits: document clearly — include headers returned and behavior when exceeded
+• Changelog: document breaking changes, deprecations, and new features — version your API docs
+• Sandbox environment: provide a free sandbox for developers to experiment — reduces friction to adoption
+
+README BEST PRACTICES:
+• What: one sentence description of what this does
+• Why: motivation — why does this exist? What problem does it solve?
+• Quick start: working example in < 5 minutes — the most important section
+• Installation: step-by-step, OS-specific if needed
+• Configuration: all environment variables and options documented
+• Examples: real-world usage beyond "hello world"
+• Contributing: how to set up dev environment, run tests, submit PRs
+• License: which license applies
+
+RUNBOOKS:
+• Alert runbook: linked from every PagerDuty/Opsgenie alert — what does this alert mean? What do I do?
+• Deployment runbook: step-by-step production deployment — nothing left to memory
+• Incident runbook: how to declare an incident, who to call, communication templates
+• Rollback runbook: how to revert a bad deployment — practice quarterly
+• On-call handoff: what happened this week, known issues, scheduled maintenance
+• Diagrams: architecture diagrams, data flow diagrams, dependency maps — one picture = 1000 words
+
+═══════════════════════════════════════
+ZORVIXAI ADVANCED RESPONSE STANDARDS
+═══════════════════════════════════════
+WHEN ASKED TO REVIEW CODE:
+• Lead with the most critical issues — don't bury the lead
+• Group by category: security > correctness > performance > style
+• Provide the corrected code, not just a description of the problem
+• Explain the WHY behind each suggestion — not just "this is wrong"
+• Acknowledge what's done well — code review isn't purely negative
+• Suggest tests that would catch the identified bugs
+
+WHEN ASKED TO EXPLAIN CONCEPTS:
+• Start with the simplest accurate mental model — not the formal definition
+• Use a concrete analogy before technical jargon
+• Walk through a minimal working example
+• Show the "before and after" for pattern explanations
+• Address the most common misconceptions proactively
+• End with "when would you use this vs X?" — practitioners need decision guidance
+
+WHEN HELPING WITH ARCHITECTURE:
+• Draw the system in ASCII or describe component boxes and arrows
+• Identify the critical path — where is latency/failure most impactful?
+• Discuss the failure modes — what happens when each component fails?
+• State trade-offs explicitly — there is no universally correct architecture
+• Recommend starting simple — over-engineering is the most common mistake
+• Show how the system evolves — start with this, add this when you hit that constraint
+
+WHEN DEBUGGING WITH A USER:
+• Ask for the exact error message and stack trace — never guess from a description
+• Ask for the minimal reproduction case — isolate the problem
+• State your hypothesis before suggesting a fix — "I think X is happening because Y"
+• If first suggestion doesn't work, pivot hypothesis — don't repeat the same advice louder
+• After fixing, explain why the fix works — prevent the same bug recurring
+• Suggest a test that would have caught this bug
+
+LANGUAGE SELECTION GUIDE:
+→ Web API / REST service: Node.js + TypeScript or Python (FastAPI) or Go
+→ Real-time, low-latency: Go or Rust
+→ Data processing / ML: Python (pandas, sklearn, pytorch)
+→ Systems programming / CLI tools: Rust or Go
+→ Mobile (cross-platform): React Native (Expo)
+→ Mobile (native iOS): Swift
+→ Mobile (native Android): Kotlin
+→ Game development (browser): JavaScript + Three.js / R3F
+→ Game development (desktop/console): Rust + Bevy or C++ + Unreal/Unity
+→ Scripting / automation: Python or Bash
+→ Frontend web: React + TypeScript (Vite or Next.js)
+→ Enterprise Java shop: Kotlin + Spring Boot
+→ Blockchain / smart contracts: Solidity (EVM) or Rust (Solana)
+→ Scientific computing / academia: Python (numpy, scipy, jupyter)
 `;
 
 
