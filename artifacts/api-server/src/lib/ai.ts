@@ -132,13 +132,11 @@ async function tryModelsNonStream(
   params: OpenAI.Chat.ChatCompletionCreateParamsNonStreaming,
   modelsToTry: string[]
 ): Promise<OpenAI.Chat.ChatCompletion> {
-  let rateLimitCount = 0;
-
   for (let i = 0; i < modelsToTry.length; i++) {
     const model = modelsToTry[i];
     try {
       const result = await client.chat.completions.create({ ...params, model });
-      if (i > 0) console.log(`[OR] Succeeded with fallback model: ${model}`);
+      if (i > 0) console.log(`[OR] Succeeded with model: ${model} (after ${i} skipped)`);
       return result;
     } catch (err: any) {
       if (isAuthError(err)) {
@@ -147,25 +145,25 @@ async function tryModelsNonStream(
         );
       }
       if (isRateLimit(err)) {
-        rateLimitCount++;
-        const delay = Math.min(1000 * rateLimitCount, 4000); // 1s, 2s, 3s, 4s max
-        console.warn(`[OR] ${model} rate-limited (429), waiting ${delay}ms then trying next...`);
-        await sleep(delay);
+        // Rate limited — instantly move to next model, no waiting
+        console.warn(`[OR] ${model} busy (429), switching to next model instantly...`);
       } else if (isServerError(err)) {
-        console.warn(`[OR] ${model} server error (${err?.status}), trying next...`);
-        await sleep(500);
+        // Server error — instantly move to next model
+        console.warn(`[OR] ${model} server error (${err?.status}), switching to next model...`);
       } else {
-        console.warn(`[OR] ${model} failed (${err?.status ?? "unknown"}), trying next...`);
+        console.warn(`[OR] ${model} failed (${err?.status ?? "unknown"}), switching to next model...`);
       }
     }
   }
 
-  // All models exhausted — retry the first 3 fast models once more after a pause
-  console.warn("[OR] All models tried once. Retrying top 3 models after a short pause...");
-  await sleep(2000);
-  for (const model of modelsToTry.slice(0, 3)) {
+  // All 26 models tried — wait 3 seconds then retry the top 5 models once more
+  console.warn("[OR] All models busy. Waiting 3s then retrying top 5 models...");
+  await sleep(3000);
+  for (const model of modelsToTry.slice(0, 5)) {
     try {
-      return await client.chat.completions.create({ ...params, model });
+      const result = await client.chat.completions.create({ ...params, model });
+      console.log(`[OR] Retry succeeded with: ${model}`);
+      return result;
     } catch (_) {
       // continue
     }
@@ -181,13 +179,11 @@ async function tryModelsStream(
   params: OpenAI.Chat.ChatCompletionCreateParamsStreaming,
   modelsToTry: string[]
 ): Promise<AsyncIterable<OpenAI.Chat.ChatCompletionChunk>> {
-  let rateLimitCount = 0;
-
   for (let i = 0; i < modelsToTry.length; i++) {
     const model = modelsToTry[i];
     try {
       const stream = await client.chat.completions.create({ ...params, model, stream: true });
-      if (i > 0) console.log(`[OR] Streaming with fallback model: ${model}`);
+      if (i > 0) console.log(`[OR] Streaming with model: ${model} (after ${i} skipped)`);
       return stream;
     } catch (err: any) {
       if (isAuthError(err)) {
@@ -196,25 +192,25 @@ async function tryModelsStream(
         );
       }
       if (isRateLimit(err)) {
-        rateLimitCount++;
-        const delay = Math.min(1000 * rateLimitCount, 4000);
-        console.warn(`[OR] ${model} rate-limited (429), waiting ${delay}ms then trying next...`);
-        await sleep(delay);
+        // Rate limited — instantly move to next model, no waiting
+        console.warn(`[OR] ${model} busy (429), switching to next model instantly...`);
       } else if (isServerError(err)) {
-        console.warn(`[OR] ${model} server error (${err?.status}), trying next...`);
-        await sleep(500);
+        // Server error — instantly move to next model
+        console.warn(`[OR] ${model} server error (${err?.status}), switching to next model...`);
       } else {
-        console.warn(`[OR] ${model} failed (${err?.status ?? "unknown"}), trying next...`);
+        console.warn(`[OR] ${model} failed (${err?.status ?? "unknown"}), switching to next model...`);
       }
     }
   }
 
-  // All models exhausted — retry the first 3 fast models once more after a pause
-  console.warn("[OR] All models tried once. Retrying top 3 models after a short pause...");
-  await sleep(2000);
-  for (const model of modelsToTry.slice(0, 3)) {
+  // All 26 models tried — wait 3 seconds then retry the top 5 models once more
+  console.warn("[OR] All models busy. Waiting 3s then retrying top 5 models...");
+  await sleep(3000);
+  for (const model of modelsToTry.slice(0, 5)) {
     try {
-      return await client.chat.completions.create({ ...params, model, stream: true });
+      const stream = await client.chat.completions.create({ ...params, model, stream: true });
+      console.log(`[OR] Retry succeeded with: ${model}`);
+      return stream;
     } catch (_) {
       // continue
     }
@@ -274,12 +270,11 @@ export async function createChatCompletionStreamFromList(
     );
   }
 
-  let rateLimitCount = 0;
   for (let i = 0; i < modelList.length; i++) {
     const model = modelList[i];
     try {
       const stream = await client.chat.completions.create({ ...params, model, stream: true });
-      console.log(`[AI] Using model: ${model}`);
+      if (i > 0) console.log(`[AI] Using model: ${model} (after ${i} skipped)`);
       return { stream, model };
     } catch (err: any) {
       if (isAuthError(err)) {
@@ -288,22 +283,26 @@ export async function createChatCompletionStreamFromList(
         );
       }
       if (isRateLimit(err)) {
-        rateLimitCount++;
-        const delay = Math.min(1000 * rateLimitCount, 4000);
-        console.warn(`[agent] ${model} rate-limited, waiting ${delay}ms...`);
-        await sleep(delay);
+        // Rate limited — instantly switch to next model, no waiting
+        console.warn(`[agent] ${model} busy (429), switching to next model instantly...`);
+      } else if (isServerError(err)) {
+        console.warn(`[agent] ${model} server error (${err?.status}), switching to next model...`);
       } else {
-        console.warn(`[agent] ${model} failed (${err?.status ?? "unknown"}), trying next...`);
+        console.warn(`[agent] ${model} failed (${err?.status ?? "unknown"}), switching to next model...`);
       }
     }
   }
 
-  // Retry top model once more
-  await sleep(2000);
-  try {
-    const stream = await client.chat.completions.create({ ...params, model: modelList[0], stream: true });
-    return { stream, model: modelList[0] };
-  } catch (_) {}
+  // All models tried — wait 3s then retry top 3
+  console.warn("[agent] All models busy. Waiting 3s then retrying top 3...");
+  await sleep(3000);
+  for (const model of modelList.slice(0, 3)) {
+    try {
+      const stream = await client.chat.completions.create({ ...params, model, stream: true });
+      console.log(`[agent] Retry succeeded with: ${model}`);
+      return { stream, model };
+    } catch (_) {}
+  }
 
   throw new Error(
     "AI is temporarily unavailable — all OpenRouter models are busy. Please try again in a few seconds."
