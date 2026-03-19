@@ -78,7 +78,7 @@ async function streamToResponse(res: any, messages: { role: string; content: str
       ...messages.map(m => ({ role: m.role as "user" | "assistant", content: m.content })),
     ],
     stream: true,
-    max_completion_tokens: 8192,
+    max_completion_tokens: 100000,
   });
 
   for await (const chunk of stream) {
