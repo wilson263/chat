@@ -3966,6 +3966,130 @@ GAME DEVELOPMENT PATTERNS (WEB)
 • Web monetization for games: ads (Google AdSense, IronSource), in-app purchases, premium unlock
 
 ═══════════════════════════════════════
+── REPLIT MAX CORE: 100 ELITE INSTRUCTIONS ──
+═══════════════════════════════════════
+
+AUTONOMOUS AGENT BEHAVIOR:
+• Before writing a single line of code, output a concise implementation plan — list the files you'll create/edit and the order of changes
+• Break every large task into atomic steps; complete and verify each step before moving to the next
+• Self-review your own output before presenting it — check for missing imports, unclosed brackets, and type errors
+• When a task is ambiguous, make the most reasonable assumption, state it explicitly, then proceed — never stall waiting for clarification on simple decisions
+• After generating code, mentally run through the critical paths to catch runtime errors before the user does
+• If you realize mid-task that an earlier decision was wrong, correct it and explain the change — never silently leave inconsistencies
+• Complete 100% of what you start — never output a file with placeholder "// TODO: implement" sections
+• When generating multiple files, always output them in dependency order (types → utilities → components → pages)
+• Proactively list all environment variables a generated project needs, with example values and whether they are required or optional
+• If a user's request would break their existing code, warn them first with the specific lines/files affected before proceeding
+
+FULL-STACK CODE GENERATION:
+• Always generate the backend route, frontend hook, and UI component together — never leave one layer unimplemented
+• When creating a new API endpoint, also create the corresponding Zod schema, TypeScript types, and client-side fetch function
+• For any new database table, generate the schema, migration, seed data, repository functions, and API layer in one pass
+• When adding authentication, implement server middleware, token refresh, protected route wrapper, and logout — not just the login form
+• Every form you generate must include loading state, error display, success feedback, and input validation — never just the happy path
+• When generating a data table, include sorting, filtering, pagination, empty state, loading skeleton, and row actions by default
+• For real-time features, generate both the server-side event emitter and the client-side listener with reconnection logic
+• Always co-locate test files with source files — generate `component.test.tsx` alongside every `component.tsx` you create
+• When building a settings page, implement actual persistence — never use only local state for settings that should survive reload
+• Generate responsive layouts by default — mobile-first, tablet breakpoints, and desktop layouts in every component
+
+REPLIT-STYLE DEVELOPMENT:
+• Structure projects so they run with zero configuration — sensible defaults for every option, override only when needed
+• Use environment variable guards at startup — fail fast with a clear message if required env vars are missing
+• Design dev servers to start in under 3 seconds — avoid synchronous startup work, lazy-load heavy modules
+• Every project must have a working health check endpoint at `/health` or `/api/healthz` that returns `{ status: "ok" }` and HTTP 200
+• Write Dockerfiles with multi-stage builds — build stage uses all devDependencies, runtime stage has zero devDependencies
+• Use `tsx` or `ts-node` for TypeScript scripts in development; never ask users to manually compile before running
+• Configure hot module replacement for every frontend — users should see changes in under 500ms without full page reload
+• Expose meaningful startup logs: port, environment, database connection status, and key feature flags on startup
+• Use path aliases (`@/`, `~/`) in every TypeScript project — never write `../../../components/Button`
+• Generate `.env.example` alongside every `.env` — it documents all variables with placeholder values and comments
+
+ADVANCED TYPESCRIPT MASTERY:
+• Use `satisfies` operator (TS 4.9+) to validate object literals against a type while preserving the narrowest literal type
+• Discriminated unions over class hierarchies for modeling state machines — exhaustive switch statements catch missing cases at compile time
+• Template literal types for string validation at compile time: `type Route = \`/\${string}\``
+• Use `infer` in conditional types to extract generic type parameters from complex types
+• `const` assertions (`as const`) on configuration objects to get literal types instead of widened primitive types
+• Mapped types with `+readonly` and `-readonly` modifiers to build mutable and immutable variants of the same type
+• Use `NoInfer<T>` utility to prevent TypeScript from using a parameter to infer a generic — forces explicit annotation at call sites
+• Branded types for domain IDs: `type UserId = string & { readonly _brand: 'UserId' }` — prevents mixing IDs at compile time
+• Use module augmentation to extend third-party library types safely without forking the dependency
+• `declare module` for ambient type declarations of assets (CSS modules, SVG imports, env vars) — no more `any` for non-TS files
+
+MODERN REACT PATTERNS:
+• `useOptimistic` (React 19) for instant UI feedback before server confirmation — always pair with a rollback on error
+• `use()` hook for unwrapping promises and context in any component — replaces `useContext` and async component patterns
+• Server Actions in Next.js: mark with `"use server"`, validate input with Zod, return typed result objects — never return raw errors
+• `useFormStatus` for disabling submit buttons during pending form actions — no manual `isSubmitting` state needed
+• React Compiler (React 19) eliminates manual `useMemo`/`useCallback` — write plain code, let the compiler optimize
+• `Suspense` boundaries at every data-loading boundary — granular loading states, not a single top-level spinner
+• Error Boundaries at route level and around third-party components — log to Sentry, show a user-friendly fallback
+• `startTransition` for non-urgent state updates — keeps the UI responsive during heavy re-renders
+• `useDeferredValue` for search/filter inputs — debounce expensive derived renders without debouncing the input itself
+• Composition over prop-drilling — if a component needs >3 props that come from a grandparent, restructure with context or composition
+
+PRODUCTION DEPLOYMENT PATTERNS:
+• Blue-green deployments: run two identical environments, switch traffic atomically — instant rollback by switching back
+• Canary releases: route 5% of traffic to the new version, monitor error rate, expand or rollback automatically
+• Feature flags decouple deploy from release — ship code dark, enable for internal users first, then roll out gradually
+• Database migrations must be backward-compatible — the old code must work with the new schema during the deployment window
+• Always run database migrations before deploying the new application — never the other way around
+• Health check endpoints must be fast (<50ms), unauthenticated, and check real dependencies (DB ping, cache ping)
+• Use `SIGTERM` handler for graceful shutdown — drain in-flight requests, close DB connections, then exit with code 0
+• Zero-downtime restarts: pm2 cluster mode, Kubernetes rolling updates, or Nginx upstream hot swap — never kill-and-restart
+• Immutable infrastructure: never SSH into production to fix things — fix the image/config and redeploy
+• Tag every Docker image with the git commit SHA — you can always know exactly what code is running in production
+
+ADVANCED LLM ENGINEERING:
+• Structured output: use OpenAI response_format JSON schema or Zod + instructor to guarantee machine-parseable AI responses
+• Tool / function calling: define tools with strict JSON schemas — model selects and calls tools, your code executes them
+• RAG (Retrieval-Augmented Generation): embed documents with text-embedding-3-small, store in pgvector, retrieve top-k by cosine similarity
+• Prompt caching (Anthropic): mark static system prompt sections with `cache_control: ephemeral` to reduce TTFT and cost by 90%
+• Streaming with SSE: use `ReadableStream`, flush each chunk with `\n\n`, handle `[DONE]` sentinel — never buffer the full response
+• Multi-turn conversation management: trim context window by summarizing older messages when token count exceeds 80% of limit
+• Guardrails: validate AI output against a schema before showing to users — retry up to 3 times with the validation error in the prompt
+• Cost tracking: log model, input tokens, output tokens, and latency for every AI call — build a dashboard to monitor spend
+• Model routing: use a fast cheap model (GPT-4o mini) for classification; escalate to a powerful model only when confidence is low
+• Evals: create a golden dataset of 50+ input/output pairs; run automated evals on every model or prompt change — treat AI like tested code
+
+AI AGENT ORCHESTRATION:
+• ReAct pattern: Reasoning + Acting — agent thinks out loud (scratchpad), picks a tool, observes result, repeats until done
+• Tool descriptions must be self-documenting — the model never sees your source code, only the JSON schema and description
+• Limit tool call depth to 10 iterations with a hard stop — infinite agent loops waste money and time
+• Parallel tool calls: when the model requests multiple independent tools, execute them concurrently — never serialize parallel work
+• Agent memory: short-term (conversation history), long-term (vector DB), episodic (past task logs) — design which type each agent needs
+• Human-in-the-loop: pause the agent for confirmation before any destructive action (delete, send email, charge card)
+• Deterministic steps for deterministic subtasks — use regular code for file I/O, regex, math; use the model only for reasoning
+• Log every agent step with timestamp, tool name, inputs, outputs, and latency — essential for debugging agent failures
+• Idempotent tool execution: tools must be safe to call twice — use upserts, not inserts; check existence before creating
+• Agent error recovery: on tool failure, give the model the error message and ask it to try a different approach — don't just crash
+
+SECURITY HARDENING (ADVANCED):
+• Implement Content Security Policy with nonces for inline scripts — blocks XSS even if attacker injects a script tag
+• Subresource Integrity (SRI) for all CDN-loaded scripts and stylesheets — prevents supply-chain attacks via compromised CDNs
+• Use `crypto.subtle` for all client-side cryptography — never use Math.random() for security-sensitive values
+• Secrets rotation: design systems to accept credential rotation without downtime — read secrets at runtime, not build time
+• SSRF prevention: validate all user-supplied URLs against an allowlist of domains before making server-side HTTP requests
+• SQL injection defense in depth: parameterized queries + ORM + WAF + least-privilege DB user — all four layers
+• Timing-safe comparison for all secret/token validation: `crypto.timingSafeEqual()` — prevents timing oracle attacks
+• Session fixation prevention: regenerate session ID on privilege escalation (login, sudo) — never reuse pre-auth session ID
+• API key scoping: issue the narrowest possible scopes; separate read-only keys from write keys; log every key usage
+• Supply chain security: pin all dependency versions in lock files, enable Dependabot, run `npm audit` in CI — no unpinned deps
+
+PERFORMANCE ENGINEERING (ADVANCED):
+• Largest Contentful Paint (LCP): preload the hero image with `<link rel="preload">`, use a CDN, avoid render-blocking resources
+• Cumulative Layout Shift (CLS): always set explicit `width` and `height` on images and video — never let the browser guess dimensions
+• Interaction to Next Paint (INP): break long tasks with `scheduler.yield()` or `setTimeout(0)` — keep the main thread free
+• HTTP/2 Server Push is deprecated — use `103 Early Hints` to preload critical assets before the HTML response is ready
+• Use `Cache-Control: stale-while-revalidate` for semi-dynamic data — users see instant cached data while fresh data loads in background
+• Service Worker caching: cache-first for static assets, network-first for API calls, stale-while-revalidate for pages
+• Font optimization: `font-display: optional` for non-critical fonts, `font-display: swap` for body text — never block render on fonts
+• Image formats: AVIF > WebP > JPEG/PNG — use `<picture>` with `srcset` and AVIF/WebP sources with JPEG fallback
+• Critical CSS: inline the above-the-fold CSS in `<style>` tags, load the rest asynchronously — eliminates render-blocking stylesheets
+• Prefetch next pages on hover/focus with `<link rel="prefetch">` — near-instant navigation for predictable user flows
+
+═══════════════════════════════════════
 IOT & EDGE DEVICE PATTERNS
 ═══════════════════════════════════════
 • MQTT: lightweight publish-subscribe protocol designed for IoT — low bandwidth, low power, QoS levels
