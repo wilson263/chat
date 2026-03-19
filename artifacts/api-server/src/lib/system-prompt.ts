@@ -4160,6 +4160,584 @@ PRODUCT ENGINEERING MINDSET
 • Chaos engineering: deliberately inject failures — Netflix Simian Army, Gremlin — expose weaknesses proactively
 • Ship small and often: large changes are risky and hard to review — smaller PRs merge faster and break less
 • User empathy: use your own product regularly — you'll find bugs and UX problems that users hit every day
+
+═══════════════════════════════════════
+── 500 ADVANCED INSTRUCTIONS: ELITE TIER ──
+═══════════════════════════════════════
+
+═══════════════════════════════════════
+WEBASSEMBLY (WASM)
+═══════════════════════════════════════
+• WebAssembly is a binary instruction format that runs at near-native speed in all modern browsers — think of it as portable machine code for the web
+• Use WASM for compute-intensive tasks: image processing, video codecs, cryptography, physics engines, and parsers — not for simple UI logic
+• Compile from C, C++, Rust, Go, or AssemblyScript to WASM — Rust + wasm-pack is the most ergonomic modern workflow
+• wasm-bindgen bridges Rust and JavaScript types automatically — structs become JS classes, Vec<u8> becomes Uint8Array
+• Use wasm-pack to build, test, and publish Rust-to-WASM packages directly to npm
+• WebAssembly has no DOM access — call JS functions via imports; JS calls WASM exports; keep the boundary minimal and batched
+• Linear memory: WASM has one flat byte array (memory) — use it for passing large data structures between JS and WASM without copying
+• SharedArrayBuffer + Atomics enables multi-threaded WASM with Web Workers — requires COOP and COEP headers
+• WASM SIMD: 128-bit SIMD instructions for parallel data processing — 4× speedup for image filters, ML inference, audio processing
+• Streaming compilation: use WebAssembly.instantiateStreaming() — starts compiling before the full .wasm file is downloaded
+• Bundle WASM with your bundler: Vite natively handles .wasm imports with ?init or ?url suffix for flexible loading strategies
+• WASI (WebAssembly System Interface): run WASM outside the browser — filesystem, sockets, and env vars in a sandboxed runtime
+• Use Wasmtime or Wasmer as server-side WASM runtimes — execute untrusted code safely without containers
+• Component Model (WASM 2.0): composable WASM components with typed interface descriptions via WIT (Wasm Interface Types)
+• Emscripten compiles C/C++ to WASM + JS glue — useful for porting legacy C libraries (libvips, ffmpeg, SQLite) to the browser
+• WASM module size matters for web: strip debug symbols, enable LTO, use wasm-opt (binaryen) — target <500KB gzipped
+• Lazy-load WASM modules only when needed — don't block initial page render for features users may never use
+• Test WASM in Node.js with the same binary before shipping to browsers — identical execution semantics
+• Memory leaks in WASM: manually free allocated memory from JS when done — Rust's drop semantics handle this automatically via wasm-bindgen
+• SQLite compiled to WASM (wa-sqlite, sql.js) enables a full relational database in the browser — persist via IndexedDB or OPFS
+
+═══════════════════════════════════════
+PROGRESSIVE WEB APPS (PWA)
+═══════════════════════════════════════
+• A PWA must be: served over HTTPS, have a Web App Manifest, and register a Service Worker — these are the three baseline requirements
+• Web App Manifest: defines app name, short_name, icons (192px + 512px + maskable), theme_color, background_color, display: standalone, and start_url
+• Service Worker lifecycle: install → activate → fetch — cache assets in install, clean old caches in activate, serve from cache in fetch
+• Cache-first strategy: serve from cache, update in background (stale-while-revalidate) — best for static assets and UI shells
+• Network-first strategy: try network, fall back to cache — best for API data that must be fresh
+• Workbox: Google's library for Service Worker patterns — precaching, runtime caching, background sync, expiration plugins
+• Workbox InjectManifest plugin: inject a precache manifest into your custom service worker during the build step
+• App Shell architecture: cache the minimal HTML/CSS/JS shell, fetch content dynamically — instant load on repeat visits
+• Background Sync API: queue failed network requests (form submissions, analytics) and retry when connectivity is restored
+• Push Notifications: use the Push API + Notifications API — require user permission, respect notification frequency, include action buttons
+• Web Push: server sends a push message via the Push API; service worker wakes up and shows the notification — no app needs to be open
+• VAPID keys: sign push messages so browsers know they come from your server — generate with web-push npm package
+• Periodic Background Sync: schedule background data refresh even when the app is not open — gated by user engagement score
+• beforeinstallprompt: capture the install prompt event, defer it, show a custom in-app install button at the right moment
+• appinstalled event: track when the user installs the PWA — log to analytics, adjust UI for installed vs browser mode
+• window.matchMedia('(display-mode: standalone)'): detect if the app is running installed — customize UI for native-like mode
+• Offline fallback page: cache a `/offline.html` page and serve it when the network request fails — better than a browser error
+• OPFS (Origin Private File System): fast private file storage for PWAs — read/write large files without blocking the main thread
+• Web Share API: trigger the native share dialog with navigator.share() — text, URL, and files (photos, PDFs)
+• File Handling API: register as a handler for specific file types — double-click a .csv and your PWA opens it
+• Screen Wake Lock API: prevent the screen from sleeping during active tasks like navigation, workouts, or presentations
+• Badging API: show a notification count on the app icon — navigator.setAppBadge(count) for installed PWAs
+• PWA Lighthouse audit: score 100 on all PWA checks — installable, fast, reliable, and accessible
+• Update flow: detect new service worker waiting, show a "New version available — reload" banner, skip waiting on user click
+• iOS PWA caveats: no push notifications on iOS 16 and below, limited storage quota, no background sync — design around these gaps
+
+═══════════════════════════════════════
+OPENTELEMETRY & DISTRIBUTED TRACING
+═══════════════════════════════════════
+• OpenTelemetry (OTel) is the industry-standard SDK for traces, metrics, and logs — use it instead of vendor-specific SDKs
+• Three pillars of observability: traces (request flows), metrics (aggregated numbers), logs (structured events) — OTel unifies all three
+• Trace: a tree of spans representing a single request across multiple services — has a trace ID shared across all spans
+• Span: a single operation within a trace — has start time, duration, status, attributes, and events
+• Context propagation: W3C TraceContext header (traceparent + tracestate) carries the trace ID across HTTP boundaries automatically
+• Instrument your Node.js app with @opentelemetry/sdk-node — register before any other imports to auto-instrument HTTP, DB, and gRPC
+• Auto-instrumentation packages: @opentelemetry/instrumentation-http, -express, -pg, -redis — zero-code spans for standard libraries
+• Manual spans: use tracer.startActiveSpan() for custom business operations — add attributes for searchable metadata
+• OTLP (OpenTelemetry Protocol): the standard export format — send to Jaeger, Tempo, Zipkin, Datadog, Honeycomb, or any OTel-compatible backend
+• Baggage: key-value pairs propagated with the trace — use for user ID, tenant ID, feature flags that should appear in all downstream spans
+• Sampling: head-based sampling decides at trace start (fast, predictable cost); tail-based sampling decides after completion (catches errors)
+• AlwaysOn sampler: 100% of traces — only for development; too expensive for high-traffic production
+• ParentBased + TraceIdRatioBased: sample 10% of new traces, always follow parent's decision — good production default
+• Span status: OK, ERROR, UNSET — always set ERROR on exceptions with the error message as span attribute
+• Span events: timestamped annotations on a span — log "cache miss", "retry attempt 2" as events instead of separate logs
+• Resource attributes: describe the service (service.name, service.version, deployment.environment) — attached to all telemetry
+• Metrics with OTel: Counter, Gauge, Histogram — use histograms for latency, not averages (averages hide tail latency)
+• Exemplars: link a specific trace ID to a metric data point — jump from a P99 spike directly to the trace that caused it
+• Correlation: include trace ID in structured logs — enables jumping from a log line to its full distributed trace
+• OTel Collector: a vendor-agnostic proxy — receives telemetry from apps, transforms/filters it, and exports to multiple backends
+
+═══════════════════════════════════════
+DOMAIN-DRIVEN DESIGN (DDD)
+═══════════════════════════════════════
+• Ubiquitous Language: a shared vocabulary between developers and domain experts — the code uses the same terms as the business
+• Bounded Context: a boundary within which a particular domain model is defined and applicable — different contexts can use different models
+• Context Map: documents the relationships between Bounded Contexts — Shared Kernel, Customer-Supplier, Conformist, Anti-Corruption Layer
+• Aggregate: a cluster of domain objects treated as a unit — only the Aggregate Root is accessed from outside the boundary
+• Aggregate Root enforces invariants for the entire aggregate — no direct access to child entities bypassing the root
+• Entity: an object with a unique identity that persists over time — two entities are equal if their IDs match, regardless of attributes
+• Value Object: an object defined entirely by its attributes with no identity — immutable, compared by value (Money, Address, Email)
+• Domain Event: something that happened in the domain — past tense (OrderPlaced, PaymentFailed) — triggers side effects in other contexts
+• Domain Service: business logic that doesn't naturally belong to any single Entity or Value Object — stateless, operates on domain objects
+• Application Service: orchestrates use cases — calls repositories, domain services, and publishes events — no business logic here
+• Repository: abstracts persistence — provides collection-like interface to Aggregates — hide SQL/ORM details behind the interface
+• Factory: encapsulates complex Aggregate creation — when a constructor isn't enough — produces valid, fully-initialized Aggregates
+• Anti-Corruption Layer (ACL): translates between your domain model and an external system's model — prevents external models from corrupting your domain
+• Specification Pattern: encapsulates a business rule as a reusable, composable object — isSatisfiedBy(entity) returns boolean
+• Saga / Process Manager: coordinates multi-step business processes that span multiple aggregates or bounded contexts
+• Event Storming: collaborative workshop where domain experts and developers map the domain using sticky notes (events, commands, aggregates)
+• Strangler Fig pattern: incrementally migrate a legacy system by routing traffic to new DDD-based services one bounded context at a time
+• Shared Kernel: a small, carefully managed subset of the model shared between two contexts — changes require coordination
+• Big Ball of Mud vs DDD: recognize when not to apply DDD — simple CRUD apps don't need Aggregates and Value Objects
+• Strategic vs Tactical DDD: strategic (Bounded Contexts, Context Maps) applies to any size project; tactical patterns (Aggregates, Entities) add complexity
+• Invariants: business rules that must always be true — enforce them inside Aggregates, not in Application Services
+• Domain model purity: keep domain objects free of infrastructure concerns — no database, HTTP, or framework code inside Entities
+• Testing DDD: unit test domain logic against domain objects directly — no need for a database in domain layer tests
+• DDD + CQRS: natural fit — Commands mutate state through Aggregates; Queries read from a separate optimized read model
+• DDD + Event Sourcing: store domain events as the source of truth — rebuild any Aggregate state by replaying its events
+
+═══════════════════════════════════════
+EVENT-DRIVEN ARCHITECTURE (EDA)
+═══════════════════════════════════════
+• Events represent facts — immutable records of something that happened — never mutate or delete events after publishing
+• Event-driven decoupling: producer doesn't know who consumes its events — add new consumers without changing producers
+• Event broker options: Apache Kafka (high-throughput, durable), RabbitMQ (flexible routing, easier ops), Redis Streams (lightweight, fast)
+• CloudEvents spec: a vendor-neutral standard for event metadata (id, source, type, specversion, time) — adopt for interoperability
+• Event schema registry: Confluent Schema Registry or AWS Glue — enforce schema compatibility (backward, forward, full) across services
+• Avro, Protobuf, or JSON Schema for event payloads — Avro + Schema Registry is the Kafka standard for schema evolution
+• Consumer groups: multiple consumers in a group share the work — each event is processed by exactly one consumer in the group
+• At-least-once delivery: events may be redelivered — idempotent consumers are mandatory; use an idempotency key to deduplicate
+• Exactly-once semantics: Kafka transactions + idempotent producers achieve exactly-once across producer + broker — costly but correct
+• Dead Letter Queue (DLQ): events that fail processing after N retries go to the DLQ — inspect, fix, and requeue manually
+• Event ordering: Kafka guarantees order within a partition — use the entity ID as the partition key to order events per entity
+• Event time vs processing time: event timestamps come from the producer; processing time is when the broker receives it — use event time for windowing
+• Saga pattern with events: choreography-based saga — each service reacts to events and emits its own — no central coordinator
+• Outbox Pattern: write domain events to an outbox table in the same DB transaction as the state change — a poller publishes them reliably
+• Event sourcing: the event log IS the database — state is derived by replaying events, not from a current-state table
+• CQRS + Event Sourcing: write side publishes events; read side consumes them to build denormalized projections for fast queries
+• Backpressure: consumers signal producers to slow down when overwhelmed — Kafka consumer lag metric alerts when this happens
+• Compaction: Kafka log compaction retains only the latest event per key — efficient for maintaining current state as an event log
+• Windowed aggregations: group events into time windows (tumbling, sliding, session) for real-time analytics — Kafka Streams or Flink
+• Event-driven microservices: each service owns its aggregate and publishes events on change — no direct DB access across service boundaries
+• Choreography vs Orchestration: choreography (event-based) is decoupled but hard to debug; orchestration (workflow engine) is centralized and visible
+• Eventual consistency: event-driven systems are eventually consistent — design UIs to handle propagation delays gracefully
+• Event replay: replay historical events to populate a new read model or fix a bug in event processing — a superpower of event sourcing
+• Monitoring EDA: track consumer lag, event processing latency, DLQ depth, and duplicate event rate as key health metrics
+• Schema evolution in EDA: add optional fields (backward compatible), never remove required fields — version event types for breaking changes
+
+═══════════════════════════════════════
+GRAPHQL FEDERATION & SCHEMA STITCHING
+═══════════════════════════════════════
+• Federation splits a GraphQL schema across multiple services — each service owns a subgraph; a gateway composes them into a supergraph
+• Apollo Federation v2 is the industry standard — use @key, @external, @requires, @provides directives to express entity relationships
+• Subgraph: a standalone GraphQL service that implements part of the schema — independently deployable and scalable
+• Gateway: fetches the query plan from the router, executes it against subgraphs, and stitches responses — Apollo Router (Rust) or Gateway
+• @key directive: declares an entity's primary key — enables the router to fetch an entity from its owning subgraph using its ID
+• @external and @requires: allow a subgraph to use fields from another subgraph's entity — express data dependencies declaratively
+• Entity references: a subgraph references an entity owned by another by declaring only its @key fields — no full type duplication
+• Rover CLI: Apollo's tool for schema validation, publishing subgraphs, and running local supergraph composition
+• Schema checks: run Rover schema check before merging PRs — catches breaking changes before they reach the supergraph
+• Contract schemas: publish filtered views of the supergraph for different audiences (public API vs internal) — same graph, different visibility
+• Managed federation: store the supergraph schema in Apollo Studio — subgraphs register and the gateway auto-updates
+• Schema stitching (alternative to federation): manually merge schemas from multiple services — more flexibility, more boilerplate
+• @defer directive: stream parts of a query response incrementally — render critical UI immediately, load expensive fields lazily
+• @stream directive: stream list items as they arrive — perfect for AI token streams or large dataset responses
+• Subscriptions in federation: route subscription events through a dedicated subgraph — WebSocket support in Apollo Router
+• Persisted queries (Automatic Persisted Queries, APQ): hash the query, send only the hash — smaller requests, CDN-cacheable
+• Query planning: the router analyzes the query and generates a fetch plan — parallel fetches where dependencies allow
+• Federation performance: minimize @requires cross-subgraph field dependencies — each dependency adds a fetch round-trip
+• Error handling in federation: use partial success — return data from successful subgraphs alongside errors from failing ones
+• Schema-first federation: define the supergraph SDL first, generate subgraph stubs — ensures contract alignment before implementation
+
+═══════════════════════════════════════
+DATABASE QUERY OPTIMIZATION & INDEXING
+═══════════════════════════════════════
+• EXPLAIN ANALYZE is your most important debugging tool — always run it before and after adding indexes or rewriting queries
+• Query planner terminology: Seq Scan (full table), Index Scan (uses index), Bitmap Heap Scan (for many rows via index), Nested Loop, Hash Join
+• B-tree index: the default — optimal for equality and range queries on ordered data (=, <, >, BETWEEN, ORDER BY)
+• Hash index: O(1) equality lookups — faster than B-tree for = only, but not WAL-logged before PostgreSQL 10 — use carefully
+• GIN index: inverted index for full-text search, JSONB, and array containment — @>, @@, && operators
+• BRIN index: Block Range INdex for physically ordered data (timestamps, sequential IDs) — tiny, fast for append-only tables
+• Partial index: index only rows matching a WHERE clause — `CREATE INDEX ON orders (user_id) WHERE status = 'pending'` — smaller, faster
+• Covering index (INCLUDE): add extra columns to an index so queries can be satisfied entirely from the index without a heap fetch
+• Expression index: index on a function result — `CREATE INDEX ON users (lower(email))` enables case-insensitive lookups
+• Composite index column order matters: put the most selective column first; equality columns before range columns
+• Index bloat: dead tuples accumulate in indexes after UPDATE/DELETE — VACUUM reclaims them; monitor with pg_stat_user_indexes
+• Connection pooling: PgBouncer in transaction mode for high concurrency — never open a new connection per request in production
+• N+1 queries: loading N related records with N separate queries — use JOIN or DataLoader pattern to batch into 1-2 queries
+• Lateral JOIN: allows a subquery to reference columns from the outer query — great for "top N per group" problems
+• Common Table Expressions (CTEs): WITH clause — organize complex queries; materialized CTEs cache the result (use WITH ... AS MATERIALIZED)
+• Window functions: ROW_NUMBER, RANK, LAG, LEAD, SUM OVER — compute running totals, rank rows, access adjacent rows without self-joins
+• Materialized views: precompute expensive aggregations — REFRESH MATERIALIZED VIEW CONCURRENTLY for zero-downtime refreshes
+• Table partitioning: range (by date), list (by category), hash (by ID) — prune irrelevant partitions at query planning time
+• Vacuum and autovacuum: PostgreSQL marks deleted rows as dead tuples — autovacuum reclaims space; monitor and tune aggressively on write-heavy tables
+• pg_stat_statements: enables query-level performance monitoring — identify top N queries by total_exec_time, calls, and mean_exec_time
+• Query timeouts: set statement_timeout and lock_timeout in production — never let a slow query lock the database for minutes
+• Read replicas: offload reporting and analytics queries to replicas — never run analytics on the primary during peak hours
+• Cursor-based pagination: use WHERE id > last_id ORDER BY id LIMIT N — avoids OFFSET's O(n) cost on large tables
+• Deadlock prevention: always acquire locks in the same order across transactions — monitors pg_locks and pg_stat_activity for blocked queries
+• Bulk operations: use COPY for large inserts (100× faster than INSERT), batch updates with CTEs, avoid row-by-row processing
+
+═══════════════════════════════════════
+DATA ENGINEERING & ETL PIPELINES
+═══════════════════════════════════════
+• ETL (Extract, Transform, Load) vs ELT (Extract, Load, Transform): ELT is modern — load raw data into the warehouse, transform with SQL
+• dbt (data build tool): transforms data in the warehouse using SQL + Jinja templates — version control, testing, and documentation for SQL
+• dbt models: SELECT statements that dbt materializes as tables or views — incremental models process only new/changed rows
+• dbt tests: assert uniqueness, not-null, referential integrity, and custom SQL conditions — run in CI before data is promoted
+• Apache Airflow: orchestrate ETL workflows as DAGs — schedule, retry, monitor, and alert on pipeline failures
+• Prefect / Dagster: modern alternatives to Airflow — Python-first, better local development, native observability
+• Data lakehouse: combine the flexibility of a data lake (raw files in S3) with the structure of a warehouse — Apache Iceberg or Delta Lake
+• Parquet: columnar storage format — 10× smaller than CSV for analytics, read only the columns your query needs
+• Apache Arrow: in-memory columnar format for zero-copy data exchange between systems — Polars and DuckDB use it natively
+• DuckDB: embedded OLAP database — run analytical SQL on Parquet/CSV/JSON files in-process — replaces Pandas for many ETL tasks
+• Polars: Rust-based DataFrame library — faster than Pandas for large datasets, lazy evaluation, zero-copy Arrow backend
+• Idempotent ETL: running the same pipeline twice produces the same result — use upserts, partition overwrite, and deduplication
+• Watermarks in streaming ETL: track the latest processed event time — handle late-arriving events within a configurable window
+• Schema drift: upstream data sources change schema without notice — detect with Great Expectations or dbt schema tests
+• Great Expectations: define data quality expectations (completeness, freshness, distribution) — run as a validation gate in your pipeline
+• Data lineage: track which source tables contributed to each output — dbt generates lineage graphs automatically
+• Slowly Changing Dimensions (SCD): Type 1 (overwrite), Type 2 (add new row with validity dates), Type 3 (add new column) — choose per use case
+• Star schema: fact tables (events, transactions) surrounded by dimension tables (users, products, dates) — optimized for aggregation queries
+• Medallion architecture: Bronze (raw), Silver (cleaned), Gold (aggregated/business-ready) — data quality improves at each layer
+• Data contracts: formal agreements between producers and consumers about data schema, semantics, and SLAs — reject invalid data at ingestion
+• CDC (Change Data Capture): capture every row change in the source DB — Debezium reads PostgreSQL WAL and publishes to Kafka
+• Backfilling: reprocess historical data when pipeline logic changes — design pipelines to accept a date range parameter
+• Data catalog: document datasets, owners, lineage, and freshness — DataHub, Amundsen, or dbt docs for discoverability
+• Cost optimization in cloud warehouses: cluster/partition by frequently filtered columns, use result caching, compress cold data to cold storage
+
+═══════════════════════════════════════
+WEBGL & GPU COMPUTING
+═══════════════════════════════════════
+• WebGL 2 is the baseline for GPU-accelerated graphics in browsers — a JavaScript binding to OpenGL ES 3.0
+• WebGPU is the modern successor: compute shaders, better performance, lower driver overhead — available in Chrome 113+, Safari 18+
+• Rendering pipeline: vertex shader (position) → rasterization → fragment shader (color) — the two programmable stages you write in GLSL/WGSL
+• GLSL (OpenGL Shading Language): typed, C-like language for GPU shaders — vec2/3/4 for vectors, mat3/4 for matrices, sampler2D for textures
+• WGSL: WebGPU's shader language — Rust-inspired syntax, statically typed, no implicit conversions
+• Vertex Buffer Objects (VBOs): store geometry (positions, normals, UVs) on the GPU — upload once, draw many times
+• Uniform variables: constants passed from CPU to GPU per draw call — transformation matrices, time, resolution, light positions
+• Texture mapping: sample a 2D image in a shader using UV coordinates — gl.texImage2D uploads the image, sampler2D reads it
+• Framebuffers: render to a texture instead of the screen — enables post-processing effects (bloom, blur, depth of field)
+• Ping-pong buffers: two framebuffers, alternate between them — enables simulation steps that read and write the same data
+• GPU particle systems: store particle state in a texture, update in a fragment shader — millions of particles at 60fps
+• Compute shaders (WebGPU): general-purpose GPU programs not tied to the rendering pipeline — machine learning inference, physics, sorting
+• GPGPU with WebGL: encode data as pixel colors in a texture, process in a fragment shader, read back with readPixels — a compute shader workaround
+• requestAnimationFrame: the correct way to drive WebGL animation loops — syncs with the display refresh rate
+• Three.js abstraction: scenes, cameras, geometries, materials, lights, and renderers — don't reinvent this unless you need micro-control
+• React Three Fiber (R3F): use Three.js declaratively in React — hooks (useFrame, useLoader) and the full Three.js ecosystem
+• Instanced rendering: draw thousands of identical objects with one draw call — InstancedMesh in Three.js
+• Level of Detail (LOD): swap high/low poly meshes based on distance from camera — maintain frame rate in large scenes
+• GPU memory management: dispose of geometries, materials, and textures when no longer needed — WebGL has no GC for GPU resources
+• Performance profiling: Chrome's WebGL Inspector and Spector.js capture draw calls, shader programs, and GPU timing
+
+═══════════════════════════════════════
+API GATEWAY & SERVICE MESH PATTERNS
+═══════════════════════════════════════
+• API Gateway: single entry point for all client requests — handles auth, rate limiting, SSL termination, routing, and response transformation
+• API Gateway vs Service Mesh: gateway handles north-south traffic (client ↔ services); service mesh handles east-west (service ↔ service)
+• Kong, AWS API Gateway, Apigee, Traefik, and Nginx are common API gateway choices — choose based on hosting model and plugin ecosystem
+• JWT validation at the gateway: authenticate once at the edge, pass user identity downstream — services trust the gateway header
+• Rate limiting at the gateway: protect backend services from being overwhelmed — per-user, per-IP, and per-endpoint limits
+• Request/response transformation: modify headers, rewrite URLs, strip internal fields before returning to clients — all at the gateway layer
+• Circuit breaker at the gateway: automatically stop routing to a degraded backend — fail fast, return cached response or error
+• Service mesh: Istio, Linkerd, Consul Connect — sidecar proxies (Envoy) intercept all traffic between services without code changes
+• mTLS (mutual TLS): the service mesh enforces encrypted, authenticated traffic between all services — zero-trust networking
+• Traffic management: canary deployments, A/B testing, weighted routing — all configured in the service mesh without code changes
+• Observability via service mesh: automatic distributed traces, per-service request latency, error rates, and traffic volume
+• Retry policies in the mesh: automatically retry failed requests with jitter — configure max retries, retry-on conditions (5xx, reset)
+• Envoy proxy: the universal sidecar in most service meshes — highly extensible via Lua filters and WASM plugins
+• API versioning in the gateway: route /v1 and /v2 to different backend versions — phase out old versions with deprecation headers
+• GraphQL gateway: Apollo Router or WunderGraph as a specialized API gateway for GraphQL federation
+• gRPC gateway: translate REST/JSON to gRPC for clients that don't support gRPC — grpc-gateway protoc plugin generates the translation layer
+• BFF (Backend for Frontend): a dedicated gateway layer customized per client type (mobile, web, TV) — aggregates and shapes data for each
+• Developer portal: expose your gateway's APIs with documentation, API keys, usage analytics, and sandbox — Kong Dev Portal or Backstage
+• API analytics: track endpoint usage, error rates, and latency per consumer — essential for deprecation decisions and SLA reporting
+• Zero-downtime gateway config changes: use gateway's hot reload or canary config deployments — never restart the gateway under traffic
+
+═══════════════════════════════════════
+DESIGN PATTERNS (GoF — APPLIED MODERN)
+═══════════════════════════════════════
+• Singleton: ensure only one instance of a class — use module-level exports in Node.js (modules are cached), not class-based singletons
+• Factory Method: define an interface for creating objects, let subclasses decide — useful for creating different AI model clients
+• Abstract Factory: create families of related objects — ThemeFactory producing LightButton/DarkButton without specifying classes
+• Builder: construct complex objects step by step — especially useful for query builders, test data factories, and email composers
+• Prototype: clone an existing object — Object.assign() and structuredClone() are JavaScript's prototype pattern implementations
+• Adapter: convert one interface to another — wrap a legacy API to match the modern interface your code expects
+• Bridge: separate abstraction from implementation — define the abstraction and implementation independently, combine at runtime
+• Composite: treat individual objects and compositions uniformly — file/folder structures, UI component trees
+• Decorator: add behavior to objects dynamically without subclassing — class decorators in TypeScript, HOCs in React, middleware in Express
+• Facade: provide a simplified interface to a complex subsystem — wrap multiple service calls behind a clean domain method
+• Flyweight: share common state between many fine-grained objects — character glyphs in a text editor, game tiles in a map
+• Proxy: control access to an object — lazy initialization, caching, logging, access control, virtual proxies for remote objects
+• Chain of Responsibility: pass a request along a chain of handlers — Express middleware chain, pipeline processors
+• Command: encapsulate a request as an object — enables undo/redo, queuing, and logging of operations
+• Iterator: provide sequential access to a collection — JavaScript generators (function*) are the modern iterator pattern
+• Mediator: centralize complex communication between objects — event bus, Redux store, React context as mediators
+• Memento: capture and restore an object's state — undo history in editors, game save states
+• Observer: define a one-to-many dependency — EventEmitter, RxJS Observable, React's useEffect dependency tracking
+• State: allow an object to alter its behavior when its state changes — XState for complex state machines, finite automata
+• Strategy: define a family of algorithms, make them interchangeable — sorting strategies, payment processors, auth providers
+• Template Method: define the skeleton of an algorithm in a base class, defer steps to subclasses — test framework lifecycle hooks
+• Visitor: add operations to an object hierarchy without modifying it — AST transformers, code generators, document processors
+• Null Object: provide a default object with no-op behavior instead of null checks — eliminates null reference exceptions
+• Repository Pattern (modern): not in GoF but essential — abstract data access; use generic base repositories with type parameters
+
+═══════════════════════════════════════
+SEARCH ENGINEERING (ELASTICSEARCH & TYPESENSE)
+═══════════════════════════════════════
+• Full-text search basics: tokenization, normalization (lowercasing, stemming), inverted index — words map to the documents containing them
+• Elasticsearch: distributed search and analytics engine built on Apache Lucene — industry standard for large-scale search
+• Typesense: simpler, faster alternative to Elasticsearch for app search — great for e-commerce, docs, and developer tools
+• Meilisearch: Rust-based, developer-friendly search — great for self-hosted app search with minimal configuration
+• Index mapping: define field types (keyword, text, date, geo_point, dense_vector) explicitly — don't rely on dynamic mapping in production
+• text vs keyword: text is analyzed for full-text search; keyword is stored as-is for exact matches, sorting, and aggregations
+• Analyzers: chain of tokenizers and filters — standard, english, autocomplete (edge_ngram), and custom analyzers for domain-specific terms
+• Edge NGram tokenizer: enables prefix search (autocomplete) — index "elast" matching "elasticsearch" at query time
+• Query DSL: match (full-text), term (exact), range, bool (must/should/must_not/filter), nested, geo_distance
+• Filter vs Query context: filters are cached and don't affect relevance score — put non-full-text conditions in filter for performance
+• Relevance tuning: boost important fields (title^3 vs body^1), use function_score for popularity/recency signals, tweak BM25 parameters
+• Multi-match: search across multiple fields simultaneously — best_fields, most_fields, cross_fields, phrase modes
+• Highlighting: return snippets of matching text with <em> tags — show users why a result matched their query
+• Faceted search: aggregations (terms, range, date_histogram) for sidebar filters — build counts per category, price range, date bucket
+• Geo search: geo_point field + geo_distance query for "find nearby" features — geo_bounding_box for map viewport filtering
+• Vector search (kNN): store embeddings as dense_vector — search by semantic similarity instead of keyword matching — hybrid search combines both
+• Index aliases: point an alias to the real index — swap indexes behind the alias for zero-downtime reindexing
+• Scroll / Search After API: paginate large result sets — never use from/size beyond 10,000 hits (expensive)
+• Reindex API: migrate data to a new index with different mappings — use an alias to flip traffic after reindex completes
+• Monitoring: watch JVM heap, index rate, search latency, shard count, and disk usage — Elastic Stack observability or Prometheus exporter
+
+═══════════════════════════════════════
+MONOREPO TOOLING (TURBOREPO & NX)
+═══════════════════════════════════════
+• Monorepos collocate all packages in one repository — shared tooling, atomic commits across packages, easier dependency management
+• Turborepo: fast build system for JS/TS monorepos — task pipelines, remote caching, and incremental builds based on file hashes
+• turbo.json: define tasks (build, test, lint), their dependencies (dependsOn), and outputs for caching — the heart of Turborepo config
+• Remote caching: share build artifacts across CI machines and developer laptops — a cache hit skips the entire task run
+• Task graph: Turborepo computes which tasks can run in parallel based on package dependencies — maximizes parallelism automatically
+• Nx: more opinionated monorepo tool — generators, executors, affected commands, and enterprise-scale project graph visualization
+• nx affected: run tasks only for packages changed since the last commit — dramatically speeds up CI for large monorepos
+• Nx Cloud: remote caching and distributed task execution for Nx — split CI tasks across multiple agents automatically
+• pnpm workspaces: native package manager support for monorepos — workspace: protocol for internal dependencies, catalog: for version pinning
+• Changesets: manage versioning and changelogs for publishable packages in a monorepo — automated version bumps and CHANGELOG generation
+• Module boundaries: enforce which packages can import from which — Nx ESLint rules or path-based import restrictions
+• Shared configs: publish ESLint, TypeScript, and Prettier configs as workspace packages — single source of truth for all packages
+• Internal package publishing: use workspace: * to reference internal packages — Turborepo and pnpm resolve them without publishing to npm
+• Composite TypeScript projects: tsc --build for declaration-only builds — enables cross-package type checking without bundling
+• Code owners: CODEOWNERS file maps packages to owning teams — ensure PRs touching a package get reviewed by its owners
+• Dependency graph visualization: nx graph or pnpm list --depth Infinity to understand the package dependency tree
+• Scaffolding: Nx generators or custom Plop.js templates to scaffold new packages with consistent structure and config
+• Package boundary linting: prevent UI components importing directly from the data access layer — enforce clean architecture automatically
+• Incremental adoption: add Turborepo to an existing monorepo without restructuring — just add turbo.json and a pipeline definition
+• CI optimization: run pnpm install --frozen-lockfile, restore Turborepo cache, then turbo run build test lint in parallel
+
+═══════════════════════════════════════
+MOBILE-FIRST & RESPONSIVE DESIGN MASTERY
+═══════════════════════════════════════
+• Mobile-first means writing base styles for mobile, then using min-width media queries to enhance for larger screens
+• Tailwind breakpoints: sm (640px), md (768px), lg (1024px), xl (1280px), 2xl (1536px) — unprefixed classes are mobile, prefixed classes are larger
+• Touch targets: minimum 44×44px for any interactive element — buttons, links, form controls — never smaller on mobile
+• Tap delay: removed in modern browsers when viewport meta has width=device-width — no need for the old 300ms delay workarounds
+• Logical properties: use padding-inline, margin-block instead of left/right/top/bottom — works correctly for RTL and vertical writing modes
+• Container queries (@container): style a component based on its own container size, not the viewport — the future of truly reusable components
+• clamp() for fluid typography: clamp(1rem, 2.5vw, 1.5rem) — font grows proportionally between minimum and maximum values
+• CSS Grid for layout, Flexbox for alignment — use the right tool for each job; don't use Flexbox for 2D grid layouts
+• Avoid fixed widths — use max-width with width: 100% — elements should flex to their container, not overflow it
+• Overflow and scrolling: add overflow-x: auto to tables and code blocks — never let content cause horizontal scroll on the page
+• Mobile navigation patterns: bottom tab bar (iOS style), hamburger menu, or full-screen overlay — match platform conventions
+• thumb zone: the lower-center of a phone screen is easiest to reach — place primary actions there, secondary actions at the top
+• Safe area insets: CSS env(safe-area-inset-*) for notches and home indicators — use padding: env(safe-area-inset-bottom) on bottom elements
+• Viewport height: 100dvh (dynamic viewport height) instead of 100vh — accounts for collapsing mobile browser chrome
+• Image art direction: different crops for mobile vs desktop — use <picture> with media attributes, not just srcset
+• Font loading strategy: preload WOFF2, use font-display: optional for non-critical — never let font load block text render
+• Touch gestures: swipe-to-dismiss, pull-to-refresh, pinch-to-zoom — use pointer events, not touch events (works on styluses too)
+• Orientation changes: handle resize event with debounce, recalculate layouts — test both portrait and landscape explicitly
+• Input types on mobile: type="email", "tel", "number", "date" — triggers the correct native keyboard on iOS and Android
+• Reduced motion: @media (prefers-reduced-motion: reduce) — disable or reduce animations for users with vestibular disorders
+• Dark mode: @media (prefers-color-scheme: dark) and CSS custom properties — switch entire theme by changing :root variables
+• Print styles: @media print — hide navigation, expand links with content: attr(href), break-inside: avoid on cards and tables
+• Testing: Chrome DevTools device simulation, BrowserStack for real devices, Lighthouse mobile audit — test on a real low-end Android phone
+• Skeleton loading: show a gray pulsing placeholder matching the content shape — better perceived performance than a spinner
+• Haptic feedback on mobile web: navigator.vibrate([50]) for confirmations — use sparingly, respect user settings
+
+═══════════════════════════════════════
+CMS & HEADLESS ARCHITECTURE
+═══════════════════════════════════════
+• Headless CMS: decouples content management (CMS) from content delivery (frontend) — content is fetched via API, not rendered by the CMS
+• Sanity: flexible, real-time CMS with a JavaScript-configurable schema (sanity.config.ts) — GROQ query language, real-time collaboration
+• Contentful: enterprise headless CMS — content modeling UI, REST and GraphQL APIs, webhooks, environments, and roles
+• Strapi: self-hosted open-source headless CMS — Node.js based, REST and GraphQL, plugins for auth, media, and more
+• Payload CMS: TypeScript-first, self-hosted CMS — config as code, access control, local API for server-side data access
+• GROQ (Graph-Relational Object Queries): Sanity's query language — powerful filtering, joining, and projections in a JSON-like syntax
+• Content modeling: define content types (Article, Author, Product) with fields and relationships — the schema is the CMS contract
+• Preview mode / draft mode: fetch unpublished content in a preview environment — Next.js draft mode, Nuxt preview mode
+• Webhooks from CMS: trigger ISR (Incremental Static Regeneration) revalidation when content changes — on-demand revalidation
+• Image optimization from CMS: Sanity and Contentful serve images with transformation URLs — resize, crop, format, and quality on-the-fly
+• Content localization: store translations in the CMS — field-level or entry-level locales, fallback to default language
+• Structured content: portable text (Sanity) or rich text (Contentful) — serialize to HTML, React, or any target format
+• Content as code: store CMS config in version control — Sanity's schema files, Payload's config — review and deploy like code
+• Environments: staging/production content environments in Contentful and Sanity — test content changes before publishing
+• Access control: field-level permissions, role-based access — editors can't publish, authors can draft, admins can everything
+• Real-time editing with Sanity: visual editing overlays where editors can click any text on the page to open the CMS editor
+• Stale content strategy: CDN caching with webhook-triggered purge — pages stay fast; updates propagate in seconds
+• Digital asset management (DAM): media libraries in CMS — tags, folders, alt text, focal point cropping for responsive images
+• CMS migration: export content as JSON/CSV, transform, import via CMS API — write idempotent import scripts with upserts
+• When not to use a CMS: simple marketing sites (plain markdown files), highly dynamic content (use a database instead)
+
+═══════════════════════════════════════
+DEVELOPER TOOLING & LOCAL DX
+═══════════════════════════════════════
+• A great DX starts with: clone → install → run in under 5 minutes — document every non-obvious step in the README
+• Use .nvmrc or .node-version to pin the Node.js version — prevents "works on my machine" issues across team members
+• devcontainers (.devcontainer/devcontainer.json): define a reproducible dev environment in a Docker container — VS Code and GitHub Codespaces support it
+• mise-en-place (mise): polyglot version manager for Node, Python, Ruby, Go, Rust — replaces nvm, pyenv, rbenv with one tool
+• direnv (.envrc): auto-load environment variables when entering a project directory — safe because you must allow each .envrc manually
+• Lefthook: fast, language-agnostic Git hooks manager — run lint/format/test on pre-commit without Husky's npm overhead
+• commitlint: enforce Conventional Commits format on every git commit — consistent history enables automated changelog generation
+• Conventional Changelog / Release-it: automate changelog generation and version bumps from commit history
+• VSCode workspace settings (.vscode/settings.json): configure formatOnSave, defaultFormatter, and extension recommendations for the project
+• .editorconfig: cross-editor whitespace and encoding settings — indent style, trailing newlines, charset — respected by most editors
+• Makefile as a task runner: `make dev`, `make test`, `make migrate` — self-documenting with tab-completion, works on any Unix system
+• mise tasks or package.json scripts as alternatives to Makefiles for Node.js projects
+• Local HTTPS: use mkcert to create a locally-trusted SSL certificate — test HTTPS features without a cloud environment
+• Ngrok / Cloudflare Tunnel: expose localhost to the internet — test webhooks, OAuth flows, and mobile devices on your local server
+• Storybook: develop and test UI components in isolation — visual regression testing with Chromatic, accessibility testing built in
+• Mock Service Worker (MSW): intercept HTTP requests in tests and the browser — mock APIs without changing application code
+• Docker Compose for local services: run PostgreSQL, Redis, Mailhog, and MinIO locally — `docker compose up -d` starts everything
+• Makefile shortcuts: define `make seed` to seed the database, `make reset` to drop and recreate — document the full dev workflow
+• Health check scripts: a script that verifies all services are up before running tests — retry with backoff, fail fast with a clear error
+• .gitattributes: normalize line endings (text=auto), mark binary files, configure diffs for specific file types
+
+═══════════════════════════════════════
+AI SAFETY, ETHICS & RESPONSIBLE AI IN CODE
+═══════════════════════════════════════
+• PII (Personally Identifiable Information): never log names, emails, IPs, or health data in plaintext — mask or hash before logging
+• Differential privacy: add calibrated noise to aggregate statistics — users can't be identified from query results even with many queries
+• Model output filtering: strip API responses that contain PII before storing or displaying — regex + named entity recognition for safety
+• Bias detection: test AI features across demographic groups — measure outcome disparities, document findings, iterate on training data
+• Explainability (XAI): for decisions affecting users (credit, hiring, medical), document what features the model uses and why
+• GDPR compliance for AI: right to explanation, right to erasure — don't train on user data without consent, honor deletion requests
+• AI content moderation: use OpenAI Moderation API or Perspective API as a pre-filter before displaying user-generated AI content
+• Hallucination mitigation: add retrieval (RAG) to ground AI responses in factual documents — always cite sources when accuracy matters
+• Adversarial inputs / prompt injection: validate and sanitize user input before including in prompts — never trust user-controlled prompt fragments
+• Jailbreak resistance: add a system prompt that reinforces behavioral constraints — detect and reject responses that violate them
+• Output validation: verify AI-generated code compiles and passes tests before accepting it — never trust AI code without checks
+• Rate limiting AI features: protect against abuse and cost overruns — per-user token quotas, daily caps, anomaly detection
+• Model versioning: document which model version powers each feature — plan for model deprecation and migration timelines
+• Fallback behavior: if the AI call fails or returns unsafe content, show a helpful error — never silently fail or show raw API errors to users
+• Transparency: tell users when content is AI-generated — disclosure builds trust and sets correct expectations
+• Environmental impact: prefer smaller, efficient models when accuracy requirements are met — a 7B model for classification vs a 70B model
+• Human review for high-stakes outputs: medical, legal, financial AI outputs should have a human-in-the-loop review step before action
+• Audit trails: log every AI decision that affects users — who asked what, what the model returned, what action was taken
+• AI usage policies: define acceptable use cases, prohibit weaponization — enforce via API key scoping and usage monitoring
+• Inclusive AI: test assistive AI features with users who have disabilities — screen readers, motor impairments, and cognitive differences
+
+═══════════════════════════════════════
+CODE DOCUMENTATION & KNOWLEDGE MANAGEMENT
+═══════════════════════════════════════
+• Documentation types (Diátaxis framework): Tutorials (learning), How-To Guides (problem-solving), Reference (information), Explanation (understanding)
+• README must include: what the project is, how to install it, how to run it, how to test it, and how to contribute — nothing more, nothing less to start
+• Architecture Decision Records (ADRs): document significant technical decisions with context, options considered, decision made, and consequences
+• ADR template: Title, Status (proposed/accepted/deprecated), Context, Decision, Consequences — store as Markdown in docs/adr/
+• Living documentation: documentation that is generated from or verified against the actual code — OpenAPI specs, dbt docs, TypeDoc, Storybook
+• JSDoc / TSDoc: annotate public functions with @param, @returns, @throws, @example — TypeDoc generates HTML docs from these
+• Inline examples in docs: show real, runnable code snippets — test them in CI to prevent docs from going stale
+• CHANGELOG.md: human-readable history of changes per version — generated from Conventional Commits with Conventional Changelog
+• Runbooks: step-by-step operational procedures for common tasks (deploy, rollback, DB migration, incident response)
+• Postmortem template: summary, timeline, contributing factors, impact, action items — blameless, focused on system improvement
+• Decision logs: short notes on why a library was chosen over alternatives — invaluable context for future maintainers
+• Onboarding docs: a document specifically for new team members — the path from zero to first PR in a day
+• API reference with examples: every endpoint documented with request/response examples, error codes, and rate limits
+• Comment rot: comments that contradict the code are worse than no comments — delete stale comments immediately
+• Knowledge management tools: Notion, Confluence, Linear docs, or a /docs folder in the repo — pick one, be consistent
+• Video documentation: Loom recordings for complex architectural walkthroughs — faster to consume than long written docs
+• Search-first documentation: users search before reading linearly — use descriptive headings, bold key terms, add a search index
+• Documentation review in PRs: require docs updates alongside code changes — a "docs" checkbox in the PR template
+• Versioned docs: maintain docs for each supported version — tools: Docusaurus versioning, VitePress, Starlight
+• Glossary: define domain-specific terms in a shared glossary — eliminates confusion when the same word means different things to different teams
+• Diagram as code: Mermaid, PlantUML, Structurizr — version-controlled, diffable diagrams alongside the code they describe
+• C4 model: Context → Container → Component → Code — four levels of architectural diagrams for different audiences
+• Self-documenting code: meaningful names, short functions, and consistent patterns reduce the need for comments — the best comment is no comment
+• Documentation site generators: Docusaurus (React-based), VitePress (Vue-based), Starlight (Astro-based) — pick based on your stack
+• Broken link detection: run a link checker in CI against your docs site — dead links erode user trust in documentation
+
+═══════════════════════════════════════
+BROWSER EXTENSION DEVELOPMENT
+═══════════════════════════════════════
+• Browser extensions use the WebExtensions API — standardized across Chrome, Firefox, Edge, and Safari (with minor differences)
+• manifest.json v3: the current standard — service workers replace background pages, declarativeNetRequest replaces webRequest blocking
+• Extension components: background service worker (persistent logic), content scripts (injected into pages), popup (action UI), options page
+• Content scripts: injected into web pages — access DOM but run in an isolated world — communicate with background via messaging
+• chrome.runtime.sendMessage / onMessage: the messaging bus between components — always handle errors and use callbacks or promises
+• Storage: chrome.storage.local (persistent, per-device), chrome.storage.sync (synced across devices, 100KB limit), sessionStorage (cleared on browser restart)
+• Permissions: declare only what you need — broad host permissions (<all_urls>) trigger extra review in the Chrome Web Store
+• Declarative Net Request (DNR): MV3's approach to network request modification — declare rules in a JSON file, no JS access to requests
+• content_security_policy in MV3: stricter defaults — no eval, no inline scripts, no remote code execution — all logic must be bundled
+• Hot reload in development: chrome-extension-tools (CRXJS Vite plugin) enables HMR for extension development without manual reloads
+• Cross-browser compatibility: webextension-polyfill normalizes the callback-based Chrome API to Promises — write once, run everywhere
+• Popup UI: React or vanilla JS — keep bundle small; users open popups frequently and expect instant load
+• Context menus: chrome.contextMenus.create — add right-click menu items that appear on text selection, images, or all pages
+• Tab manipulation: chrome.tabs API — query tabs, create, update, remove, and message individual tabs
+• Background service worker limitations: no DOM access, terminates after 30s of inactivity — use alarms for periodic tasks
+• Extension messaging security: validate message senders (event.sender.id) — malicious pages can send messages to your extension
+• Publishing: Chrome Web Store, Firefox Add-ons, Edge Add-ons — different review timelines; Chrome is slowest (days to weeks)
+• Privacy policy: required for any extension that collects or transmits user data — clearly document what you collect and why
+• Auto-update: extensions update automatically — use versioning in manifest.json and handle storage schema migrations gracefully
+• Testing: Playwright or Puppeteer with launch args to load an unpacked extension — test content scripts in real browser contexts
+
+═══════════════════════════════════════
+SERVERLESS DEEP DIVE (AWS LAMBDA / CLOUDFLARE WORKERS)
+═══════════════════════════════════════
+• Serverless: run code without managing servers — pay per invocation, scale to zero, zero patching — not free from ops concerns
+• AWS Lambda: event-driven functions — triggered by API Gateway, SQS, S3, EventBridge, DynamoDB Streams, and more
+• Lambda cold starts: the first invocation initializes the runtime container — Node.js cold starts are ~100ms; keep functions warm with provisioned concurrency
+• Lambda deployment package: <50MB zipped, <250MB unzipped — use Lambda Layers for shared dependencies (AWS SDK, node_modules)
+• Lambda Powertools (TypeScript): structured logging, tracing (X-Ray), metrics (EMF), idempotency, and feature flags — use in every Lambda
+• IAM roles for Lambda: least-privilege — grant only the specific DynamoDB tables, S3 buckets, and services this function needs
+• Lambda concurrency: reserved concurrency limits parallel executions for a function — burst concurrency starts at 3000 then +500/minute
+• Lambda timeouts: max 15 minutes — for long tasks, use Step Functions or SQS + Lambda with visibility timeout
+• AWS API Gateway vs Function URLs: Function URLs are simpler for single-function APIs; API Gateway adds auth, rate limiting, and routing
+• DynamoDB + Lambda: the serverless data stack — on-demand pricing, auto-scaling, single-digit millisecond reads — design with single-table design
+• SQS + Lambda: decouple workloads — Lambda polls the queue, processes in batches, reports failures back per message ID
+• EventBridge: serverless event bus — route events from AWS services, SaaS, and your own code to Lambda functions with rule-based filtering
+• Step Functions: orchestrate multi-step workflows visually — parallel states, catch/retry, wait for human approval, Express vs Standard workflows
+• Cloudflare Workers: JavaScript/WASM functions at the edge, <1ms cold start, 200+ locations globally — built on the V8 isolate model
+• Workers KV: globally replicated key-value store — eventual consistency, best for configuration, feature flags, and caching
+• Durable Objects: stateful serverless — a single instance with strong consistency — use for collaborative sessions, game state, rate limiting
+• Workers R2: S3-compatible object storage with zero egress fees — store and serve large files from the edge
+• Wrangler CLI: local development and deployment for Cloudflare Workers — `wrangler dev` runs Workers locally with KV and R2 bindings
+• Vercel Edge Functions: Next.js middleware and Edge API routes — run on Cloudflare's infrastructure, instant cold starts
+• Cold start optimization for Lambda: reduce bundle size, initialize clients outside the handler, use ES modules with tree-shaking
+• Observability for serverless: AWS X-Ray + CloudWatch Logs Insights — query structured logs across all Lambda invocations in seconds
+
+═══════════════════════════════════════
+REAL-TIME ANALYTICS & STREAMING DATA
+═══════════════════════════════════════
+• Real-time analytics: process and query data within seconds of ingestion — contrasts with batch analytics which runs hours later
+• ClickHouse: columnar OLAP database with blazing INSERT rates and sub-second aggregation queries — open source, Kafka-native
+• Apache Flink: stateful stream processing — windowed aggregations, joins across streams, exactly-once semantics, event-time processing
+• Kafka Streams: stream processing library within Kafka — no separate cluster needed, stateful with RocksDB, part of the Kafka ecosystem
+• KSQL / ksqlDB: SQL interface for Kafka Streams — write streaming queries in SQL, materialize as Kafka topics or tables
+• TimescaleDB: PostgreSQL extension for time-series data — automatic partitioning by time, continuous aggregates, compression
+• InfluxDB: purpose-built time-series database — Flux query language, downsampling policies, Telegraf for metric collection
+• Apache Druid: real-time OLAP — sub-second queries on event-level data, Kafka ingestion, approximate count-distinct
+• Event time vs wall clock: always use event time for aggregations — late arrivals handled with watermarks and allowed lateness
+• Tumbling windows: fixed, non-overlapping time windows (1-minute buckets) — COUNT per minute, SUM per hour
+• Sliding windows: overlapping windows — "sum of the last 5 minutes" updated every 30 seconds — higher compute cost
+• Session windows: activity-based windows — group events from the same user until a gap of N seconds — variable length
+• Exactly-once in streaming: difficult to achieve — Kafka + Flink transactional sink, idempotent sinks, deduplication
+• Lambda architecture: batch layer (Hadoop/Spark) + speed layer (Flink) + serving layer (Druid/Cassandra) — complex, being replaced by Kappa
+• Kappa architecture: single streaming system handles both real-time and historical reprocessing — simpler than Lambda
+• Hot/warm/cold storage tiers: hot (ClickHouse/Druid, 7 days), warm (ClickHouse compressed, 90 days), cold (Parquet on S3, forever)
+• Backpressure in streaming: downstream system signals it can't keep up — Flink's flow control, Kafka consumer lag as the signal
+• Checkpointing: streaming jobs save state snapshots periodically — recover from failures by restoring the latest checkpoint
+• Watermarks: progress markers in a stream — Flink advances the watermark as events arrive, triggers late-arrival handling
+• Dashboarding real-time data: Grafana with InfluxDB or ClickHouse datasource — auto-refresh dashboards, alerting rules, Loki for logs
+• Cost control: aggregate at the edge before sending to ClickHouse — pre-aggregate in Kafka Streams, store summaries not raw events
+• Schema registry with streaming: every Kafka topic's schema registered — consumers auto-discover and deserialize without coordination
+• Anomaly detection in streams: statistical baselines (mean ± 3σ), ML models (Isolation Forest), rule-based alerts — alert with context not just threshold
+
+═══════════════════════════════════════
+COMPONENT-DRIVEN DEVELOPMENT (STORYBOOK)
+═══════════════════════════════════════
+• Component-driven development: build UI from the bottom up — atoms → molecules → organisms → templates → pages (Atomic Design)
+• Storybook: the industry-standard tool for developing, documenting, and testing UI components in isolation
+• Stories: a story renders a component in a specific state — one file can have many stories (Default, Loading, Error, Empty, WithData)
+• Component Story Format (CSF): export a default meta object and named story exports — works with all major frameworks
+• Args: pass data to stories as props — storybook controls let you change args interactively without editing code
+• ArgTypes: metadata about component props — type, default, description, and control type — generated from TypeScript types automatically
+• Storybook addons: Actions (event logging), Controls (prop tweaking), Viewport (responsive), A11y (accessibility), Interactions (play functions)
+• Play functions: simulate user interactions in a story — click, type, wait — test component behavior in Storybook's browser
+• @storybook/testing-library: run play functions as Vitest/Jest tests — same interaction logic in Storybook and your test suite
+• Chromatic: visual regression testing service — captures screenshots of every story, flags visual diffs in PRs
+• Storybook Docs: auto-generate component documentation from JSDoc comments and TypeScript types — MDX for custom narrative docs
+• Decorators: wrap stories with context providers (theme, auth, i18n) — define globally or per-story
+• Parameters: configure addons and global story settings — backgrounds, viewport defaults, a11y rules
+• Mock providers: wrap stories with mock API clients (MSW), router (MemoryRouter), and store — stories work offline
+• Storybook as a design system: publish Storybook as a static site — designers and PMs browse components and states without running the app
+• Composing Storybooks: reference stories from multiple team repos in one Storybook — Storybook Composition for monorepos
+• storybook-addon-pseudo-states: render components in :hover, :focus, :active, :disabled states — test without mouse interaction
+• Component contract testing: a story's args document the component's API contract — changes that break stories break the API
+• Module mocking: mock modules within stories (@storybook/nextjs auto-mocks Next.js router and Image) — no real network calls
+• Continuous integration: run storybook build and chromatic in CI — block merges if visual regressions are detected
+• Design token integration: import CSS custom properties or JS tokens into Storybook — show components with the live design system values
+• Accessibility in Storybook: @storybook/addon-a11y runs axe-core — flag WCAG violations on every story automatically
+• Story hierarchy: organize stories in folders matching your component hierarchy — use the title field: 'Forms/Button' groups them in the sidebar
+• On-demand revalidation from Storybook: connect Storybook to your CMS — editors preview content in real component stories
 `;
 
 
