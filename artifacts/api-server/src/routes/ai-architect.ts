@@ -100,7 +100,7 @@ Provide a COMPLETE system design:
           { role: "system", content: ARCHITECT_SYSTEM },
           { role: "user", content: prompt },
         ],
-        max_completion_tokens: 60000,
+        max_completion_tokens: 100000,
       });
 
       for await (const chunk of stream) {
@@ -119,7 +119,7 @@ Provide a COMPLETE system design:
           { role: "system", content: ARCHITECT_SYSTEM },
           { role: "user", content: prompt },
         ],
-        max_completion_tokens: 60000,
+        max_completion_tokens: 100000,
       });
       res.json({ design: result.choices[0]?.message?.content ?? "" });
     } catch (err: any) {
@@ -163,7 +163,7 @@ Include all relevant components, connections, data flows, and labels.
 After the diagram, add a legend explaining all symbols and abbreviations used.`,
         },
       ],
-      max_completion_tokens: 60000,
+      max_completion_tokens: 100000,
     });
     res.json({ diagram: result.choices[0]?.message?.content ?? "" });
   } catch (err: any) {
@@ -231,7 +231,7 @@ Recommend a COMPLETE tech stack with rationale:
 (First 5 commands to bootstrap this stack)`,
         },
       ],
-      max_completion_tokens: 60000,
+      max_completion_tokens: 100000,
     });
     res.json({ recommendation: result.choices[0]?.message?.content ?? "" });
   } catch (err: any) {
@@ -290,7 +290,7 @@ Provide a complete API design:
 (Key parts of the OpenAPI 3.1 specification in YAML)`,
         },
       ],
-      max_completion_tokens: 60000,
+      max_completion_tokens: 100000,
     });
     res.json({ apiDesign: result.choices[0]?.message?.content ?? "" });
   } catch (err: any) {
@@ -352,7 +352,7 @@ Design a complete, normalized schema:
 (Check constraints, triggers, business rules enforced at DB level)`,
         },
       ],
-      max_completion_tokens: 60000,
+      max_completion_tokens: 100000,
     });
     res.json({ schema: result.choices[0]?.message?.content ?? "" });
   } catch (err: any) {
@@ -412,7 +412,7 @@ Phase 3 (100K → 1M): [changes needed]
 (How to validate each scale milestone)`,
         },
       ],
-      max_completion_tokens: 60000,
+      max_completion_tokens: 100000,
     });
     res.json({ analysis: result.choices[0]?.message?.content ?? "" });
   } catch (err: any) {
@@ -474,7 +474,7 @@ Provide a microservices decomposition plan:
 (Distributed monolith, chatty services, shared databases)`,
         },
       ],
-      max_completion_tokens: 60000,
+      max_completion_tokens: 100000,
     });
     res.json({ decomposition: result.choices[0]?.message?.content ?? "" });
   } catch (err: any) {
