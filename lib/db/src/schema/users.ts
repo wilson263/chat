@@ -9,9 +9,10 @@ export const usersTable = pgTable("users", {
   passwordHash: text("password_hash").notNull(),
   isAdmin: boolean("is_admin").notNull().default(false),
   avatarUrl: text("avatar_url"),
+  status: text("status").notNull().default("pending"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const insertUserSchema = createInsertSchema(usersTable).omit({ id: true, createdAt: true, isAdmin: true, avatarUrl: true });
+export const insertUserSchema = createInsertSchema(usersTable).omit({ id: true, createdAt: true, isAdmin: true, avatarUrl: true, status: true });
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof usersTable.$inferSelect;
