@@ -85,9 +85,18 @@ function Router() {
   );
 }
 
+const AUTH_ROUTES = ["/login", "/signup"];
+
 function App() {
-  const [introComplete, setIntroComplete] = useState(false);
-  const handleIntroComplete = useCallback(() => setIntroComplete(true), []);
+  const currentPath = typeof window !== "undefined" ? window.location.pathname : "";
+  const isAuthRoute = AUTH_ROUTES.some(r => currentPath === r || currentPath.endsWith(r));
+  const alreadySeen = typeof window !== "undefined" && !!localStorage.getItem("zorvix_intro_seen");
+
+  const [introComplete, setIntroComplete] = useState(isAuthRoute || alreadySeen);
+  const handleIntroComplete = useCallback(() => {
+    localStorage.setItem("zorvix_intro_seen", "1");
+    setIntroComplete(true);
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
