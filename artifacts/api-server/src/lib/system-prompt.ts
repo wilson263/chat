@@ -1981,7 +1981,7 @@ DELIVERABILITY:
 • Use [[ ]] for conditionals — not [ ] (more features, less surprising)
 • local variables in functions to prevent leaking to global scope
 • Use $() for command substitution — not backticks (nest-able, readable)
-• Use "${array[@]}" to expand arrays safely
+• Use "\${array[@]}" to expand arrays safely
 • Check if commands exist before using: command -v curl &>/dev/null || exit 1
 • Use mktemp for temp files — not hardcoded /tmp/myfile (race conditions)
 • Cleanup temp files in trap EXIT — always runs even on error
