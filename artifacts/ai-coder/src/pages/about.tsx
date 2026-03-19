@@ -16,7 +16,8 @@ import {
   Network, Server, Activity, ShieldCheck, FlaskConical, Workflow,
   DatabaseZap, CloudUpload, TestTube, Gauge, BookOpen, Lightbulb,
   CreditCard, Container, Sigma, Layers3, Globe2, Braces, MousePointer2,
-  SquareCode, Repeat2, SlidersHorizontal,
+  SquareCode, Repeat2, SlidersHorizontal, Mail, Video, ToggleLeft,
+  HardDrive, PenTool, GitMerge, Box, MapPin,
 } from 'lucide-react';
 import { OPENROUTER_MODELS } from '@/components/model-selector';
 
@@ -181,7 +182,52 @@ export default function AboutPage() {
     { icon: CreditCard, title: 'Payments & Billing Systems', desc: 'Stripe Payment Intents, webhook verification, subscription states, dunning management, usage-based billing, Stripe Tax, Stripe Connect for marketplaces, and chargeback defense.', color: 'bg-green-500/10 text-green-400', badge: 'NEW' },
   ];
 
-  const totalFeatures = playgroundFeatures.length + workspaceFeatures.length + chatFeatures.length + powerFeatures.length + promptGeneratorFeatures.length + exploreFeatures.length + aiIntelligenceFeatures.length + aiUpgradeV2Features.length;
+  const aiUpgradeV3Features = [
+    { icon: Code2, title: 'Python Backend (FastAPI & Django)', desc: 'FastAPI async-first APIs, Pydantic v2, SQLAlchemy 2.0 async sessions, Alembic migrations, Celery tasks, Django ORM optimization, and httpx for async HTTP.', color: 'bg-blue-500/10 text-blue-400', badge: 'NEW' },
+    { icon: Zap, title: 'Go (Golang) Mastery', desc: 'Goroutines, channels, context propagation, errors.Is/As, sync primitives, table-driven tests, pprof profiling, graceful shutdown, and Go generics.', color: 'bg-cyan-500/10 text-cyan-400', badge: 'NEW' },
+    { icon: Box, title: 'Rust Fundamentals', desc: 'Ownership model, borrowing rules, lifetimes, Result/Option ergonomics, traits, Tokio async runtime, Axum web framework, Serde, and sqlx.', color: 'bg-orange-500/10 text-orange-400', badge: 'NEW' },
+    { icon: Layers, title: 'Vue 3 & Nuxt Mastery', desc: 'Composition API with <script setup>, Pinia stores, useAsyncData, useFetch, Nuxt modules, auto-imports, Nitro server engine, and Island architecture.', color: 'bg-emerald-500/10 text-emerald-400', badge: 'NEW' },
+    { icon: Star, title: 'Astro Framework', desc: 'Islands architecture, content collections with Zod schemas, client: hydration directives, middleware, API routes, View Transitions, and Astro DB.', color: 'bg-violet-500/10 text-violet-400', badge: 'NEW' },
+    { icon: Globe, title: 'Browser APIs Deep Dive', desc: 'Intersection Observer, ResizeObserver, Web Animations API, Pointer Events, Clipboard API, File System Access, IndexedDB, Web Crypto, and BroadcastChannel.', color: 'bg-sky-500/10 text-sky-400', badge: 'NEW' },
+    { icon: Search, title: 'SEO & Core Web Vitals', desc: 'LCP/INP/CLS ranking signals, JSON-LD structured data, hreflang, canonical URLs, robots.txt, XML sitemaps, E-E-A-T, and mobile-first indexing.', color: 'bg-yellow-500/10 text-yellow-400', badge: 'NEW' },
+    { icon: Palette, title: 'Design Systems', desc: 'Design tokens, semantic tokens, Radix UI primitives, Storybook + Chromatic, CVA (Class Variance Authority), compound components, and ARIA pattern library.', color: 'bg-pink-500/10 text-pink-400', badge: 'NEW' },
+    { icon: HardDrive, title: 'Cloud Storage & File Handling', desc: 'Pre-signed S3 URLs for direct uploads, multipart upload, file type validation via magic bytes, Sharp image processing, ffmpeg, and CDN lifecycle policies.', color: 'bg-teal-500/10 text-teal-400', badge: 'NEW' },
+    { icon: BookOpen, title: 'Technical Writing & Docs', desc: 'ADRs, Diátaxis framework (Tutorial/How-To/Reference/Explanation), TSDoc, Runbooks, Mermaid diagrams, Docusaurus, and Vale linting for prose.', color: 'bg-amber-500/10 text-amber-400', badge: 'NEW' },
+    { icon: Cpu, title: 'Memory Management', desc: 'WeakMap/WeakRef/FinalizationRegistry, V8 JIT shape optimization, detached DOM leak detection, heap snapshots, structuredClone, and object pooling patterns.', color: 'bg-rose-500/10 text-rose-400', badge: 'NEW' },
+    { icon: PenTool, title: 'Developer Experience (DX)', desc: 'README-driven development, zero-config defaults, Husky + lint-staged, commitlint, devcontainers, path aliases, Prettier/ESLint integration, and update notifiers.', color: 'bg-indigo-500/10 text-indigo-400', badge: 'NEW' },
+  ];
+
+  const aiUpgradeV4Features = [
+    { icon: Braces, title: 'tRPC — Type-Safe APIs', desc: 'End-to-end typed procedures, Zod input/output validation, protected procedures, React Query integration, infinite queries, optimistic updates, and server-side callers.', color: 'bg-primary/10 text-primary', badge: 'NEW' },
+    { icon: Monitor, title: 'React Native & Expo', desc: 'Expo Router, React Navigation, Reanimated 60fps animations, FlashList, EAS Build, OTA updates via expo-updates, Gesture Handler, and MMKV for fast storage.', color: 'bg-blue-500/10 text-blue-400', badge: 'NEW' },
+    { icon: ToggleLeft, title: 'Feature Flags & Rollouts', desc: 'Gradual rollouts (1%→100%), kill switches, user targeting by segment/plan/region, LaunchDarkly/GrowthBook, server-side evaluation, and flag debt prevention.', color: 'bg-emerald-500/10 text-emerald-400', badge: 'NEW' },
+    { icon: BarChart, title: 'Analytics & Experimentation', desc: 'Privacy-first event tracking, GDPR/CCPA compliance, funnel analysis, cohort retention, A/B testing with statistical significance, PostHog session replay, and UTM attribution.', color: 'bg-violet-500/10 text-violet-400', badge: 'NEW' },
+    { icon: Database, title: 'Caching Strategies', desc: 'Cache-aside, write-through, stale-while-revalidate, Redis data structures (Hash/Set/Sorted Set/Stream), cache stampede prevention, CDN cache control, and LRU/LFU eviction.', color: 'bg-cyan-500/10 text-cyan-400', badge: 'NEW' },
+    { icon: ShieldCheck, title: 'Rate Limiting & Abuse Prevention', desc: 'Token bucket and sliding window algorithms, Redis-based distributed limiting, per-IP and per-user quotas, 429 Retry-After headers, bot detection, and DDoS defense.', color: 'bg-red-500/10 text-red-400', badge: 'NEW' },
+    { icon: Activity, title: 'Logging Best Practices', desc: 'Structured JSON logs with correlation IDs, pino/Winston/zap, log levels, PII scrubbing, centralized shipping to Datadog/ELK, log sampling, and child loggers.', color: 'bg-yellow-500/10 text-yellow-400', badge: 'NEW' },
+    { icon: Video, title: 'WebRTC & Peer-to-Peer', desc: 'ICE/STUN/TURN negotiation, SDP offer/answer, perfect negotiation pattern, SFU (Mediasoup/LiveKit), simulcast, RTCDataChannel, screen sharing, and MediaRecorder.', color: 'bg-pink-500/10 text-pink-400', badge: 'NEW' },
+    { icon: Brain, title: 'ML Integration Patterns', desc: 'ONNX Runtime, TensorFlow.js, HuggingFace Inference API, embeddings + cosine similarity, pgvector, re-ranking with cross-encoders, structured output, and AI guardrails.', color: 'bg-amber-500/10 text-amber-400', badge: 'NEW' },
+    { icon: Users, title: 'Multi-Tenancy Architecture', desc: 'Row-level isolation, Postgres RLS policies, tenant context middleware, tenant-aware caching, subdomain routing, custom domains, and per-tenant usage metering.', color: 'bg-teal-500/10 text-teal-400', badge: 'NEW' },
+    { icon: GitMerge, title: 'Real-Time Collaboration', desc: 'Yjs CRDT (YText/YArray/YMap), y-websocket/y-indexeddb, presence awareness, collaborative cursors, OT vs CRDT tradeoffs, and optimistic concurrency.', color: 'bg-orange-500/10 text-orange-400', badge: 'NEW' },
+    { icon: Terminal, title: 'CLI Tools & Desktop Apps', desc: 'Commander.js + Inquirer, Chalk + Ora, exit codes, shell completions, Tauri (Rust + WebView), Electron IPC, code signing for Windows/macOS, and auto updater.', color: 'bg-sky-500/10 text-sky-400', badge: 'NEW' },
+  ];
+
+  const aiUpgradeV5Features = [
+    { icon: Mail, title: 'Email Systems & Deliverability', desc: 'SPF/DKIM/DMARC setup, IP warming, bounce/unsubscribe handling, BullMQ email queuing, React Email/MJML, suppression lists, and List-Unsubscribe headers.', color: 'bg-rose-500/10 text-rose-400', badge: 'NEW' },
+    { icon: Server, title: 'Infrastructure as Code (IaC)', desc: 'Terraform plan/apply/state, remote state with S3+DynamoDB, modules, Terragrunt for DRY configs, Pulumi (TypeScript), AWS CDK, Policy as Code with OPA.', color: 'bg-blue-500/10 text-blue-400', badge: 'NEW' },
+    { icon: DatabaseZap, title: 'Advanced SQL Patterns', desc: 'Recursive CTEs, window functions (ROW_NUMBER, LAG, LEAD), LATERAL JOIN, DISTINCT ON, UPSERT, partial indexes, pg_stat_statements, materialized views, and advisory locks.', color: 'bg-emerald-500/10 text-emerald-400', badge: 'NEW' },
+    { icon: Database, title: 'NoSQL & Document Databases', desc: 'MongoDB aggregation pipeline, $lookup, change streams, DynamoDB single-table design, GSIs, conditional writes, TTL, and Redis as primary database with Sorted Sets/Streams.', color: 'bg-orange-500/10 text-orange-400', badge: 'NEW' },
+    { icon: Network, title: 'Networking Fundamentals', desc: 'TCP vs UDP, HTTP/2 multiplexing, HTTP/3 on QUIC, TLS 1.3 handshake, DNS resolution, CDN Anycast, load balancer algorithms, gRPC over HTTP/2, and service mesh.', color: 'bg-violet-500/10 text-violet-400', badge: 'NEW' },
+    { icon: GitCommit, title: 'API Versioning & Evolution', desc: 'Breaking vs non-breaking changes, Sunset/Deprecation headers, URL vs header versioning, Expand/Contract pattern, consumer-driven contracts with Pact, and gateway routing.', color: 'bg-cyan-500/10 text-cyan-400', badge: 'NEW' },
+    { icon: Package, title: 'Frontend Build Optimization', desc: 'Bundle analysis, tree shaking, code splitting, Brotli compression, critical CSS inlining, content-hash filenames, CDN deployment, Lighthouse CI, and build caching.', color: 'bg-yellow-500/10 text-yellow-400', badge: 'NEW' },
+    { icon: Workflow, title: 'Queue-Based Architecture', desc: 'BullMQ lifecycle (waiting/active/completed/failed), exponential backoff with jitter, DLQ, job idempotency, parent-child flows, Kafka consumer groups, and at-least-once delivery.', color: 'bg-teal-500/10 text-teal-400', badge: 'NEW' },
+    { icon: Gamepad2, title: 'Web Game Development', desc: 'requestAnimationFrame game loop, delta time, Entity-Component System, Phaser 3, React Three Fiber, object pooling, FSM for AI, spatial hashing, and multiplayer with Colyseus.', color: 'bg-pink-500/10 text-pink-400', badge: 'NEW' },
+    { icon: MapPin, title: 'IoT & Edge Device Patterns', desc: 'MQTT (QoS levels, wildcards, broker), device shadow, CoAP, OTA firmware updates, telemetry with InfluxDB, heartbeat pattern, watchdog timers, and FOTA management.', color: 'bg-amber-500/10 text-amber-400', badge: 'NEW' },
+    { icon: Lock, title: 'Blockchain & Web3', desc: 'Solidity smart contracts, proxy upgradability patterns, ABI, gas optimization, ERC-20/721/1155 standards, ethers.js/viem, The Graph, reentrancy defense, and IPFS.', color: 'bg-indigo-500/10 text-indigo-400', badge: 'NEW' },
+    { icon: Lightbulb, title: 'Product Engineering Mindset', desc: 'Ship small & often, blameless postmortems, chaos engineering, boring technology principle, MVP thinking, toil automation, runbooks, graceful degradation, and user empathy.', color: 'bg-sky-500/10 text-sky-400', badge: 'NEW' },
+  ];
+
+  const totalFeatures = playgroundFeatures.length + workspaceFeatures.length + chatFeatures.length + powerFeatures.length + promptGeneratorFeatures.length + exploreFeatures.length + aiIntelligenceFeatures.length + aiUpgradeV2Features.length + aiUpgradeV3Features.length + aiUpgradeV4Features.length + aiUpgradeV5Features.length;
 
   return (
     <PageLayout crumbs={[{ label: 'About' }]} backHref="/" withMeshBg>
@@ -586,6 +632,195 @@ export default function AboutPage() {
           <div className="mt-4 flex justify-center">
             <Button onClick={() => setLocation('/')} className="gap-2 shadow-lg shadow-indigo-500/20 bg-indigo-600 hover:bg-indigo-700">
               <Sigma className="w-4 h-4" />Chat with Upgraded AI
+            </Button>
+          </div>
+        </section>
+
+        {/* AI Knowledge Update v3 */}
+        <section className="mb-14">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+              <Code2 className="w-4 h-4 text-emerald-400" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold">AI Knowledge Update v3</h2>
+              <p className="text-sm text-muted-foreground">500+ more instructions: Python, Go, Rust, Vue 3, Astro, Browser APIs, SEO, Design Systems, Cloud Storage, Memory & DX</p>
+            </div>
+            <Badge className="ml-auto bg-emerald-500/20 text-emerald-400 border-emerald-500/30">500+ NEW</Badge>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {aiUpgradeV3Features.map(f => (
+              <div key={f.title} className="bg-card border border-border/50 rounded-xl p-5 hover:border-emerald-500/20 transition-colors">
+                <div className="flex items-start gap-3 mb-3">
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${f.color}`}><f.icon className="w-4 h-4" /></div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <h3 className="font-semibold text-sm">{f.title}</h3>
+                      <Badge variant="outline" className="text-xs py-0 h-4 border-emerald-500/40 text-emerald-400">{f.badge}</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">{f.desc}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-6 bg-muted/30 border border-border/50 rounded-xl p-5">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">v3 Expert Knowledge Domains</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              {[
+                { label: 'Python / FastAPI', icon: '🐍' },
+                { label: 'Go (Golang)', icon: '🐹' },
+                { label: 'Rust Systems', icon: '🦀' },
+                { label: 'Vue 3 & Nuxt', icon: '💚' },
+                { label: 'Astro Framework', icon: '🚀' },
+                { label: 'Browser APIs', icon: '🌐' },
+                { label: 'SEO & CWV', icon: '📈' },
+                { label: 'Design Systems', icon: '🎨' },
+                { label: 'Cloud Storage', icon: '☁️' },
+                { label: 'Memory Management', icon: '🧠' },
+                { label: 'Developer Experience', icon: '⚙️' },
+                { label: 'Technical Writing', icon: '📝' },
+                { label: 'Concurrency Patterns', icon: '⚡' },
+                { label: 'Data Validation', icon: '✅' },
+                { label: 'Async Patterns', icon: '🔄' },
+                { label: 'CSS Animation', icon: '🎭' },
+              ].map(d => (
+                <div key={d.label} className="flex items-center gap-2 px-3 py-2 bg-card border border-border/50 rounded-lg">
+                  <span>{d.icon}</span>
+                  <p className="text-xs text-muted-foreground">{d.label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="mt-4 flex justify-center">
+            <Button onClick={() => setLocation('/')} className="gap-2 shadow-lg shadow-emerald-500/20 bg-emerald-600 hover:bg-emerald-700">
+              <Code2 className="w-4 h-4" />Try v3 Upgraded AI
+            </Button>
+          </div>
+        </section>
+
+        {/* AI Knowledge Update v4 */}
+        <section className="mb-14">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-9 h-9 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
+              <Zap className="w-4 h-4 text-orange-400" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold">AI Knowledge Update v4</h2>
+              <p className="text-sm text-muted-foreground">500+ more instructions: tRPC, React Native, Feature Flags, Analytics, Caching, WebRTC, ML Integration, Multi-Tenancy, CLI & Desktop</p>
+            </div>
+            <Badge className="ml-auto bg-orange-500/20 text-orange-400 border-orange-500/30">500+ NEW</Badge>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {aiUpgradeV4Features.map(f => (
+              <div key={f.title} className="bg-card border border-border/50 rounded-xl p-5 hover:border-orange-500/20 transition-colors">
+                <div className="flex items-start gap-3 mb-3">
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${f.color}`}><f.icon className="w-4 h-4" /></div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <h3 className="font-semibold text-sm">{f.title}</h3>
+                      <Badge variant="outline" className="text-xs py-0 h-4 border-orange-500/40 text-orange-400">{f.badge}</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">{f.desc}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-6 bg-muted/30 border border-border/50 rounded-xl p-5">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">v4 Expert Knowledge Domains</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              {[
+                { label: 'tRPC Type-Safe APIs', icon: '🔷' },
+                { label: 'React Native / Expo', icon: '📱' },
+                { label: 'Feature Flags', icon: '🚩' },
+                { label: 'A/B Testing', icon: '🧪' },
+                { label: 'Analytics & Funnels', icon: '📊' },
+                { label: 'Caching Strategies', icon: '⚡' },
+                { label: 'Rate Limiting', icon: '🛡️' },
+                { label: 'Structured Logging', icon: '📋' },
+                { label: 'WebRTC / P2P', icon: '📹' },
+                { label: 'ML Integration', icon: '🤖' },
+                { label: 'Multi-Tenancy', icon: '🏢' },
+                { label: 'Real-Time Collab', icon: '🤝' },
+                { label: 'CLI Tools', icon: '💻' },
+                { label: 'Desktop (Tauri)', icon: '🖥️' },
+                { label: 'Queue Architecture', icon: '📬' },
+                { label: 'CRDT / Yjs', icon: '🔗' },
+              ].map(d => (
+                <div key={d.label} className="flex items-center gap-2 px-3 py-2 bg-card border border-border/50 rounded-lg">
+                  <span>{d.icon}</span>
+                  <p className="text-xs text-muted-foreground">{d.label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="mt-4 flex justify-center">
+            <Button onClick={() => setLocation('/')} className="gap-2 shadow-lg shadow-orange-500/20 bg-orange-600 hover:bg-orange-700">
+              <Zap className="w-4 h-4" />Try v4 Upgraded AI
+            </Button>
+          </div>
+        </section>
+
+        {/* AI Knowledge Update v5 */}
+        <section className="mb-14">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-9 h-9 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center">
+              <Lightbulb className="w-4 h-4 text-rose-400" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold">AI Knowledge Update v5</h2>
+              <p className="text-sm text-muted-foreground">500+ more instructions: Email, IaC, Advanced SQL, NoSQL, Networking, API Versioning, Build Optimization, Game Dev, IoT, Blockchain & Product Mindset</p>
+            </div>
+            <Badge className="ml-auto bg-rose-500/20 text-rose-400 border-rose-500/30">500+ NEW</Badge>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {aiUpgradeV5Features.map(f => (
+              <div key={f.title} className="bg-card border border-border/50 rounded-xl p-5 hover:border-rose-500/20 transition-colors">
+                <div className="flex items-start gap-3 mb-3">
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${f.color}`}><f.icon className="w-4 h-4" /></div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <h3 className="font-semibold text-sm">{f.title}</h3>
+                      <Badge variant="outline" className="text-xs py-0 h-4 border-rose-500/40 text-rose-400">{f.badge}</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">{f.desc}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-6 bg-muted/30 border border-border/50 rounded-xl p-5">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">v5 Expert Knowledge Domains</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              {[
+                { label: 'Email Deliverability', icon: '📧' },
+                { label: 'Terraform / IaC', icon: '🏗️' },
+                { label: 'Advanced SQL', icon: '🗄️' },
+                { label: 'MongoDB / DynamoDB', icon: '📦' },
+                { label: 'HTTP/2 & HTTP/3', icon: '🌐' },
+                { label: 'API Versioning', icon: '🔖' },
+                { label: 'Build Optimization', icon: '⚡' },
+                { label: 'BullMQ / Kafka', icon: '📬' },
+                { label: 'Web Game Dev', icon: '🎮' },
+                { label: 'IoT & MQTT', icon: '📡' },
+                { label: 'Blockchain / Web3', icon: '⛓️' },
+                { label: 'Product Mindset', icon: '🧠' },
+                { label: 'Networking Fundamentals', icon: '🔗' },
+                { label: 'NoSQL Patterns', icon: '🔀' },
+                { label: 'DNS & CDN', icon: '☁️' },
+                { label: 'Chaos Engineering', icon: '💥' },
+              ].map(d => (
+                <div key={d.label} className="flex items-center gap-2 px-3 py-2 bg-card border border-border/50 rounded-lg">
+                  <span>{d.icon}</span>
+                  <p className="text-xs text-muted-foreground">{d.label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="mt-4 flex justify-center">
+            <Button onClick={() => setLocation('/')} className="gap-2 shadow-lg shadow-rose-500/20 bg-rose-600 hover:bg-rose-700">
+              <Lightbulb className="w-4 h-4" />Try v5 Upgraded AI
             </Button>
           </div>
         </section>
