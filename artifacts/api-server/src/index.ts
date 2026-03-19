@@ -17,13 +17,16 @@ if (Number.isNaN(port) || port <= 0) {
 
 async function start() {
   try {
+    console.log("[startup] Running database migrations...");
     await runMigrations();
+    console.log("[startup] Migrations complete.");
   } catch (err) {
-    console.error("[startup] Migration failed — server will start anyway but DB features may not work:", err);
+    // Log the full error so Render logs show exactly what went wrong
+    console.error("[startup] ❌ Migration error (server will still start):", err);
   }
 
   app.listen(port, () => {
-    console.log(`Server listening on port ${port}`);
+    console.log(`[startup] ✅ Server listening on port ${port}`);
   });
 }
 

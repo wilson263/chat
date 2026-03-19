@@ -1,26 +1,20 @@
-import pg from "pg";
-
-const { Pool } = pg;
+import { sql } from "drizzle-orm";
+import { db, pool } from "./index";
 
 /**
  * Runs auto-migration to ensure all required tables exist in the database.
  * Called on server startup so the app works even on fresh Render deployments
  * without needing to manually run drizzle-kit push.
  *
+ * Uses the SAME pool as the main db connection — no SSL or connection issues.
  * This creates tables only if they do not already exist — safe to call repeatedly.
  */
 export async function runMigrations(): Promise<void> {
-  const databaseUrl = process.env.DATABASE_URL;
-  if (!databaseUrl) {
-    throw new Error("DATABASE_URL is not set. Cannot run migrations.");
-  }
+  console.log("[migrate] Starting auto-migration...");
 
-  const pool = new Pool({ connectionString: databaseUrl });
   const client = await pool.connect();
 
   try {
-    console.log("[migrate] Starting auto-migration...");
-
     await client.query("BEGIN");
 
     // ── users ─────────────────────────────────────────────────────────────────
@@ -36,6 +30,7 @@ export async function runMigrations(): Promise<void> {
         "created_at"    TIMESTAMP NOT NULL DEFAULT NOW()
       )
     `);
+    console.log("[migrate] ✓ users table ready");
 
     // ── conversations ─────────────────────────────────────────────────────────
     await client.query(`
@@ -46,6 +41,7 @@ export async function runMigrations(): Promise<void> {
         "created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `);
+    console.log("[migrate] ✓ conversations table ready");
 
     // ── messages ──────────────────────────────────────────────────────────────
     await client.query(`
@@ -58,6 +54,7 @@ export async function runMigrations(): Promise<void> {
         "created_at"      TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `);
+    console.log("[migrate] ✓ messages table ready");
 
     // ── projects ──────────────────────────────────────────────────────────────
     await client.query(`
@@ -70,6 +67,7 @@ export async function runMigrations(): Promise<void> {
         "updated_at"  TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `);
+    console.log("[migrate] ✓ projects table ready");
 
     // ── project_files ─────────────────────────────────────────────────────────
     await client.query(`
@@ -83,6 +81,7 @@ export async function runMigrations(): Promise<void> {
         "updated_at" TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `);
+    console.log("[migrate] ✓ project_files table ready");
 
     // ── apps ──────────────────────────────────────────────────────────────────
     await client.query(`
@@ -96,8 +95,9 @@ export async function runMigrations(): Promise<void> {
         "updated_at"  TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `);
+    console.log("[migrate] ✓ apps table ready");
 
-    // ── conversation_summaries (new — for AI memory) ─────────────────────────
+    // ── conversation_summaries ────────────────────────────────────────────────
     await client.query(`
       CREATE TABLE IF NOT EXISTS "conversation_summaries" (
         "id"              SERIAL PRIMARY KEY,
@@ -108,8 +108,9 @@ export async function runMigrations(): Promise<void> {
         "updated_at"      TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `);
+    console.log("[migrate] ✓ conversation_summaries table ready");
 
-    // ── ai_memory (new — persistent facts the AI remembers per user) ──────────
+    // ── ai_memory ─────────────────────────────────────────────────────────────
     await client.query(`
       CREATE TABLE IF NOT EXISTS "ai_memory" (
         "id"         SERIAL PRIMARY KEY,
@@ -121,8 +122,9 @@ export async function runMigrations(): Promise<void> {
         UNIQUE("user_id", "key")
       )
     `);
+    console.log("[migrate] ✓ ai_memory table ready");
 
-    // ── code_reviews (new — stored code review results) ──────────────────────
+    // ── code_reviews ──────────────────────────────────────────────────────────
     await client.query(`
       CREATE TABLE IF NOT EXISTS "code_reviews" (
         "id"         SERIAL PRIMARY KEY,
@@ -133,15 +135,15 @@ export async function runMigrations(): Promise<void> {
         "created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `);
+    console.log("[migrate] ✓ code_reviews table ready");
 
     await client.query("COMMIT");
-    console.log("[migrate] Auto-migration complete. All tables are ready.");
+    console.log("[migrate] ✅ Auto-migration complete. All tables are ready.");
   } catch (err) {
     await client.query("ROLLBACK");
-    console.error("[migrate] Migration failed:", err);
+    console.error("[migrate] ❌ Migration failed:", err);
     throw err;
   } finally {
     client.release();
-    await pool.end();
   }
 }
