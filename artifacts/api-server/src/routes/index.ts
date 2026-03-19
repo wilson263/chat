@@ -30,6 +30,7 @@ import aiRefactorRouter from "./ai-refactor";
 import aiPipelineRouter from "./ai-pipeline";
 import aiAssistantRouter from "./ai-assistant";
 import aiWebSearchRouter from "./ai-websearch";
+import executeRouter from "./execute";
 
 const router: IRouter = Router();
 
@@ -64,5 +65,6 @@ router.use(aiRefactorRouter);
 router.use(aiPipelineRouter);
 router.use(aiAssistantRouter);
 router.use(aiWebSearchRouter);
+router.use(executeRouter);
 
 export default router;
