@@ -28,64 +28,43 @@ interface ChatRequest {
 }
 
 const MODEL_MAP: Record<string, string> = {
-    // ── Working OpenRouter free models (verified) ─────────────────────────
+    // ── Active free models ────────────────────────────────────────────────
     "stepfun/step-3.5-flash:free": "stepfun/step-3.5-flash:free",
     "mistralai/mistral-small-3.1-24b-instruct:free": "mistralai/mistral-small-3.1-24b-instruct:free",
-    "arcee-ai/trinity-mini:free": "arcee-ai/trinity-mini:free",
-    "arcee-ai/trinity-large-preview:free": "arcee-ai/trinity-large-preview:free",
-    "z-ai/glm-4.5-air:free": "z-ai/glm-4.5-air:free",
-    "liquid/lfm-2.5-1.2b-instruct:free": "liquid/lfm-2.5-1.2b-instruct:free",
-    "liquid/lfm-2.5-1.2b-thinking:free": "liquid/lfm-2.5-1.2b-thinking:free",
-    "google/gemma-3-4b-it:free": "google/gemma-3-4b-it:free",
-    "google/gemma-3n-e4b-it:free": "google/gemma-3n-e4b-it:free",
-    "google/gemma-3n-e2b-it:free": "google/gemma-3n-e2b-it:free",
-    "google/gemma-3-12b-it:free": "google/gemma-3-12b-it:free",
-    "google/gemma-3-27b-it:free": "google/gemma-3-27b-it:free",
-    "meta-llama/llama-3.2-3b-instruct:free": "meta-llama/llama-3.2-3b-instruct:free",
     "meta-llama/llama-3.3-70b-instruct:free": "meta-llama/llama-3.3-70b-instruct:free",
-    "nvidia/nemotron-3-nano-30b-a3b:free": "nvidia/nemotron-3-nano-30b-a3b:free",
-    "nvidia/nemotron-nano-9b-v2:free": "nvidia/nemotron-nano-9b-v2:free",
-    "nvidia/nemotron-nano-12b-v2-vl:free": "nvidia/nemotron-nano-12b-v2-vl:free",
-    "nvidia/nemotron-3-super-120b-a12b:free": "nvidia/nemotron-3-super-120b-a12b:free",
-    "minimax/minimax-m2.5:free": "minimax/minimax-m2.5:free",
-    "cognitivecomputations/dolphin-mistral-24b-venice-edition:free": "cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
-    "openai/gpt-oss-120b:free": "openai/gpt-oss-120b:free",
-    "openai/gpt-oss-20b:free": "openai/gpt-oss-20b:free",
-    "qwen/qwen3-coder:free": "qwen/qwen3-coder:free",
-    "qwen/qwen3-next-80b-a3b-instruct:free": "qwen/qwen3-next-80b-a3b-instruct:free",
+    "google/gemma-3-27b-it:free": "google/gemma-3-27b-it:free",
+    "google/gemma-3-12b-it:free": "google/gemma-3-12b-it:free",
+    "arcee-ai/trinity-mini:free": "arcee-ai/trinity-mini:free",
     "qwen/qwen3-4b:free": "qwen/qwen3-4b:free",
+    "nvidia/nemotron-nano-9b-v2:free": "nvidia/nemotron-nano-9b-v2:free",
     "nousresearch/hermes-3-llama-3.1-405b:free": "nousresearch/hermes-3-llama-3.1-405b:free",
-    // ── Legacy aliases (redirect old names to closest working model) ──────
-    "mixtral-8x7b-32768": "mistralai/mistral-small-3.1-24b-instruct:free",
-    "gemma2-9b-it": "google/gemma-3-12b-it:free",
-    "deepseek-r1-distill-llama-70b": "meta-llama/llama-3.3-70b-instruct:free",
+    // ── Legacy aliases → redirect to step-3.5-flash ──────────────────────
+    "mixtral-8x7b-32768": "stepfun/step-3.5-flash:free",
+    "gemma2-9b-it": "stepfun/step-3.5-flash:free",
+    "deepseek-r1-distill-llama-70b": "stepfun/step-3.5-flash:free",
   };
 
+// Step 3.5 Flash is the primary running model for ALL task types.
 const CODING_MODELS = [
-    "qwen/qwen3-coder:free",
-    "openai/gpt-oss-120b:free",
-    "nvidia/nemotron-3-super-120b-a12b:free",
-    "nousresearch/hermes-3-llama-3.1-405b:free",
-    "meta-llama/llama-3.3-70b-instruct:free",
-    "qwen/qwen3-next-80b-a3b-instruct:free",
+    "stepfun/step-3.5-flash:free",
     "mistralai/mistral-small-3.1-24b-instruct:free",
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "arcee-ai/trinity-mini:free",
   ];
 
 const REASONING_MODELS = [
-    "openai/gpt-oss-120b:free",
-    "nvidia/nemotron-3-super-120b-a12b:free",
+    "stepfun/step-3.5-flash:free",
     "meta-llama/llama-3.3-70b-instruct:free",
-    "qwen/qwen3-next-80b-a3b-instruct:free",
+    "mistralai/mistral-small-3.1-24b-instruct:free",
     "nousresearch/hermes-3-llama-3.1-405b:free",
   ];
 
 const GENERAL_MODELS = [
-    "meta-llama/llama-3.3-70b-instruct:free",
-    "openai/gpt-oss-120b:free",
+    "stepfun/step-3.5-flash:free",
     "mistralai/mistral-small-3.1-24b-instruct:free",
-    "nvidia/nemotron-3-super-120b-a12b:free",
-    "qwen/qwen3-next-80b-a3b-instruct:free",
-    "arcee-ai/trinity-large-preview:free",
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "google/gemma-3-27b-it:free",
+    "arcee-ai/trinity-mini:free",
     "nousresearch/hermes-3-llama-3.1-405b:free",
   ];
 
