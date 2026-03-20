@@ -116,19 +116,12 @@ async function tryStream(
       const stream = await withTimeout(
         (signal) =>
           client.chat.completions.create(
-            {
-              ...params,
-              model,
-              stream: true,
-              // OpenRouter-specific: pass remaining models as server-side fallback
-              // @ts-ignore
-              models: models.slice(i),
-            },
+            { ...params, model, stream: true },
             { signal }
           ) as any,
         MODEL_TIMEOUT_MS
       );
-      if (i > 0) console.log(`[OR] switched to ${model} (skipped ${i})`);
+      if (i > 0) console.log(`[OR] switched to ${model} (attempt ${i + 1})`);
       return stream as AsyncIterable<OpenAI.Chat.ChatCompletionChunk>;
     } catch (err: any) {
       if (isAuthError(err)) {
@@ -136,35 +129,37 @@ async function tryStream(
           "AI authentication failed. Your OPENROUTER_API_KEY is invalid or expired. Please update it on Render."
         );
       }
-      const reason = isUnavailable(err) ? "busy/rate-limited" : `error (${err?.status ?? err?.name ?? "unknown"})`;
-      console.warn(`[OR] ${model} ${reason} → trying next`);
+      const status = err?.status ?? err?.statusCode ?? err?.response?.status ?? "?";
+      const msg = String(err?.message ?? "").slice(0, 120);
+      const reason = isUnavailable(err) ? "busy/rate-limited" : `error ${status}`;
+      console.warn(`[OR] ${model} → ${reason} | ${msg}`);
 
-      // Notify the caller so they can stream a switch event to the client
       if (onSwitch && models[i + 1]) {
         try { onSwitch(model, models[i + 1], i + 1, reason); } catch (_) {}
       }
     }
   }
 
-  console.warn("[OR] All models tried. Pausing 3s then retrying top 5...");
+  // One final retry on the primary model after a brief pause
+  console.warn("[OR] All models tried. Retrying primary model in 3s...");
   await sleep(3000);
-  for (const model of models.slice(0, 5)) {
-    try {
-      const stream = await withTimeout(
-        (signal) =>
-          client.chat.completions.create(
-            { ...params, model, stream: true, /* @ts-ignore */ models },
-            { signal }
-          ) as any,
-        MODEL_TIMEOUT_MS
-      );
-      console.log(`[OR] retry succeeded: ${model}`);
-      return stream as AsyncIterable<OpenAI.Chat.ChatCompletionChunk>;
-    } catch (_) {}
+  try {
+    const stream = await withTimeout(
+      (signal) =>
+        client.chat.completions.create(
+          { ...params, model: models[0], stream: true },
+          { signal }
+        ) as any,
+      MODEL_TIMEOUT_MS
+    );
+    console.log(`[OR] final retry succeeded: ${models[0]}`);
+    return stream as AsyncIterable<OpenAI.Chat.ChatCompletionChunk>;
+  } catch (err: any) {
+    console.error(`[OR] final retry failed: ${err?.message}`);
   }
 
   throw new Error(
-    "AI is temporarily unavailable — all OpenRouter models are busy. Please try again in a few seconds."
+    "AI is temporarily unavailable. Please try again in a moment."
   );
 }
 
@@ -179,7 +174,7 @@ async function tryNonStream(
       const result = await withTimeout(
         (signal) =>
           client.chat.completions.create(
-            { ...params, model, /* @ts-ignore */ models: models.slice(i) },
+            { ...params, model },
             { signal }
           ) as any,
         MODEL_TIMEOUT_MS
@@ -192,30 +187,28 @@ async function tryNonStream(
           "AI authentication failed. Your OPENROUTER_API_KEY is invalid or expired. Please update it on Render."
         );
       }
-      const reason = isUnavailable(err)
-        ? "busy/rate-limited"
-        : `error (${err?.status ?? err?.name ?? "unknown"})`;
-      console.warn(`[OR] ${model} ${reason} → trying next`);
+      const status = err?.status ?? err?.statusCode ?? "?";
+      const msg = String(err?.message ?? "").slice(0, 120);
+      const reason = isUnavailable(err) ? "busy/rate-limited" : `error ${status}`;
+      console.warn(`[OR] ${model} → ${reason} | ${msg}`);
     }
   }
 
   await sleep(3000);
-  for (const model of models.slice(0, 5)) {
-    try {
-      const result = await withTimeout(
-        (signal) =>
-          client.chat.completions.create(
-            { ...params, model, /* @ts-ignore */ models },
-            { signal }
-          ) as any,
-        MODEL_TIMEOUT_MS
-      );
-      return result as OpenAI.Chat.ChatCompletion;
-    } catch (_) {}
-  }
+  try {
+    const result = await withTimeout(
+      (signal) =>
+        client.chat.completions.create(
+          { ...params, model: models[0] },
+          { signal }
+        ) as any,
+      MODEL_TIMEOUT_MS
+    );
+    return result as OpenAI.Chat.ChatCompletion;
+  } catch (_) {}
 
   throw new Error(
-    "AI is temporarily unavailable — all OpenRouter models are busy. Please try again in a few seconds."
+    "AI is temporarily unavailable. Please try again in a moment."
   );
 }
 
@@ -264,7 +257,7 @@ export async function createChatCompletionStreamFromList(
       const stream = await withTimeout(
         (signal) =>
           client.chat.completions.create(
-            { ...params, model, stream: true, /* @ts-ignore */ models: modelList.slice(i) },
+            { ...params, model, stream: true },
             { signal }
           ) as any,
         MODEL_TIMEOUT_MS
@@ -277,8 +270,10 @@ export async function createChatCompletionStreamFromList(
           "AI authentication failed. Your OPENROUTER_API_KEY is invalid or expired. Please update it on Render."
         );
       }
-      const reason = isUnavailable(err) ? "busy" : `error(${err?.status ?? err?.name})`;
-      console.warn(`[agent] ${model} ${reason} → next`);
+      const status = err?.status ?? err?.statusCode ?? "?";
+      const msg = String(err?.message ?? "").slice(0, 120);
+      const reason = isUnavailable(err) ? "busy" : `error ${status}`;
+      console.warn(`[agent] ${model} → ${reason} | ${msg}`);
       if (onSwitch && modelList[i + 1]) {
         try { onSwitch(model, modelList[i + 1], i + 1, reason); } catch (_) {}
       }
@@ -286,21 +281,19 @@ export async function createChatCompletionStreamFromList(
   }
 
   await sleep(3000);
-  for (const model of modelList.slice(0, 3)) {
-    try {
-      const stream = await withTimeout(
-        (signal) =>
-          client.chat.completions.create(
-            { ...params, model, stream: true, /* @ts-ignore */ models: modelList },
-            { signal }
-          ) as any,
-        MODEL_TIMEOUT_MS
-      );
-      return { stream: stream as AsyncIterable<OpenAI.Chat.ChatCompletionChunk>, model };
-    } catch (_) {}
-  }
+  try {
+    const stream = await withTimeout(
+      (signal) =>
+        client.chat.completions.create(
+          { ...params, model: modelList[0], stream: true },
+          { signal }
+        ) as any,
+      MODEL_TIMEOUT_MS
+    );
+    return { stream: stream as AsyncIterable<OpenAI.Chat.ChatCompletionChunk>, model: modelList[0] };
+  } catch (_) {}
 
   throw new Error(
-    "AI is temporarily unavailable — all OpenRouter models are busy. Please try again in a few seconds."
+    "AI is temporarily unavailable. Please try again in a moment."
   );
 }
