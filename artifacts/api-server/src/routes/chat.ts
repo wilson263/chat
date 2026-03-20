@@ -30,48 +30,46 @@ interface ChatRequest {
 const MODEL_MAP: Record<string, string> = {
     // ── Coding-specialist models ───────────────────────────────────────────
     "qwen/qwen2.5-coder-32b-instruct:free": "qwen/qwen2.5-coder-32b-instruct:free",
-    "deepseek/deepseek-v3-0324:free": "deepseek/deepseek-v3-0324:free",
+    "deepseek/deepseek-chat:free": "deepseek/deepseek-chat:free",
     // ── General free models ───────────────────────────────────────────────
-    "stepfun/step-3.5-flash:free": "stepfun/step-3.5-flash:free",
     "mistralai/mistral-small-3.1-24b-instruct:free": "mistralai/mistral-small-3.1-24b-instruct:free",
     "meta-llama/llama-3.3-70b-instruct:free": "meta-llama/llama-3.3-70b-instruct:free",
     "google/gemma-3-27b-it:free": "google/gemma-3-27b-it:free",
     "google/gemma-3-12b-it:free": "google/gemma-3-12b-it:free",
-    "arcee-ai/trinity-mini:free": "arcee-ai/trinity-mini:free",
-    "nvidia/nemotron-nano-9b-v2:free": "nvidia/nemotron-nano-9b-v2:free",
     "nousresearch/hermes-3-llama-3.1-405b:free": "nousresearch/hermes-3-llama-3.1-405b:free",
-    // ── Legacy aliases → redirect to best coder ───────────────────────────
+    "microsoft/phi-4:free": "microsoft/phi-4:free",
+    "deepseek/deepseek-r1:free": "deepseek/deepseek-r1:free",
+    // ── Legacy aliases → redirect to best free equivalents ────────────────
     "mixtral-8x7b-32768": "qwen/qwen2.5-coder-32b-instruct:free",
-    "gemma2-9b-it": "qwen/qwen2.5-coder-32b-instruct:free",
-    "deepseek-r1-distill-llama-70b": "deepseek/deepseek-v3-0324:free",
+    "gemma2-9b-it": "google/gemma-3-27b-it:free",
+    "deepseek-r1-distill-llama-70b": "deepseek/deepseek-chat:free",
     "qwen/qwen3-4b:free": "qwen/qwen2.5-coder-32b-instruct:free",
   };
 
 // Qwen 2.5 Coder 32B is the primary model for code tasks — purpose-built for code generation.
 const CODING_MODELS = [
     "qwen/qwen2.5-coder-32b-instruct:free",
-    "deepseek/deepseek-v3-0324:free",
+    "deepseek/deepseek-chat:free",
     "meta-llama/llama-3.3-70b-instruct:free",
     "mistralai/mistral-small-3.1-24b-instruct:free",
-    "stepfun/step-3.5-flash:free",
+    "google/gemma-3-27b-it:free",
   ];
 
 const REASONING_MODELS = [
-    "deepseek/deepseek-v3-0324:free",
+    "deepseek/deepseek-r1:free",
+    "deepseek/deepseek-chat:free",
     "meta-llama/llama-3.3-70b-instruct:free",
     "mistralai/mistral-small-3.1-24b-instruct:free",
     "nousresearch/hermes-3-llama-3.1-405b:free",
-    "stepfun/step-3.5-flash:free",
   ];
 
 const GENERAL_MODELS = [
-    "deepseek/deepseek-v3-0324:free",
-    "stepfun/step-3.5-flash:free",
-    "mistralai/mistral-small-3.1-24b-instruct:free",
+    "deepseek/deepseek-chat:free",
     "meta-llama/llama-3.3-70b-instruct:free",
+    "mistralai/mistral-small-3.1-24b-instruct:free",
     "google/gemma-3-27b-it:free",
-    "arcee-ai/trinity-mini:free",
     "nousresearch/hermes-3-llama-3.1-405b:free",
+    "microsoft/phi-4:free",
   ];
 
 type TaskIntent = "build_app" | "fix_code" | "explain_code" | "reasoning" | "general" | "general_chat";
@@ -473,7 +471,7 @@ router.get("/chat/test", async (_req, res): Promise<void> => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "stepfun/step-3.5-flash:free",
+        model: "meta-llama/llama-3.3-70b-instruct:free",
         messages: [{ role: "user", content: "Say hi" }],
         max_tokens: 10,
         stream: false,

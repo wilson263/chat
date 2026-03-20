@@ -7,37 +7,36 @@ import OpenAI from "openai";
 // ─────────────────────────────────────────────────────────────────────────────
 const FREE_MODELS = [
   "qwen/qwen2.5-coder-32b-instruct:free", // PRIMARY — best free coding model
-  "deepseek/deepseek-v3-0324:free",        // Excellent general + code
+  "deepseek/deepseek-chat:free",           // DeepSeek V3 — confirmed free
   "meta-llama/llama-3.3-70b-instruct:free",
   "mistralai/mistral-small-3.1-24b-instruct:free",
-  "stepfun/step-3.5-flash:free",
   "google/gemma-3-27b-it:free",
   "google/gemma-3-12b-it:free",
-  "arcee-ai/trinity-mini:free",
   "nousresearch/hermes-3-llama-3.1-405b:free",
+  "microsoft/phi-4:free",
 ];
 
 export const CODING_FALLBACKS = [
   "qwen/qwen2.5-coder-32b-instruct:free",
-  "deepseek/deepseek-v3-0324:free",
+  "deepseek/deepseek-chat:free",
   "meta-llama/llama-3.3-70b-instruct:free",
   "mistralai/mistral-small-3.1-24b-instruct:free",
-  "stepfun/step-3.5-flash:free",
+  "google/gemma-3-27b-it:free",
 ];
 
 export const AGENT_BUILD_MODELS = [
   "qwen/qwen2.5-coder-32b-instruct:free",
-  "deepseek/deepseek-v3-0324:free",
+  "deepseek/deepseek-chat:free",
   "meta-llama/llama-3.3-70b-instruct:free",
   "mistralai/mistral-small-3.1-24b-instruct:free",
-  "stepfun/step-3.5-flash:free",
+  "google/gemma-3-27b-it:free",
 ];
 
 export const PLANNING_MODELS = [
-  "deepseek/deepseek-v3-0324:free",
-  "stepfun/step-3.5-flash:free",
+  "deepseek/deepseek-chat:free",
   "meta-llama/llama-3.3-70b-instruct:free",
   "mistralai/mistral-small-3.1-24b-instruct:free",
+  "google/gemma-3-27b-it:free",
 ];
 
 export const FREE_MODEL = FREE_MODELS[0];
@@ -62,7 +61,6 @@ function sleep(ms: number): Promise<void> {
 }
 
 // Per-model hard timeout — give free models enough time to respond.
-// stepfun/step-3.5-flash is fast but OpenRouter may queue briefly.
 const MODEL_TIMEOUT_MS = 25_000;
 
 function withTimeout<T>(fn: (signal: AbortSignal) => Promise<T>, ms: number): Promise<T> {
