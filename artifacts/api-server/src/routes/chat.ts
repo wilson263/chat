@@ -388,6 +388,38 @@ async function handleChatRequest(req: any, res: any): Promise<void> {
 router.post("/chat/stream", handleChatRequest);
 router.post("/chat/message", handleChatRequest);
 
+// Diagnostic endpoint — visit /api/chat/test to see the exact OpenRouter error
+router.get("/chat/test", async (_req, res): Promise<void> => {
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) {
+    res.json({ ok: false, error: "OPENROUTER_API_KEY is not set in Render environment variables." });
+    return;
+  }
+  try {
+    const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "stepfun/step-3.5-flash:free",
+        messages: [{ role: "user", content: "Say hi" }],
+        max_tokens: 10,
+        stream: false,
+      }),
+    });
+    const data = await resp.json() as any;
+    if (!resp.ok) {
+      res.json({ ok: false, status: resp.status, error: data?.error ?? data });
+    } else {
+      res.json({ ok: true, status: resp.status, reply: data?.choices?.[0]?.message?.content });
+    }
+  } catch (err: any) {
+    res.json({ ok: false, error: err?.message ?? String(err) });
+  }
+});
+
 router.post("/chat/generate-image", async (_req, res): Promise<void> => {
   res.status(501).json({ error: "Image generation is not supported with the current AI provider." });
 });

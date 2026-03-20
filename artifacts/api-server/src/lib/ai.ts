@@ -110,6 +110,8 @@ async function tryStream(
   models: string[],
   onSwitch?: OnSwitchCallback
 ): Promise<AsyncIterable<OpenAI.Chat.ChatCompletionChunk>> {
+  let firstError: string | null = null;
+
   for (let i = 0; i < models.length; i++) {
     const model = models[i];
     try {
@@ -124,24 +126,32 @@ async function tryStream(
       if (i > 0) console.log(`[OR] switched to ${model} (attempt ${i + 1})`);
       return stream as AsyncIterable<OpenAI.Chat.ChatCompletionChunk>;
     } catch (err: any) {
-      if (isAuthError(err)) {
+      const status  = err?.status ?? err?.statusCode ?? err?.response?.status ?? "?";
+      const rawMsg  = err?.message ?? err?.error?.message ?? err?.response?.data?.error?.message ?? "";
+      const fullMsg = String(rawMsg).slice(0, 200);
+
+      // Surface auth errors immediately with clear message
+      if (status === 401 || status === 403) {
         throw new Error(
-          "AI authentication failed. Your OPENROUTER_API_KEY is invalid or expired. Please update it on Render."
+          `OpenRouter API key is invalid or missing (HTTP ${status}). ` +
+          `Please add a valid OPENROUTER_API_KEY in your Render environment variables.`
         );
       }
-      const status = err?.status ?? err?.statusCode ?? err?.response?.status ?? "?";
-      const msg = String(err?.message ?? "").slice(0, 120);
-      const reason = isUnavailable(err) ? "busy/rate-limited" : `error ${status}`;
-      console.warn(`[OR] ${model} → ${reason} | ${msg}`);
+
+      // Capture the first error for the final message
+      if (!firstError) {
+        firstError = `[${model}] HTTP ${status}: ${fullMsg || "no details"}`;
+      }
+
+      console.warn(`[OR] ${model} → HTTP ${status} | ${fullMsg}`);
 
       if (onSwitch && models[i + 1]) {
-        try { onSwitch(model, models[i + 1], i + 1, reason); } catch (_) {}
+        try { onSwitch(model, models[i + 1], i + 1, String(status)); } catch (_) {}
       }
     }
   }
 
   // One final retry on the primary model after a brief pause
-  console.warn("[OR] All models tried. Retrying primary model in 3s...");
   await sleep(3000);
   try {
     const stream = await withTimeout(
@@ -155,11 +165,15 @@ async function tryStream(
     console.log(`[OR] final retry succeeded: ${models[0]}`);
     return stream as AsyncIterable<OpenAI.Chat.ChatCompletionChunk>;
   } catch (err: any) {
-    console.error(`[OR] final retry failed: ${err?.message}`);
+    const status = err?.status ?? err?.statusCode ?? "?";
+    const msg    = String(err?.message ?? "").slice(0, 200);
+    console.error(`[OR] final retry failed: HTTP ${status} | ${msg}`);
+    if (!firstError) firstError = `HTTP ${status}: ${msg}`;
   }
 
   throw new Error(
-    "AI is temporarily unavailable. Please try again in a moment."
+    `AI request failed. First error: ${firstError ?? "unknown"}. ` +
+    `Check your OPENROUTER_API_KEY on Render and try again.`
   );
 }
 
