@@ -74,46 +74,79 @@ const GENERAL_MODELS = [
     "nousresearch/hermes-3-llama-3.1-405b:free",
   ];
 
-type TaskIntent = "build_app" | "fix_code" | "explain_code" | "reasoning" | "general";
+type TaskIntent = "build_app" | "fix_code" | "explain_code" | "reasoning" | "general" | "general_chat";
 
+// Only match when the user is clearly asking to BUILD/CODE something specific
 const BUILD_APP_PATTERNS = [
-  /\b(build|create|make|develop|generate|write|code|implement|design|clone)\b.{0,80}\b(app|application|website|web\s*app|webapp|site|platform|system|tool|dashboard|api|backend|frontend|server|bot|script|program|project|saas|marketplace|portal|cms|crm|erp|ecommerce|e-commerce|shop|store|service|microservice|landing|portfolio|blog|forum|social|game|calculator|tracker|planner|manager)\b/i,
-  /\b(html|css|javascript|typescript|python|react|vue|angular|node|express|django|flask|fastapi|rails|spring|svelte|nextjs|nuxt)\b.{0,60}\b(page|component|layout|form|modal|sidebar|navbar|hero|landing|widget|feature|module|section|ui|interface)\b/i,
-  /\b(full[\s-]?stack|end[\s-]?to[\s-]?end|from scratch|complete project|production[\s-]?ready|working (app|example|demo|prototype|mvp))\b/i,
-  /\b(from zero|from scratch|complete|full|entire|whole)\b.{0,40}\b(app|website|system|project|codebase)\b/i,
-  /\b(landing page|portfolio site|dashboard ui|admin panel|login page|signup|auth|authentication|todo|task manager|expense tracker|recipe app|weather app|music player|chat app)\b/i,
+  // Must mention a coding action AND a software artifact type
+  /\b(build|create|make|develop|generate|implement|clone|code up)\b.{0,80}\b(app|application|website|web\s*app|webapp|platform|dashboard|api|backend|frontend|server|bot|script|program|saas|marketplace|cms|crm|ecommerce|e-commerce|shop|store|microservice)\b/i,
+  // Framework + UI component (strongly indicates code request)
+  /\b(html|css|javascript|typescript|python|react|vue|angular|node\.?js|express|django|flask|fastapi|rails|svelte|next\.?js|nuxt)\b.{0,60}\b(page|component|layout|form|modal|sidebar|navbar|hero|landing|widget|module|ui|interface)\b/i,
+  // Explicit full-project signals
+  /\b(full[\s-]?stack|from scratch|complete project|production[\s-]?ready|working (app|demo|prototype|mvp))\b/i,
+  /\b(from zero|from scratch)\b.{0,40}\b(app|website|system|project|codebase)\b/i,
+  // Very specific well-known app types
+  /\b(todo app|task manager|expense tracker|recipe app|weather app|music player|chat app|portfolio site|landing page|admin panel)\b/i,
+  // Explicit "write code / write a function / write a script"
+  /\bwrite\b.{0,40}\b(code|function|class|script|component|api|query|schema|migration|test)\b/i,
 ];
 
+// Only match when the user has actual code context or error messages
 const FIX_CODE_PATTERNS = [
-  /\b(fix|debug|solve|resolve|patch|correct|repair|find)\b.{0,60}\b(bug|error|issue|problem|crash|failure|exception|warning|lint|test|compile)\b/i,
-  /\b(not\s+working|doesn't\s+work|failing|broken|crashes|not\s+loading|not\s+showing)\b/i,
-  /\b(why (is|does|doesn't|won't|can't|isn't))\b.{0,80}\b(work|run|execute|compile|pass|load|display|render|show|appear|start|connect)\b/i,
-  /(TypeError|SyntaxError|ReferenceError|ImportError|AttributeError|NullPointerException|undefined is not|cannot read prop|is not a function|ENOENT|ECONNREFUSED|404|500|403|401)/i,
+  /\b(fix|debug|solve|resolve|patch|correct|repair)\b.{0,60}\b(bug|error|issue|crash|failure|exception|warning|lint|compile)\b/i,
+  /\b(not\s+working|doesn't\s+work|failing|broken|crashes)\b.{0,60}\b(code|app|function|component|script|query|api|server)\b/i,
+  /(TypeError|SyntaxError|ReferenceError|ImportError|AttributeError|NullPointerException|undefined is not|cannot read prop|is not a function|ENOENT|ECONNREFUSED)/i,
 ];
 
+// Only match when asking about code/programming concepts specifically
 const EXPLAIN_CODE_PATTERNS = [
-  /\b(explain|describe|what (is|are|does|do)|how (does|do|to|can|would)|tell me about|walk me through|break ?down|summarize|understand)\b.{0,80}\b(code|function|class|algorithm|pattern|concept|this|the|method|component|hook|middleware)\b/i,
-  /^(what|how|why|when|where)\b.{0,200}\?$/i,
+  /\b(explain|walk me through|break ?down|how does)\b.{0,80}\b(code|function|class|algorithm|pattern|hook|middleware|component|recursion|closure|promise|async|regex|api|orm|database schema)\b/i,
+  /\b(what (is|are|does|do))\b.{0,60}\b(useState|useEffect|async\/await|promise|closure|callback|prototype|event loop|virtual dom|redux|jwt|cors|rest api|graphql|docker|kubernetes|sql|nosql|orm)\b/i,
 ];
 
 const REASONING_PATTERNS = [
-  /\b(compare|versus|vs|pros and cons|trade[\s-]?offs?|benchmark|analyze|evaluate|best (option|choice|approach|practice|way|solution)|which (should|is better|do you recommend|would you choose))\b/i,
-  /\b(should I|would you|do you recommend|what('s| is) (the )?best (way|practice|approach|option))\b/i,
+  /\b(compare|versus|vs|pros and cons|trade[\s-]?offs?|evaluate|best (option|choice|approach|practice|way|solution)|which (should|is better|do you recommend|would you choose))\b.{0,80}\b(framework|language|library|database|stack|tool|approach|pattern|architecture)\b/i,
+  /\b(should I use|which is better|what('s| is) (the )?best (framework|language|database|tool|library|approach))\b/i,
+];
+
+// Clear signals that the user wants a plain conversation, NOT code
+const GENERAL_CHAT_PATTERNS = [
+  /^(hi|hello|hey|good (morning|afternoon|evening)|what's up|sup|greetings|howdy)\b/i,
+  /\b(who are you|what are you|tell me about yourself|what can you do|your name|introduce yourself)\b/i,
+  /\b(joke|story|poem|quote|fun fact|trivia|riddle|advice|motivat)\b/i,
+  /\b(weather|news|sports|movie|music|food|recipe|travel|history|science|math|geography|politics|health|fitness)\b(?!.{0,30}\b(api|app|widget|code|script|website)\b)/i,
+  /\b(thank(s| you)|you('re| are) (great|awesome|helpful|amazing)|good (job|work|answer|response))\b/i,
 ];
 
 function detectIntent(userMessage: string, history: HistoryMessage[]): TaskIntent {
+  const msg = userMessage.trim();
+
+  // Check for plain general chat first — short conversational messages
+  if (msg.length < 80) {
+    for (const pattern of GENERAL_CHAT_PATTERNS) {
+      if (pattern.test(msg)) return "general_chat";
+    }
+  }
+
   for (const pattern of BUILD_APP_PATTERNS) {
-    if (pattern.test(userMessage)) return "build_app";
+    if (pattern.test(msg)) return "build_app";
   }
   for (const pattern of FIX_CODE_PATTERNS) {
-    if (pattern.test(userMessage)) return "fix_code";
+    if (pattern.test(msg)) return "fix_code";
   }
   for (const pattern of EXPLAIN_CODE_PATTERNS) {
-    if (pattern.test(userMessage)) return "explain_code";
+    if (pattern.test(msg)) return "explain_code";
   }
   for (const pattern of REASONING_PATTERNS) {
-    if (pattern.test(userMessage)) return "reasoning";
+    if (pattern.test(msg)) return "reasoning";
   }
+
+  // If longer message with no code signals, check if it looks like a general question
+  const hasCodeKeywords = /\b(code|function|class|script|component|api|database|server|npm|git|terminal|command|syntax|variable|loop|array|object|string|integer|boolean)\b/i.test(msg);
+  if (!hasCodeKeywords) {
+    return "general_chat";
+  }
+
   return "general";
 }
 
@@ -125,9 +158,10 @@ function selectBestModel(
     return { model: MODEL_MAP[requestedModel], autoSelected: false, intent };
   }
   const model =
-    intent === "reasoning" ? REASONING_MODELS[0] :
-    intent === "general"   ? GENERAL_MODELS[0]   :
-                             CODING_MODELS[0];
+    intent === "general_chat" ? GENERAL_MODELS[0]   :
+    intent === "reasoning"    ? REASONING_MODELS[0] :
+    intent === "general"      ? GENERAL_MODELS[0]   :
+                                CODING_MODELS[0];
   return { model, autoSelected: true, intent };
 }
 
@@ -286,6 +320,20 @@ CODE CORRECTNESS CHECKLIST (verify before outputting each file):
 ✓ CSS: all selectors match actual HTML elements
 ✓ JS: no syntax errors, no missing semicolons where required`;
 
+// Lightweight prompt for general/conversational questions — no code unless explicitly asked
+const GENERAL_CHAT_SYSTEM_PROMPT = `You are ZorvixAI, a smart and helpful AI assistant. You can help with anything — general knowledge, advice, explanations, creative writing, math, science, history, and much more. You are also an expert in software engineering, but you only write code when the user specifically asks for it.
+
+RULES FOR GENERAL CONVERSATION:
+• Answer the user's question directly and clearly — do NOT add code unless they ask for it
+• Be concise and conversational — match the tone of the user's message
+• For factual questions, give accurate, well-structured answers
+• For opinions or advice, be thoughtful and helpful
+• For creative requests (jokes, stories, poems), be engaging and original
+• If the user seems to want a coding explanation or example, you may add a short code snippet — but keep it brief and relevant
+• Never add unrequested code blocks, file outputs, or technical deep-dives to a simple question
+
+You are knowledgeable, friendly, and adapt your response to exactly what the user is asking — nothing more, nothing less.`;
+
 function buildSystemPrompt(intent: TaskIntent, customPrompt?: string): string {
   if (customPrompt) {
     return `${BASE_SYSTEM_PROMPT}\n\n${customPrompt}`;
@@ -295,6 +343,7 @@ function buildSystemPrompt(intent: TaskIntent, customPrompt?: string): string {
     case "fix_code":     return BASE_SYSTEM_PROMPT + "\n\n" + FIX_CODE_SYSTEM_PROMPT;
     case "explain_code": return BASE_SYSTEM_PROMPT + "\n\n" + EXPLAIN_CODE_SYSTEM_PROMPT;
     case "reasoning":    return BASE_SYSTEM_PROMPT + "\n\n" + REASONING_SYSTEM_PROMPT;
+    case "general_chat": return GENERAL_CHAT_SYSTEM_PROMPT;
     default:             return BASE_SYSTEM_PROMPT;
   }
 }
