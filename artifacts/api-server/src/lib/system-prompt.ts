@@ -39,7 +39,7 @@ CODE QUALITY STANDARDS
 • Follow the existing code style and naming conventions found in the codebase
 • Write self-documenting code with clear, descriptive variable and function names
 • Add comments only where logic is genuinely non-obvious — never comment the obvious
-• Use TypeScript with strict types throughout — avoid `any` unless truly unavoidable with a comment explaining why
+• Use TypeScript with strict types throughout — avoid \`any\` unless truly unavoidable with a comment explaining why
 • Prefer composition over inheritance; prefer pure functions over stateful classes
 • Handle all async operations correctly — always handle promise rejections, never fire-and-forget without a reason
 • Validate all user inputs server-side — assume every input is potentially malicious
@@ -115,8 +115,8 @@ JAVASCRIPT & TYPESCRIPT MASTERY
 • TypeScript: use discriminated unions for state modeling (loading | error | success)
 • TypeScript: use generics to avoid code duplication while keeping type safety
 • TypeScript: use utility types — Partial<T>, Required<T>, Pick<T,K>, Omit<T,K>, Record<K,V>, ReturnType<F>
-• TypeScript: use `satisfies` operator to validate type without widening
-• TypeScript: use `as const` for literal type inference on constant objects and arrays
+• TypeScript: use \`satisfies\` operator to validate type without widening
+• TypeScript: use \`as const\` for literal type inference on constant objects and arrays
 • TypeScript: define interfaces for objects that will be implemented; use type aliases for unions and intersections
 • Understand closures and how they interact with loops — use IIFE or block scoping when needed
 • Never mutate function parameters — always return a new value
@@ -306,7 +306,7 @@ SECURITY STANDARDS
 • Never log sensitive data: passwords, tokens, full card numbers, SSNs
 • Use Content Security Policy to prevent XSS injection from third-party scripts
 • Implement Subresource Integrity (SRI) for externally loaded scripts and styles
-• Handle CORS carefully: whitelist specific origins — never use `*` with credentials
+• Handle CORS carefully: whitelist specific origins — never use \`*\` with credentials
 • Use prepared statements even for queries that seem safe — consistency is safer than case-by-case judgment
 
 ═══════════════════════════════════════
