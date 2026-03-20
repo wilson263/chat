@@ -1,57 +1,33 @@
 import OpenAI from "openai";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// FREE MODELS — 26 verified live models on OpenRouter
-// Ordered: fastest/most reliable first
+// PRIMARY MODEL — stepfun/step-3.5-flash:free is the main AI.
+// Reliable fallbacks tried in order if the primary is rate-limited.
 // ─────────────────────────────────────────────────────────────────────────────
 const FREE_MODELS = [
-  "stepfun/step-3.5-flash:free",
+  "stepfun/step-3.5-flash:free",          // PRIMARY — always tried first
   "mistralai/mistral-small-3.1-24b-instruct:free",
-  "arcee-ai/trinity-mini:free",
-  "z-ai/glm-4.5-air:free",
-  "liquid/lfm-2.5-1.2b-instruct:free",
-  "liquid/lfm-2.5-1.2b-thinking:free",
-  "google/gemma-3-4b-it:free",
-  "google/gemma-3n-e4b-it:free",
-  "google/gemma-3n-e2b-it:free",
-  "meta-llama/llama-3.2-3b-instruct:free",
   "meta-llama/llama-3.3-70b-instruct:free",
-  "nvidia/nemotron-3-nano-30b-a3b:free",
-  "nvidia/nemotron-nano-9b-v2:free",
-  "nvidia/nemotron-nano-12b-v2-vl:free",
-  "minimax/minimax-m2.5:free",
-  "cognitivecomputations/dolphin-mistral-24b-venice-edition:free",
-  "google/gemma-3-12b-it:free",
   "google/gemma-3-27b-it:free",
-  "openai/gpt-oss-120b:free",
-  "openai/gpt-oss-20b:free",
-  "qwen/qwen3-coder:free",
-  "qwen/qwen3-next-80b-a3b-instruct:free",
+  "google/gemma-3-12b-it:free",
+  "arcee-ai/trinity-mini:free",
   "qwen/qwen3-4b:free",
-  "nvidia/nemotron-3-super-120b-a12b:free",
-  "arcee-ai/trinity-large-preview:free",
+  "nvidia/nemotron-nano-9b-v2:free",
   "nousresearch/hermes-3-llama-3.1-405b:free",
 ];
 
 export const CODING_FALLBACKS = [
-  "qwen/qwen3-coder:free",
-  "openai/gpt-oss-120b:free",
-  "nvidia/nemotron-3-super-120b-a12b:free",
-  "nousresearch/hermes-3-llama-3.1-405b:free",
-  "meta-llama/llama-3.3-70b-instruct:free",
-  "qwen/qwen3-next-80b-a3b-instruct:free",
   "stepfun/step-3.5-flash:free",
   "mistralai/mistral-small-3.1-24b-instruct:free",
+  "meta-llama/llama-3.3-70b-instruct:free",
+  "google/gemma-3-27b-it:free",
   "arcee-ai/trinity-mini:free",
 ];
 
 export const AGENT_BUILD_MODELS = [
-  "qwen/qwen3-coder:free",
-  "openai/gpt-oss-120b:free",
-  "meta-llama/llama-3.3-70b-instruct:free",
-  "nvidia/nemotron-3-super-120b-a12b:free",
   "stepfun/step-3.5-flash:free",
   "mistralai/mistral-small-3.1-24b-instruct:free",
+  "meta-llama/llama-3.3-70b-instruct:free",
   "arcee-ai/trinity-mini:free",
   "nvidia/nemotron-nano-9b-v2:free",
 ];
@@ -60,9 +36,7 @@ export const PLANNING_MODELS = [
   "stepfun/step-3.5-flash:free",
   "mistralai/mistral-small-3.1-24b-instruct:free",
   "meta-llama/llama-3.3-70b-instruct:free",
-  "arcee-ai/trinity-mini:free",
-  "z-ai/glm-4.5-air:free",
-  "google/gemma-3-4b-it:free",
+  "google/gemma-3-12b-it:free",
 ];
 
 export const FREE_MODEL = FREE_MODELS[0];
@@ -86,9 +60,9 @@ function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// Per-model hard timeout — OpenRouter sometimes queues silently instead of
-// returning 429, so we force a switch after this many ms.
-const MODEL_TIMEOUT_MS = 8_000;
+// Per-model hard timeout — give free models enough time to respond.
+// stepfun/step-3.5-flash is fast but OpenRouter may queue briefly.
+const MODEL_TIMEOUT_MS = 25_000;
 
 function withTimeout<T>(fn: (signal: AbortSignal) => Promise<T>, ms: number): Promise<T> {
   const ctrl = new AbortController();

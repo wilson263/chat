@@ -1489,13 +1489,13 @@ export default function ChatPage() {
           <div className="flex items-center gap-1.5 min-w-max">
             <span className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-wider mr-1 shrink-0">Models:</span>
             {[
-              { id: 'meta-llama/llama-3.3-70b-instruct:free', label: 'Llama 3.3 70B', provider: 'Meta', busy: false },
-              { id: 'qwen/qwen3-coder-480b-a35b:free', label: 'Qwen3 Coder', provider: 'Qwen', busy: true },
-              { id: 'deepseek/deepseek-r1:free', label: 'DeepSeek R1', provider: 'DeepSeek', busy: false },
-              { id: 'openai/gpt-oss-120b:free', label: 'GPT-OSS 120B', provider: 'OpenAI', busy: false },
+              { id: 'stepfun/step-3.5-flash:free', label: 'Step 3.5 Flash', provider: 'Stepfun', busy: false },
               { id: 'mistralai/mistral-small-3.1-24b-instruct:free', label: 'Mistral Small', provider: 'Mistral', busy: false },
+              { id: 'meta-llama/llama-3.3-70b-instruct:free', label: 'Llama 3.3 70B', provider: 'Meta', busy: false },
               { id: 'google/gemma-3-27b-it:free', label: 'Gemma 3 27B', provider: 'Google', busy: false },
-              { id: 'nvidia/llama-3.3-nemotron-super-49b-v1:free', label: 'Nemotron 49B', provider: 'NVIDIA', busy: false },
+              { id: 'arcee-ai/trinity-mini:free', label: 'Trinity Mini', provider: 'Arcee', busy: false },
+              { id: 'qwen/qwen3-4b:free', label: 'Qwen3 4B', provider: 'Qwen', busy: false },
+              { id: 'nousresearch/hermes-3-llama-3.1-405b:free', label: 'Hermes 405B', provider: 'Nous', busy: false },
             ].map(m => (
               <button
                 key={m.id}
