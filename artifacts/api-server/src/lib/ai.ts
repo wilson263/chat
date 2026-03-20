@@ -1,42 +1,43 @@
 import OpenAI from "openai";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PRIMARY MODEL — stepfun/step-3.5-flash:free is the main AI.
-// Reliable fallbacks tried in order if the primary is rate-limited.
+// MODEL LISTS
+// Coding-specialist models are listed first for code tasks; fast general
+// models are used for planning. All models are free-tier on OpenRouter.
 // ─────────────────────────────────────────────────────────────────────────────
 const FREE_MODELS = [
-  "stepfun/step-3.5-flash:free",          // PRIMARY — always tried first
-  "mistralai/mistral-small-3.1-24b-instruct:free",
+  "qwen/qwen2.5-coder-32b-instruct:free", // PRIMARY — best free coding model
+  "deepseek/deepseek-v3-0324:free",        // Excellent general + code
   "meta-llama/llama-3.3-70b-instruct:free",
+  "mistralai/mistral-small-3.1-24b-instruct:free",
+  "stepfun/step-3.5-flash:free",
   "google/gemma-3-27b-it:free",
   "google/gemma-3-12b-it:free",
   "arcee-ai/trinity-mini:free",
-  "qwen/qwen3-4b:free",
-  "nvidia/nemotron-nano-9b-v2:free",
   "nousresearch/hermes-3-llama-3.1-405b:free",
 ];
 
 export const CODING_FALLBACKS = [
-  "stepfun/step-3.5-flash:free",
-  "mistralai/mistral-small-3.1-24b-instruct:free",
+  "qwen/qwen2.5-coder-32b-instruct:free",
+  "deepseek/deepseek-v3-0324:free",
   "meta-llama/llama-3.3-70b-instruct:free",
-  "google/gemma-3-27b-it:free",
-  "arcee-ai/trinity-mini:free",
+  "mistralai/mistral-small-3.1-24b-instruct:free",
+  "stepfun/step-3.5-flash:free",
 ];
 
 export const AGENT_BUILD_MODELS = [
-  "stepfun/step-3.5-flash:free",
-  "mistralai/mistral-small-3.1-24b-instruct:free",
+  "qwen/qwen2.5-coder-32b-instruct:free",
+  "deepseek/deepseek-v3-0324:free",
   "meta-llama/llama-3.3-70b-instruct:free",
-  "arcee-ai/trinity-mini:free",
-  "nvidia/nemotron-nano-9b-v2:free",
+  "mistralai/mistral-small-3.1-24b-instruct:free",
+  "stepfun/step-3.5-flash:free",
 ];
 
 export const PLANNING_MODELS = [
+  "deepseek/deepseek-v3-0324:free",
   "stepfun/step-3.5-flash:free",
-  "mistralai/mistral-small-3.1-24b-instruct:free",
   "meta-llama/llama-3.3-70b-instruct:free",
-  "google/gemma-3-12b-it:free",
+  "mistralai/mistral-small-3.1-24b-instruct:free",
 ];
 
 export const FREE_MODEL = FREE_MODELS[0];

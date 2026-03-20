@@ -53,6 +53,7 @@ async function streamCollect(
     messages,
     max_tokens: maxTokens,
     stream: true,
+    temperature: 0.15, // Low temperature for more deterministic, error-free code
   } as any, modelList);
   let raw = "";
   for await (const chunk of stream) {
@@ -329,13 +330,12 @@ Write the COMPLETE content of ${filePath} now:`;
 
   send({ step: "writing_file", message: `Writing ${filePath}...`, filePath });
 
-  // All files use AGENT_BUILD_MODELS — tries best coders first, falls back to fast working models.
-  // This means if qwen3-coder is unavailable, we quickly fall to step-3.5-flash (which works) instead
-  // of wasting time cycling through 10+ failing models.
+  // All files use AGENT_BUILD_MODELS — coding-specialist models first for fewest errors.
+  // Token limit raised to 12 000 so large files (CSS/JS) are never truncated mid-output.
   const content = await streamCollect(
     AGENT_BUILD_MODELS,
     [{ role: "system", content: systemPrompt }, { role: "user", content: userMessage }],
-    8192,
+    12000,
     (token) => send({ step: "file_token", filePath, token })
   );
 

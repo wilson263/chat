@@ -28,38 +28,44 @@ interface ChatRequest {
 }
 
 const MODEL_MAP: Record<string, string> = {
-    // ── Active free models ────────────────────────────────────────────────
+    // ── Coding-specialist models ───────────────────────────────────────────
+    "qwen/qwen2.5-coder-32b-instruct:free": "qwen/qwen2.5-coder-32b-instruct:free",
+    "deepseek/deepseek-v3-0324:free": "deepseek/deepseek-v3-0324:free",
+    // ── General free models ───────────────────────────────────────────────
     "stepfun/step-3.5-flash:free": "stepfun/step-3.5-flash:free",
     "mistralai/mistral-small-3.1-24b-instruct:free": "mistralai/mistral-small-3.1-24b-instruct:free",
     "meta-llama/llama-3.3-70b-instruct:free": "meta-llama/llama-3.3-70b-instruct:free",
     "google/gemma-3-27b-it:free": "google/gemma-3-27b-it:free",
     "google/gemma-3-12b-it:free": "google/gemma-3-12b-it:free",
     "arcee-ai/trinity-mini:free": "arcee-ai/trinity-mini:free",
-    "qwen/qwen3-4b:free": "qwen/qwen3-4b:free",
     "nvidia/nemotron-nano-9b-v2:free": "nvidia/nemotron-nano-9b-v2:free",
     "nousresearch/hermes-3-llama-3.1-405b:free": "nousresearch/hermes-3-llama-3.1-405b:free",
-    // ── Legacy aliases → redirect to step-3.5-flash ──────────────────────
-    "mixtral-8x7b-32768": "stepfun/step-3.5-flash:free",
-    "gemma2-9b-it": "stepfun/step-3.5-flash:free",
-    "deepseek-r1-distill-llama-70b": "stepfun/step-3.5-flash:free",
+    // ── Legacy aliases → redirect to best coder ───────────────────────────
+    "mixtral-8x7b-32768": "qwen/qwen2.5-coder-32b-instruct:free",
+    "gemma2-9b-it": "qwen/qwen2.5-coder-32b-instruct:free",
+    "deepseek-r1-distill-llama-70b": "deepseek/deepseek-v3-0324:free",
+    "qwen/qwen3-4b:free": "qwen/qwen2.5-coder-32b-instruct:free",
   };
 
-// Step 3.5 Flash is the primary running model for ALL task types.
+// Qwen 2.5 Coder 32B is the primary model for code tasks — purpose-built for code generation.
 const CODING_MODELS = [
-    "stepfun/step-3.5-flash:free",
-    "mistralai/mistral-small-3.1-24b-instruct:free",
+    "qwen/qwen2.5-coder-32b-instruct:free",
+    "deepseek/deepseek-v3-0324:free",
     "meta-llama/llama-3.3-70b-instruct:free",
-    "arcee-ai/trinity-mini:free",
+    "mistralai/mistral-small-3.1-24b-instruct:free",
+    "stepfun/step-3.5-flash:free",
   ];
 
 const REASONING_MODELS = [
-    "stepfun/step-3.5-flash:free",
+    "deepseek/deepseek-v3-0324:free",
     "meta-llama/llama-3.3-70b-instruct:free",
     "mistralai/mistral-small-3.1-24b-instruct:free",
     "nousresearch/hermes-3-llama-3.1-405b:free",
+    "stepfun/step-3.5-flash:free",
   ];
 
 const GENERAL_MODELS = [
+    "deepseek/deepseek-v3-0324:free",
     "stepfun/step-3.5-flash:free",
     "mistralai/mistral-small-3.1-24b-instruct:free",
     "meta-llama/llama-3.3-70b-instruct:free",
@@ -266,7 +272,19 @@ RULES:
 ✓ Production-ready — error handling, loading states, edge cases covered
 ✗ Never say "add the rest yourself" — deliver the complete working product
 ✗ Never use placeholder images or content — use real data, real logic
-✗ Never output partial files — always complete file contents`;
+✗ Never output partial files — always complete file contents
+
+CODE CORRECTNESS CHECKLIST (verify before outputting each file):
+✓ All imports/requires are present and correct
+✓ All functions are fully implemented — no empty bodies
+✓ All variables are declared before use
+✓ All brackets, parentheses, and quotes are properly closed
+✓ All async functions have proper error handling (try/catch or .catch)
+✓ All event listeners reference functions that actually exist
+✓ No undefined variables or missing function calls
+✓ HTML: all tags are properly opened and closed
+✓ CSS: all selectors match actual HTML elements
+✓ JS: no syntax errors, no missing semicolons where required`;
 
 function buildSystemPrompt(intent: TaskIntent, customPrompt?: string): string {
   if (customPrompt) {
@@ -329,12 +347,15 @@ async function streamReplitAI(
     } catch (_) {}
   };
 
+  // Use more tokens for build tasks so complete files are never truncated
+  const maxTokens = resolvedSystemPrompt?.includes("BUILD MODE") ? 16384 : 8192;
+
   const stream = await createChatCompletionStream({
     model,
     messages: messages as any,
     stream: true,
-    max_tokens: 8192,
-    temperature: temperature ?? 0.25,
+    max_tokens: maxTokens,
+    temperature: temperature ?? 0.2,
   } as any, undefined, onSwitch);
 
   const keepalive = setInterval(() => {
