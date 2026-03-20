@@ -335,7 +335,7 @@ Write the COMPLETE content of ${filePath} now:`;
   const content = await streamCollect(
     AGENT_BUILD_MODELS,
     [{ role: "system", content: systemPrompt }, { role: "user", content: userMessage }],
-    4096,
+    8192,
     (token) => send({ step: "file_token", filePath, token })
   );
 

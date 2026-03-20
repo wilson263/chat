@@ -100,7 +100,7 @@ router.post("/openai/conversations/:id/messages", async (req, res): Promise<void
         ...chatMessages,
       ],
       stream: true,
-      max_tokens: 4096,
+      max_tokens: 8192,
     });
 
     for await (const chunk of stream) {
