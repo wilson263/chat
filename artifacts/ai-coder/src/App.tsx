@@ -26,23 +26,22 @@ import ExplorePage from "@/pages/explore";
 import CodeRunnerPage from "@/pages/code-runner";
 import { OnboardingTour } from "@/components/onboarding-tour";
 import { ZorvixIntro } from "@/components/zorvix-intro";
+import { WakeWordOverlay } from "@/components/wake-word-overlay";
 import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: false,
-      refetchOnWindowFocus: false,
-    },
-  },
+  defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } },
 });
 
-const PUBLIC_ROUTES = ["/login", "/signup", "/about", "/contact", "/our-apps", "/developer", "/analytics", "/compare", "/playground", "/templates", "/prompt-generator", "/explore", "/code-runner"];
+const PUBLIC_ROUTES = [
+  "/login", "/signup", "/about", "/contact", "/our-apps", "/developer",
+  "/analytics", "/compare", "/playground", "/templates", "/prompt-generator",
+  "/explore", "/code-runner",
+];
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const [location, setLocation] = useLocation();
-
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -50,50 +49,42 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
       </div>
     );
   }
-
   const isPublic = PUBLIC_ROUTES.some(r => location === r || location.startsWith(r + "/"));
-  if (!user && !isPublic) {
-    setLocation("/login");
-    return null;
-  }
-
+  if (!user && !isPublic) { setLocation("/login"); return null; }
   return <>{children}</>;
 }
 
 function Router() {
   return (
     <Switch>
-      <Route path="/login" component={LoginPage} />
-      <Route path="/signup" component={SignupPage} />
-      <Route path="/about" component={AboutPage} />
-      <Route path="/contact" component={ContactPage} />
-      <Route path="/our-apps" component={OurAppsPage} />
-      <Route path="/" component={ChatPage} />
-      <Route path="/projects" component={Dashboard} />
-      <Route path="/workspace/:id" component={WorkspacePage} />
-      <Route path="/developer" component={DeveloperPage} />
-      <Route path="/settings" component={SettingsPage} />
-      <Route path="/usage" component={UsagePage} />
-      <Route path="/admin" component={AdminPage} />
-      <Route path="/analytics" component={AnalyticsPage} />
-      <Route path="/compare" component={ComparePage} />
-      <Route path="/playground" component={PlaygroundPage} />
-      <Route path="/templates" component={TemplatesPage} />
+      <Route path="/login"            component={LoginPage} />
+      <Route path="/signup"           component={SignupPage} />
+      <Route path="/about"            component={AboutPage} />
+      <Route path="/contact"          component={ContactPage} />
+      <Route path="/our-apps"         component={OurAppsPage} />
+      <Route path="/"                 component={ChatPage} />
+      <Route path="/projects"         component={Dashboard} />
+      <Route path="/workspace/:id"    component={WorkspacePage} />
+      <Route path="/developer"        component={DeveloperPage} />
+      <Route path="/settings"         component={SettingsPage} />
+      <Route path="/usage"            component={UsagePage} />
+      <Route path="/admin"            component={AdminPage} />
+      <Route path="/analytics"        component={AnalyticsPage} />
+      <Route path="/compare"          component={ComparePage} />
+      <Route path="/playground"       component={PlaygroundPage} />
+      <Route path="/templates"        component={TemplatesPage} />
       <Route path="/prompt-generator" component={PromptGeneratorPage} />
-      <Route path="/explore" component={ExplorePage} />
-      <Route path="/code-runner" component={CodeRunnerPage} />
+      <Route path="/explore"          component={ExplorePage} />
+      <Route path="/code-runner"      component={CodeRunnerPage} />
       <Route component={NotFound} />
     </Switch>
   );
 }
 
-const AUTH_ROUTES = ["/login", "/signup"];
-
 function App() {
   const currentPath = typeof window !== "undefined" ? window.location.pathname : "";
-  const isAuthRoute = AUTH_ROUTES.some(r => currentPath === r || currentPath.endsWith(r));
+  const isAuthRoute = ["/login", "/signup"].some(r => currentPath === r || currentPath.endsWith(r));
   const alreadySeen = typeof window !== "undefined" && !!localStorage.getItem("zorvix_intro_seen");
-
   const [introComplete, setIntroComplete] = useState(isAuthRoute || alreadySeen);
   const handleIntroComplete = useCallback(() => {
     localStorage.setItem("zorvix_intro_seen", "1");
@@ -111,6 +102,8 @@ function App() {
           </AuthGuard>
         </WouterRouter>
         <Toaster />
+        {/* ── Hey Zorbix — Voice Assistant ── */}
+        <WakeWordOverlay />
       </TooltipProvider>
     </QueryClientProvider>
   );
