@@ -352,6 +352,26 @@ export default function ChatPage() {
     }
   }, []);
 
+  // ── Hey Zorbix: handle voice-triggered URL params ───────────────────────
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const wakeCmd = params.get('wakeCommand');
+    const newChatParam = params.get('newChat');
+    window.history.replaceState({}, '', window.location.pathname);
+    if (newChatParam) {
+      setMessages([]); setActiveChatId(null); setInput('');
+      setAttachments([]); setLastUserMessage(''); setLastAttachments([]);
+      return;
+    }
+    if (wakeCmd) {
+      const decoded = decodeURIComponent(wakeCmd).trim();
+      if (decoded) {
+        const t = setTimeout(() => sendMessage(decoded, []), 700);
+        return () => clearTimeout(t);
+      }
+    }
+  }, []);
+
   // keyboard shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -720,6 +740,7 @@ export default function ChatPage() {
           const finalMessages = [...newMessages, { role: 'assistant' as const, content: fullText, answeredBy: finalAnsweredBy }];
           setMessages(finalMessages);
           setFollowUpSuggestions(generateFollowUps(fullText));
+          window.dispatchEvent(new CustomEvent('zorbix-ai-response', { detail: fullText }));
           let chatId = activeChatId;
           if (!chatId) {
             chatId = Date.now().toString();
