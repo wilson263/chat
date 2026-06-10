@@ -1338,7 +1338,8 @@ export default function ChatPage() {
             <p className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-medium mb-1.5">Navigate</p>
             <div className="grid grid-cols-2 gap-1">
               {[
-                { icon: FolderKanban, label: 'Dashboard', path: '/projects', color: 'hover:text-primary' },
+                { icon: Mic, label: 'Voice', path: '/voice', color: 'hover:text-violet-400' },
+                  { icon: FolderKanban, label: 'Dashboard', path: '/projects', color: 'hover:text-primary' },
                 { icon: Monitor, label: 'Workspace', path: '/projects', color: 'hover:text-blue-400' },
                 { icon: Wand2, label: 'Prompt Gen', path: '/prompt-generator', color: 'hover:text-violet-400' },
                 { icon: Globe, label: 'Explore', path: '/explore', color: 'hover:text-teal-400' },
