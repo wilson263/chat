@@ -191,14 +191,15 @@ export function WakeWordOverlay() {
       </div>
     )}
 
-    {/* ── Idle mic indicator — always visible so user knows it's listening ── */}
+    {/* ── Idle mic indicator — click to open Voice Assistant page ── */}
     {!active && (profileReady || dismissed) && (
-      <div
-        title="Hey Zorbix is listening"
-        style={{ position: 'fixed', bottom: 20, right: 20, zIndex: 9988, width: 38, height: 38, borderRadius: '50%', background: 'hsl(var(--card))', border: '1px solid hsl(var(--primary)/.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 12px rgba(0,0,0,.2)', cursor: 'default' }}
+      <button
+        onClick={() => setLocation('/voice')}
+        title="Open Voice Assistant"
+        style={{ position: 'fixed', bottom: 20, right: 20, zIndex: 9988, width: 38, height: 38, borderRadius: '50%', background: 'hsl(var(--card))', border: '1px solid hsl(var(--primary)/.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 12px rgba(0,0,0,.2)', cursor: 'pointer' }}
       >
         <Mic style={{ width: 16, height: 16, color: 'hsl(var(--primary)/.6)' }} />
-      </div>
+      </button>
     )}
 
     {/* ── Timers strip ── */}
