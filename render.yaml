@@ -1,18 +1,19 @@
 services:
-  - type: web
-    name: ichat
-    runtime: node
-    region: oregon
-    plan: free
-    buildCommand: npm install -g pnpm && pnpm install --frozen-lockfile && bash scripts/render-build.sh
-    startCommand: node artifacts/api-server/dist/index.cjs
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: DATABASE_URL
-        sync: false
-      - key: SESSION_SECRET
-        generateValue: true
-      - key: OPENROUTER_API_KEY
-        sync: false
-    autoDeploy: false
+    - type: web
+      name: ichat
+      runtime: node
+      region: oregon
+      plan: free
+      buildCommand: npm install -g pnpm && pnpm install --frozen-lockfile && bash scripts/render-build.sh
+      startCommand: pnpm --filter @workspace/db run push-force && node artifacts/api-server/dist/index.cjs
+      envVars:
+        - key: NODE_ENV
+          value: production
+        - key: DATABASE_URL
+          sync: false
+        - key: SESSION_SECRET
+          generateValue: true
+        - key: OPENROUTER_API_KEY
+          sync: false
+      autoDeploy: false
+  
